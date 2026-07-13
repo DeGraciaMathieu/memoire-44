@@ -67,7 +67,9 @@ export function tipHTML(state, ui, hex) {
         redA !== red ? ' (−' + redA + ' blindé)' : ''
       }</b></div>
       <div class="row">Mouvement<b>${t.stops ? 'stoppe net' : 'libre'}</b></div>
-      <div class="row">Ligne de mire<b>${t.blocksSight ? 'bloquée' : 'libre'}</b></div>
+      <div class="row">Ligne de mire<b>${
+        t.blocksSight ? 'bloquée' : t.elevated ? 'bloquée en contrebas' : 'libre'
+      }</b></div>
     </div>`;
 
   if (u) {

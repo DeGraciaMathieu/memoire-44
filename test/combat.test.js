@@ -64,9 +64,9 @@ test('la forêt bloque la ligne de mire : plus de tir ni de cible à travers', (
   state.terrain[key(4, 4)] = 'village';
   assert.ok(!hasLineOfSight(state, art, enemy));
   assert.equal(diceFor(state, art, enemy), 0);
-  // une colline, non
+  // une colline bloque aussi quand les deux camps sont en contrebas
   state.terrain[key(4, 4)] = 'colline';
-  assert.ok(hasLineOfSight(state, art, enemy));
+  assert.ok(!hasLineOfSight(state, art, enemy));
 });
 
 test("l'hex du tireur et celui de la cible ne bloquent pas la ligne de mire", () => {
@@ -98,6 +98,39 @@ test('ligne longeant une arête : bloquée seulement si les DEUX hexes riverains
     units: [inf('a', 'allies', 0, 0), inf('e', 'axis', 0, 2)],
   });
   assert.ok(hasLineOfSight(rim, { c: 0, r: 0 }, { c: 0, r: 2 }));
+});
+
+test('colline : bloque en contrebas, mais pas si une extrémité est à la même altitude', () => {
+  const shooter = { id: 'a', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const target = inf('e', 'axis', 6, 4);
+  const hill = { [key(4, 4)]: 'colline' };
+
+  // tireur et cible en contrebas : bloqué
+  const low = battleState({ terrain: { ...hill }, units: [shooter, target] });
+  assert.ok(!hasLineOfSight(low, shooter, target));
+  assert.equal(diceFor(low, shooter, target), 0);
+
+  // cible sur une colline : la vue passe (même altitude que l'obstacle)
+  const onHillTarget = battleState({
+    terrain: { ...hill, [key(6, 4)]: 'colline' },
+    units: [shooter, target],
+  });
+  assert.ok(hasLineOfSight(onHillTarget, shooter, target));
+  assert.equal(diceFor(onHillTarget, shooter, target), 1); // 2 dés à portée 4, −1 (colline)
+
+  // tireur sur une colline : symétrique, la vue passe aussi
+  const onHillShooter = battleState({
+    terrain: { ...hill, [key(2, 4)]: 'colline' },
+    units: [shooter, target],
+  });
+  assert.ok(hasLineOfSight(onHillShooter, shooter, target));
+
+  // la forêt reste opaque, même vue depuis une colline
+  const forestWall = battleState({
+    terrain: { [key(2, 4)]: 'colline', [key(4, 4)]: 'foret' },
+    units: [shooter, target],
+  });
+  assert.ok(!hasLineOfSight(forestWall, shooter, target));
 });
 
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {

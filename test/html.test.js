@@ -52,7 +52,11 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
 
   const forest = tipHTML(state, emptyUi, { c: 1, r: 2 }); // forêt du scénario
   assert.match(forest, /Forêt/);
-  assert.match(forest, /Ligne de mire<b>bloquée/);
+  assert.match(forest, /Ligne de mire<b>bloquée</);
+
+  const hill = tipHTML(state, emptyUi, { c: 4, r: 4 }); // colline du scénario
+  assert.match(hill, /Colline/);
+  assert.match(hill, /Ligne de mire<b>bloquée en contrebas/);
 
   const withUnit = tipHTML(state, emptyUi, { c: 1, r: 7 }); // infanterie alliée
   assert.match(withUnit, /Infanterie/);

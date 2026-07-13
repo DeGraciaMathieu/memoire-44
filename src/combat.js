@@ -4,18 +4,27 @@ import { FACES, H, MEDALS_TO_WIN, TERRAIN, UNITS } from './config.js';
 import { hexDistance, hexLine, key, neighbors } from './hex.js';
 import { unitAt } from './movement.js';
 
-// Un terrain blocksSight (forêt) entre le tireur et la cible coupe le tir.
-// Les hexes du tireur et de la cible ne comptent pas. Quand la ligne longe
-// exactement une arête, le tir n'est bloqué que si les DEUX hexes riverains
-// bloquent (d'où les deux tracés nudge ±1) ; le hors-plateau ne bloque pas.
+// Un terrain blocksSight (forêt, village) entre le tireur et la cible coupe
+// le tir. Une colline (elevated) intermédiaire ne bloque que si le tireur ET
+// la cible sont en contrebas : dès qu'une extrémité est elle-même sur une
+// colline (même altitude), la vue passe. Les hexes du tireur et de la cible
+// ne comptent pas. Quand la ligne longe exactement une arête, le tir n'est
+// bloqué que si les DEUX hexes riverains bloquent (d'où les deux tracés
+// nudge ±1) ; le hors-plateau ne bloque pas.
 export function hasLineOfSight(state, from, to) {
+  const elevated = (h) => {
+    const t = state.terrain[key(h.c, h.r)];
+    return !!t && !!TERRAIN[t].elevated;
+  };
+  const lowEnds = !elevated(from) && !elevated(to);
+  const blocks = (h) => {
+    const t = state.terrain[key(h.c, h.r)];
+    return !!t && (TERRAIN[t].blocksSight || (TERRAIN[t].elevated && lowEnds));
+  };
   const clear = (nudge) =>
     hexLine(from, to, nudge)
       .slice(1, -1)
-      .every((h) => {
-        const t = state.terrain[key(h.c, h.r)];
-        return !t || !TERRAIN[t].blocksSight;
-      });
+      .every((h) => !blocks(h));
   return clear(1) || clear(-1);
 }
 
