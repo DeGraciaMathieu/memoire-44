@@ -42,7 +42,7 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 
 | Champ        | Contenu                                                             |
 | ------------ | ------------------------------------------------------------------- |
-| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village' }`                |
+| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage' }`      |
 | `units`      | `[{ id, side, type, c, r, figs, acted }]`                           |
 | `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14 |
 | `hands`      | `{ allies: [cardId], axis: [cardId] }`                              |
