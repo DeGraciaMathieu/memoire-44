@@ -4,6 +4,7 @@ import {
   defenseReduction,
   diceFor,
   hasLineOfSight,
+  reductionOf,
   resolveCombat,
   rollDice,
   targetsFor,
@@ -158,6 +159,55 @@ test("bocage : couvert par type, ligne de mire coupée, pas de tir le tour d'ent
   const st = battleState({ terrain: { [key(6, 5)]: 'bocage' }, units: [entered, near] });
   assert.equal(targetsFor(st, entered, 1).length, 0);
   assert.equal(targetsFor(st, entered, 0).length, 1);
+});
+
+test('bunker : protection non cumulée avec le terrain, ligne de mire coupée', () => {
+  const def = inf('d', 'axis', 5, 4);
+  const state = battleState({ terrain: { [key(5, 4)]: 'colline' }, units: [def] });
+  state.obstacles = { [key(5, 4)]: 'bunker' };
+  // le plus fort des deux couverts, jamais la somme : blindé → max(1, 2) = 2
+  assert.equal(defenseReduction(state, 'arm', def), 2);
+  assert.equal(defenseReduction(state, 'inf', def), 1);
+  assert.equal(defenseReduction(state, 'art', def), 1); // la colline compte encore pour l'artillerie
+  assert.equal(reductionOf({ def: 1, defArmor: 2, defArt: 0 }, 'art'), 0);
+
+  // un bunker sur un hex intermédiaire coupe la ligne de mire
+  const art = { id: 'b', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const enemy = inf('e', 'axis', 6, 4);
+  const los = battleState({ units: [art, enemy] });
+  los.obstacles = { [key(4, 4)]: 'bunker' };
+  assert.ok(!hasLineOfSight(los, art, enemy));
+});
+
+test('bunker : le premier drapeau de chaque jet est ignoré', () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const def = inf('d', 'axis', 5, 4);
+  const state = battleState({ units: [atk, def] });
+  state.obstacles = { [key(5, 4)]: 'bunker' };
+
+  const one = resolveCombat(state, atk, def, ['flag']);
+  assert.equal(one.flagsIgnored, 1);
+  assert.equal(one.retreated, null);
+  assert.deepEqual({ c: def.c, r: def.r }, { c: 5, r: 4 }); // il tient la position
+  assert.equal(def.figs, 4);
+
+  // deux drapeaux : le premier est ignoré, le second fait replier
+  const two = resolveCombat(state, atk, def, ['flag', 'flag']);
+  assert.equal(two.flagsIgnored, 1);
+  assert.ok(two.retreated);
+});
+
+test("bunker : l'artillerie retranchée ne peut pas replier et encaisse", () => {
+  const atk = inf('a', 'allies', 6, 4);
+  const gun = { id: 'g', side: 'axis', type: 'art', c: 6, r: 3, figs: 2 };
+  const state = battleState({ units: [atk, gun] });
+  state.obstacles = { [key(6, 3)]: 'bunker' };
+
+  const rep = resolveCombat(state, atk, gun, ['flag', 'flag']);
+  assert.equal(rep.flagsIgnored, 1); // le bunker annule le premier
+  assert.equal(rep.extraLoss, 1); // le second : fixe, donc perte
+  assert.equal(gun.figs, 1);
+  assert.deepEqual({ c: gun.c, r: gun.r }, { c: 6, r: 3 });
 });
 
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {

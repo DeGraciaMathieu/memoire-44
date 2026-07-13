@@ -1,13 +1,25 @@
 // Fragments HTML PURS (chaînes) — testables sans navigateur, aucun accès au DOM.
 
-import { TERRAIN, UNITS } from '../src/config.js';
+import { OBSTACLES, TERRAIN, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
 import { SECTORS, sectorsOf } from '../src/sectors.js';
-import { unitAt } from '../src/movement.js';
+import { obstacleAt, unitAt } from '../src/movement.js';
+import { reductionOf } from '../src/combat.js';
 
 export const SYM = { inf: '✦', arm: '▮', grenade: '✸', star: '★', flag: '⚑' };
 export const UNIT_GLYPH = { inf: '✦', arm: '▮', art: '✜' };
 export const SIDE_FR = { allies: 'Alliés', axis: 'Axe' };
+
+// Libellé des dés retirés à l'assaillant pour un couvert (terrain ou obstacle).
+function reductionLabel(dice) {
+  const red = dice.def;
+  const redA = dice.defArmor != null ? dice.defArmor : red;
+  const redArt = dice.defArt != null ? dice.defArt : red;
+  const extras = [];
+  if (redA !== red) extras.push('−' + redA + ' blindé');
+  if (redArt !== red) extras.push(redArt ? '−' + redArt + ' artillerie' : 'artillerie sans malus');
+  return `${red ? '−' + red : '—'}${extras.length ? ' (' + extras.join(', ') + ')' : ''}`;
+}
 
 const RANGE_LBL = { inf: '1 / 2 / 3', arm: '1 à 3', art: '1 à 6' };
 const MOVE_LBL = {
@@ -40,11 +52,19 @@ export function forcePanelHTML(unit, terrainKey, role, figsShown, lost) {
 }
 
 // Détail du calcul de dés d'un engagement (outcome produit par attackUnit).
+// Le couvert affiché est celui qui fournit la réduction retenue (non cumulée) :
+// l'obstacle s'il protège au moins autant que le terrain.
 export function calcHTML(outcome) {
-  const { baseDice, range, reduction, dice, defender, terrainKey } = outcome;
+  const { attacker, baseDice, range, reduction, dice, defender, terrainKey, obstacleKey } = outcome;
+  const t = TERRAIN[terrainKey];
+  const o = obstacleKey ? OBSTACLES[obstacleKey] : null;
+  const coverLabel =
+    o && reductionOf(o.dice, attacker.type) >= reductionOf(t.dice, attacker.type)
+      ? o.label
+      : t.label;
   return (
     `<b>${baseDice}</b> dés à portée ${range}` +
-    (reduction ? ` − <b>${reduction}</b> (${TERRAIN[terrainKey].label.toLowerCase()})` : '') +
+    (reduction ? ` − <b>${reduction}</b> (${coverLabel.toLowerCase()})` : '') +
     ` = <b>${dice} dé${dice > 1 ? 's' : ''}</b> · touche sur ${UNITS[defender.type].hitOn
       .map((f) => SYM[f])
       .join(' ')}`
@@ -58,18 +78,9 @@ export function tipHTML(state, ui, hex) {
   const secs = sectorsOf(hex.c, hex.r);
   const u = unitAt(state, hex.c, hex.r);
 
-  const red = t.dice.def;
-  const redA = t.dice.defArmor != null ? t.dice.defArmor : red;
-  const redArt = t.dice.defArt != null ? t.dice.defArt : red;
-  const extras = [];
-  if (redA !== red) extras.push('−' + redA + ' blindé');
-  if (redArt !== red) extras.push(redArt ? '−' + redArt + ' artillerie' : 'artillerie sans malus');
-
   let h = `<div class="thead ${tkey}">${t.label}<em>${secs.join(' + ')}</em></div>
     <div class="tbody">
-      <div class="row">Dés retirés à l'assaillant<b>${red ? '−' + red : '—'}${
-        extras.length ? ' (' + extras.join(', ') + ')' : ''
-      }</b></div>
+      <div class="row">Dés retirés à l'assaillant<b>${reductionLabel(t.dice)}</b></div>
       <div class="row">Mouvement<b>${
         t.enterAdjacentOnly ? 'entrée adjacente, stoppe net' : t.stops ? 'stoppe net' : 'libre'
       }</b></div>${
@@ -79,6 +90,20 @@ export function tipHTML(state, ui, hex) {
         t.blocksSight ? 'bloquée' : t.elevated ? 'bloquée en contrebas' : 'libre'
       }</b></div>
     </div>`;
+
+  const oKey = obstacleAt(state, hex.c, hex.r);
+  if (oKey) {
+    const o = OBSTACLES[oKey];
+    h += `<div class="unit">
+      <div class="uname">${o.label}</div>
+      <div class="row">Protection<b>${reductionLabel(o.dice)}, non cumulée</b></div>`;
+    if (o.infantryOnly) h += `<div class="row">Accès<b>infanterie seulement</b></div>`;
+    if (o.fixesArtillery) h += `<div class="row">Artillerie<b>retranchée, ne sort plus</b></div>`;
+    if (o.ignoreFirstFlag)
+      h += `<div class="row">Drapeaux<b>le premier du jet est ignoré</b></div>`;
+    if (o.blocksSight) h += `<div class="row">Ligne de mire<b>bloquée</b></div>`;
+    h += `</div>`;
+  }
 
   if (u) {
     const U = UNITS[u.type];

@@ -25,3 +25,11 @@ test('le terrain couvre tout le plateau, avec le bocage attendu', () => {
   assert.equal(terrain[key(3, 3)], 'bocage');
   assert.equal(terrain[key(0, 0)], 'plaine');
 });
+
+test("les bunkers du scénario, dont celui de l'artillerie de l'Axe", () => {
+  const { obstacles, units } = scenario();
+  assert.equal(obstacles[key(6, 0)], 'bunker');
+  assert.equal(obstacles[key(4, 6)], 'bunker');
+  const gun = units.find((u) => u.side === 'axis' && u.type === 'art');
+  assert.deepEqual({ c: gun.c, r: gun.r }, { c: 6, r: 0 }); // retranchée dès le départ
+});

@@ -26,6 +26,20 @@ export const TERRAIN = {
   },
 };
 
+// Obstacles posés SUR un terrain. Leur protection ne se cumule pas avec celle
+// du terrain : on retient la plus forte des deux réductions (un bunker sur une
+// colline protège de 2 contre un blindé, pas de 3).
+export const OBSTACLES = {
+  bunker: {
+    label: 'Bunker',
+    dice: { def: 1, defArmor: 2, defArt: 0 },
+    blocksSight: true,
+    infantryOnly: true, // blindés et artillerie n'y entrent jamais
+    fixesArtillery: true, // une artillerie qui y débute ne peut plus bouger
+    ignoreFirstFlag: true, // le premier drapeau de chaque jet est ignoré
+  },
+};
+
 export const UNITS = {
   inf: {
     label: 'Infanterie',

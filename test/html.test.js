@@ -59,6 +59,12 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   assert.match(hill, /Colline/);
   assert.match(hill, /Ligne de mire<b>bloquée en contrebas/);
 
+  const bunker = tipHTML(state, emptyUi, { c: 4, r: 6 }); // bunker vide du scénario
+  assert.match(bunker, /Bunker/);
+  assert.match(bunker, /non cumulée/);
+  assert.match(bunker, /infanterie seulement/);
+  assert.match(bunker, /le premier du jet est ignoré/);
+
   const hedge = tipHTML(state, emptyUi, { c: 3, r: 3 }); // bocage du scénario
   assert.match(hedge, /Bocage/);
   assert.match(hedge, /entrée adjacente/);

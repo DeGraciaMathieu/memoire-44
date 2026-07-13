@@ -49,6 +49,23 @@ test('bocage : entrée seulement en premier pas, sortie stoppée à 1 hex', () =
   for (const h of exits) assert.equal(h.cost, 1);
 });
 
+test("bunker : seule l'infanterie entre, l'artillerie retranchée est fixe", () => {
+  const foot = { id: 'a', side: 'allies', type: 'inf', c: 6, r: 4 };
+  const state = flatState('plaine', [foot]);
+  state.obstacles = { [key(7, 4)]: 'bunker' };
+  assert.ok(reachable(state, foot, 2).some((h) => h.c === 7 && h.r === 4));
+
+  const tank = { id: 'b', side: 'allies', type: 'arm', c: 6, r: 4 };
+  const st2 = flatState('plaine', [tank]);
+  st2.obstacles = { [key(7, 4)]: 'bunker' };
+  assert.ok(!reachable(st2, tank, 3).some((h) => h.c === 7 && h.r === 4));
+
+  const gun = { id: 'g', side: 'axis', type: 'art', c: 6, r: 4 };
+  const st3 = flatState('plaine', [gun]);
+  st3.obstacles = { [key(6, 4)]: 'bunker' };
+  assert.equal(reachable(st3, gun, 1).length, 0);
+});
+
 test('les terrains qui stoppent arrêtent net le mouvement', () => {
   const u = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
   const out = reachable(flatState('foret', [u]), u, 3);

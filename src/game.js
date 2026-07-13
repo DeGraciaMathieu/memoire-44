@@ -8,7 +8,7 @@ import { hexDistance, key } from './hex.js';
 import { inSector } from './sectors.js';
 import { buildDeck, cardById } from './cards.js';
 import { scenario } from './scenario.js';
-import { reachable } from './movement.js';
+import { obstacleAt, reachable } from './movement.js';
 import { defenseReduction, diceFor, resolveCombat, rollDice } from './combat.js';
 
 export function shuffle(list, rng) {
@@ -21,10 +21,11 @@ export function shuffle(list, rng) {
 }
 
 export function createGame({ rng = Math.random } = {}) {
-  const { terrain, units } = scenario();
+  const { terrain, units, obstacles } = scenario();
   const deck = shuffle(buildDeck(), rng);
   return {
     terrain,
+    obstacles,
     units,
     decks: { allies: deck.slice(0, 10), axis: deck.slice(10) },
     hands: { allies: [], axis: [] },
@@ -96,6 +97,7 @@ export function attackUnit(state, attacker, defender) {
     dice: diceFor(state, attacker, defender),
     figsBefore: defender.figs,
     terrainKey: state.terrain[key(defender.c, defender.r)],
+    obstacleKey: obstacleAt(state, defender.c, defender.r) ?? null,
   };
   const faces = rollDice(outcome.dice, state.rng);
   outcome.report = resolveCombat(state, attacker, defender, faces);

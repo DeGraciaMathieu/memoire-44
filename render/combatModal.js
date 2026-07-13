@@ -91,11 +91,16 @@ export function createCombatModal({ requestDraw, getUi }) {
       report.hits ? 'hit' : '',
     );
     await sleep(280);
-    if (report.flags) {
+    if (report.flagsIgnored) {
+      line('1 drapeau ignoré (bunker)', 'flagline');
+      await sleep(280);
+    }
+    const flagsLeft = report.flags - report.flagsIgnored;
+    if (flagsLeft) {
       line(
         report.retreated
-          ? `${report.flags} drapeau${report.flags > 1 ? 'x' : ''} — repli d’un hex`
-          : `${report.flags} drapeau${report.flags > 1 ? 'x' : ''} — repli impossible : ${report.extraLoss} perte(s)`,
+          ? `${flagsLeft} drapeau${flagsLeft > 1 ? 'x' : ''} — repli d’un hex`
+          : `${flagsLeft} drapeau${flagsLeft > 1 ? 'x' : ''} — repli impossible : ${report.extraLoss} perte(s)`,
         'flagline',
       );
       await sleep(280);

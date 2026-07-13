@@ -1,8 +1,8 @@
 // Règles de tir et résolution du combat.
 
-import { FACES, H, MEDALS_TO_WIN, TERRAIN, UNITS } from './config.js';
+import { FACES, H, MEDALS_TO_WIN, OBSTACLES, TERRAIN, UNITS } from './config.js';
 import { hexDistance, hexLine, key, neighbors } from './hex.js';
-import { unitAt } from './movement.js';
+import { obstacleAt, unitAt } from './movement.js';
 
 // Un terrain blocksSight (forêt, village) entre le tireur et la cible coupe
 // le tir. Une colline (elevated) intermédiaire ne bloque que si le tireur ET
@@ -19,7 +19,9 @@ export function hasLineOfSight(state, from, to) {
   const lowEnds = !elevated(from) && !elevated(to);
   const blocks = (h) => {
     const t = state.terrain[key(h.c, h.r)];
-    return !!t && (TERRAIN[t].blocksSight || (TERRAIN[t].elevated && lowEnds));
+    if (!t) return false;
+    const o = OBSTACLES[obstacleAt(state, h.c, h.r)];
+    return TERRAIN[t].blocksSight || !!o?.blocksSight || (TERRAIN[t].elevated && lowEnds);
   };
   const clear = (nudge) =>
     hexLine(from, to, nudge)
@@ -28,14 +30,22 @@ export function hasLineOfSight(state, from, to) {
   return clear(1) || clear(-1);
 }
 
-// Dés retirés par le terrain du défenseur, selon le type de l'attaquant :
-// defArmor pour les blindés, defArt pour l'artillerie (0 = sans malus),
-// def sinon.
+// Dés retirés par un couvert (terrain ou obstacle), selon le type de
+// l'attaquant : defArmor pour les blindés, defArt pour l'artillerie
+// (0 = sans malus), def sinon.
+export function reductionOf(dice, attackerType) {
+  if (attackerType === 'arm' && dice.defArmor != null) return dice.defArmor;
+  if (attackerType === 'art' && dice.defArt != null) return dice.defArt;
+  return dice.def;
+}
+
+// Terrain et obstacle ne se cumulent pas : seule la plus forte des deux
+// réductions est retenue.
 export function defenseReduction(state, attackerType, target) {
   const t = TERRAIN[state.terrain[key(target.c, target.r)]];
-  if (attackerType === 'arm' && t.dice.defArmor != null) return t.dice.defArmor;
-  if (attackerType === 'art' && t.dice.defArt != null) return t.dice.defArt;
-  return t.dice.def;
+  const o = OBSTACLES[obstacleAt(state, target.c, target.r)];
+  const fromTerrain = reductionOf(t.dice, attackerType);
+  return o ? Math.max(fromTerrain, reductionOf(o.dice, attackerType)) : fromTerrain;
 }
 
 export function diceFor(state, unit, target) {
@@ -71,18 +81,44 @@ export function resolveCombat(state, attacker, defender, faces) {
     if (hitOn.includes(f)) hits++;
     else if (f === 'flag') flags++;
   }
-  const report = { hits, flags, retreated: null, extraLoss: 0, killed: false, faces };
+  const report = {
+    hits,
+    flags,
+    flagsIgnored: 0,
+    retreated: null,
+    extraLoss: 0,
+    killed: false,
+    faces,
+  };
 
   defender.figs -= hits;
 
+  // un obstacle ignoreFirstFlag (bunker) annule le premier drapeau du jet
+  // (simplification assumée : toujours appliqué, sans choix du défenseur)
+  const cover = OBSTACLES[obstacleAt(state, defender.c, defender.r)];
+  let effectiveFlags = flags;
+  if (cover?.ignoreFirstFlag && flags > 0) {
+    effectiveFlags--;
+    report.flagsIgnored = 1;
+  }
+
   // repli : 1 hex vers sa ligne de départ par drapeau ; sinon perte
-  if (defender.figs > 0 && flags > 0) {
+  if (defender.figs > 0 && effectiveFlags > 0) {
     const home = defender.side === 'allies' ? H - 1 : 0;
-    for (let i = 0; i < flags; i++) {
-      const opts = neighbors(defender.c, defender.r)
-        .filter((h) => !unitAt(state, h.c, h.r))
-        .filter((h) => Math.abs(h.r - home) < Math.abs(defender.r - home))
-        .sort((a, b) => hexDistance(b, attacker) - hexDistance(a, attacker));
+    for (let i = 0; i < effectiveFlags; i++) {
+      // artillerie retranchée : aucun repli possible
+      const here = OBSTACLES[obstacleAt(state, defender.c, defender.r)];
+      const fixed = defender.type === 'art' && here?.fixesArtillery;
+      const opts = fixed
+        ? []
+        : neighbors(defender.c, defender.r)
+            .filter((h) => !unitAt(state, h.c, h.r))
+            .filter((h) => {
+              const ob = OBSTACLES[obstacleAt(state, h.c, h.r)];
+              return !ob?.infantryOnly || defender.type === 'inf';
+            })
+            .filter((h) => Math.abs(h.r - home) < Math.abs(defender.r - home))
+            .sort((a, b) => hexDistance(b, attacker) - hexDistance(a, attacker));
       if (opts.length) {
         defender.c = opts[0].c;
         defender.r = opts[0].r;

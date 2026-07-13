@@ -1,14 +1,20 @@
 // Occupation du plateau et hexes atteignables.
 
-import { TERRAIN } from './config.js';
+import { OBSTACLES, TERRAIN } from './config.js';
 import { key, neighbors } from './hex.js';
 
 export const unitAt = (state, c, r) => state.units.find((u) => u.c === c && u.r === r);
+
+// Clé de l'obstacle posé sur l'hex ('bunker'…), ou undefined.
+export const obstacleAt = (state, c, r) => state.obstacles?.[key(c, r)];
 
 // hexes atteignables : coût 1/hex, les terrains "stops" arrêtent le mouvement.
 // enterAdjacentOnly (bocage) : entrée possible uniquement comme premier pas ;
 // exitAdjacentOnly (bocage) : la sortie s'arrête sur l'hex adjacent.
 export function reachable(state, unit, maxMove) {
+  // artillerie retranchée dans un bunker : fixe, aucune sortie
+  const startObstacle = OBSTACLES[obstacleAt(state, unit.c, unit.r)];
+  if (unit.type === 'art' && startObstacle?.fixesArtillery) return [];
   const start = TERRAIN[state.terrain[key(unit.c, unit.r)]];
   const max = start.exitAdjacentOnly ? Math.min(maxMove, 1) : maxMove;
   const seen = { [key(unit.c, unit.r)]: 0 };
@@ -22,6 +28,8 @@ export function reachable(state, unit, maxMove) {
       if (unitAt(state, n.c, n.r)) continue; // hex occupé
       const t = TERRAIN[state.terrain[k]];
       if (t.enterAdjacentOnly && cur.cost > 0) continue; // bocage : premier pas seulement
+      const o = OBSTACLES[obstacleAt(state, n.c, n.r)];
+      if (o?.infantryOnly && unit.type !== 'inf') continue; // bunker : infanterie seulement
       const cost = cur.cost + 1;
       if (k in seen && seen[k] <= cost) continue;
       seen[k] = cost;

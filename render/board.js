@@ -50,6 +50,13 @@ export function buildBoardLayer(state, dpr) {
         ctx.textAlign = 'center';
         ctx.fillText('▦', p.x, p.y + 5);
       }
+      if (state.obstacles?.[key(c, r)] === 'bunker') {
+        ctx.strokeStyle = 'rgba(0,0,0,.5)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(p.x - 11, p.y - 8, 22, 16);
+        ctx.fillStyle = 'rgba(0,0,0,.5)';
+        ctx.fillRect(p.x - 5, p.y - 2, 10, 3); // meurtrière
+      }
     }
   return layer;
 }

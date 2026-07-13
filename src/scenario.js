@@ -37,6 +37,12 @@ export function scenario() {
     [9, 6],
   ]);
 
+  // obstacles posés sur le terrain
+  const obstacles = {
+    [key(6, 0)]: 'bunker', // l'artillerie de l'Axe y est retranchée (fixe)
+    [key(4, 6)]: 'bunker',
+  };
+
   const units = [];
   let id = 0;
   const add = (side, type, c, r) =>
@@ -58,5 +64,5 @@ export function scenario() {
   add('axis', 'arm', 9, 0);
   add('axis', 'art', 6, 0);
 
-  return { terrain, units };
+  return { terrain, units, obstacles };
 }

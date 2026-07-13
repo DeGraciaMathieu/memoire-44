@@ -78,6 +78,7 @@ function wireBus(bus) {
     );
     let txt = `  → ${o.report.hits} touche(s)`;
     if (o.report.flags) txt += `, ${o.report.flags} drapeau(x)`;
+    if (o.report.flagsIgnored) txt += ` · 1 drapeau ignoré (bunker)`;
     if (o.report.extraLoss) txt += ` · repli impossible : ${o.report.extraLoss} perte(s)`;
     hud.log(txt, o.report.hits || o.report.extraLoss ? 'bad' : '');
     if (o.report.killed) {
