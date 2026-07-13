@@ -6,7 +6,7 @@
 import { W, H } from '../src/config.js';
 import { key } from '../src/hex.js';
 import { sectorsOf } from '../src/sectors.js';
-import { COL, boardSize, hexCenter, hexPath } from './gfx.js';
+import { COL, boardSize, hexCenter, hexPath, plaineShade } from './gfx.js';
 
 export function buildBoardLayer(state, dpr) {
   const { width, height } = boardSize();
@@ -21,7 +21,7 @@ export function buildBoardLayer(state, dpr) {
       const p = hexCenter(c, r);
       const t = state.terrain[key(c, r)];
       hexPath(ctx, p.x, p.y);
-      ctx.fillStyle = COL[t];
+      ctx.fillStyle = t === 'plaine' ? plaineShade(c, r) : COL[t];
       ctx.fill();
       if (sectorsOf(c, r).includes('centre')) {
         ctx.fillStyle = 'rgba(0,0,0,.06)';

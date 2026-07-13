@@ -7,7 +7,7 @@ import { W, H } from '../src/config.js';
 export const LAYOUT = { size: 34, mx: 26, my: 26 };
 
 export const COL = {
-  plaine: '#C7B98F',
+  plaine: '#B5C98C',
   foret: '#55703F',
   colline: '#B08D5B',
   village: '#9A9086',
@@ -17,6 +17,17 @@ export const COL = {
   ink: '#E8E2D0',
   line: '#8C8264',
 };
+
+// Nuances de vert autour de COL.plaine pour casser la monotonie du fond.
+export const PLAINE_SHADES = [COL.plaine, '#ADC282', '#BCCF96', '#A8BD7E'];
+
+// Nuance de plaine d'un hex : déterministe (même hex → même teinte), le hash
+// évite les rayures qu'un simple modulo sur c et r dessinerait.
+export function plaineShade(c, r) {
+  let h = Math.imul(c + 1, 2654435761) ^ Math.imul(r + 1, 1597334677);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return PLAINE_SHADES[(h >>> 16) % PLAINE_SHADES.length];
+}
 
 export function boardSize(layout = LAYOUT) {
   return {

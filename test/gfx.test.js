@@ -3,10 +3,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  PLAINE_SHADES,
   boardSize,
   hexCenter,
   hexCorners,
   pickHex,
+  plaineShade,
   sectorLabelsX,
   sectorLinesX,
 } from '../render/gfx.js';
@@ -45,6 +47,18 @@ test('hexCorners : 6 sommets à égale distance du centre', () => {
   for (const [x, y] of corners) {
     assert.ok(Math.abs(Math.hypot(x - 100, y - 100) - 34) < 1e-9);
   }
+});
+
+test('plaineShade : nuance stable par hex, plusieurs verts sur le plateau', () => {
+  const used = new Set();
+  for (let r = 0; r < H; r++)
+    for (let c = 0; c < W; c++) {
+      const shade = plaineShade(c, r);
+      assert.ok(PLAINE_SHADES.includes(shade));
+      assert.equal(plaineShade(c, r), shade); // déterministe
+      used.add(shade);
+    }
+  assert.ok(used.size > 1); // le fond n'est pas monotone
 });
 
 test('lignes de secteur : deux frontières croissantes, trois étiquettes ordonnées', () => {
