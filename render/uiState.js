@@ -11,5 +11,7 @@ export function createUiState() {
     hover: null, // hex sous le curseur (infobulle)
     justDrew: 0, // nombre de cartes fraîchement piochées (animation)
     modalOpen: false, // la modale de combat bloque les entrées plateau
+    takeGround: null, // { unit, hex } : prise de terrain proposée au joueur
+    breakthrough: null, // unité blindée dont la percée attend une cible
   };
 }

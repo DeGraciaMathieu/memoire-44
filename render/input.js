@@ -51,7 +51,9 @@ export function attachInput(canvas, { getState, getUi, hud, stage, actions }) {
     const hex = pickHex(x, y);
     if (!grabbable(hex)) return;
     const ui = getUi();
+    if (ui.takeGround) return; // choix de prise de terrain en cours : clic seulement
     const u = unitAt(getState(), hex.c, hex.r);
+    if (ui.breakthrough && ui.breakthrough.id !== u.id) return; // percée : seul le blindé agit
 
     if (!ui.selected || ui.selected.id !== u.id) actions.selectUnit(u);
     canvas.setPointerCapture(e.pointerId);
@@ -130,6 +132,19 @@ export function attachInput(canvas, { getState, getUi, hud, stage, actions }) {
     const ui = getUi();
     const { x, y } = toCanvas(e);
     const hex = pickHex(x, y);
+
+    if (ui.takeGround) {
+      const tg = ui.takeGround.hex;
+      if (hex && hex.c === tg.c && hex.r === tg.r) actions.confirmTakeGround();
+      else actions.declineTakeGround();
+      return;
+    }
+    if (ui.breakthrough) {
+      const tgt = hex && ui.targets.find((t) => t.unit.c === hex.c && t.unit.r === hex.r);
+      if (tgt) actions.attackTarget(ui.breakthrough, tgt);
+      else actions.finishBreakthrough();
+      return;
+    }
     if (!hex) return;
 
     const tgt = ui.targets.find((t) => t.unit.c === hex.c && t.unit.r === hex.r);

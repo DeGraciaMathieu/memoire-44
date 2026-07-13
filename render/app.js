@@ -6,6 +6,7 @@ import { OBSTACLES, TERRAIN, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
 import {
   attackUnit,
+  canBreakthrough,
   createGame,
   drawCards,
   endAxisTurn,
@@ -14,11 +15,13 @@ import {
   moveUnit,
   orderableUnits,
   playCard,
+  takeGround,
+  takeGroundHex,
 } from '../src/game.js';
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
 import { diceFor, targetsFor } from '../src/combat.js';
-import { aiChooseMoves, aiPickCard } from '../src/ai.js';
+import { aiBreakthroughTarget, aiChooseMoves, aiPickCard, aiTakesGround } from '../src/ai.js';
 import { createUiState } from './uiState.js';
 import { buildBoardLayer } from './board.js';
 import { createStage, DPR } from './stage.js';
@@ -46,7 +49,16 @@ attachInput(canvas, {
   getUi: () => ui,
   hud,
   stage,
-  actions: { selectUnit, moveTo, attackTarget, clearSelection, refresh },
+  actions: {
+    selectUnit,
+    moveTo,
+    attackTarget,
+    clearSelection,
+    refresh,
+    confirmTakeGround,
+    declineTakeGround,
+    finishBreakthrough,
+  },
 });
 
 /* --- bus → rendu ------------------------------------------------------- */
@@ -91,6 +103,15 @@ function wireBus(bus) {
       );
     }
   });
+  bus.on('groundTaken', ({ unit }) => {
+    const label = UNITS[unit.type].label;
+    hud.log(
+      unit.side === 'allies'
+        ? `  ${label} fait une prise de terrain.`
+        : `  Axe · ${label} fait une prise de terrain.`,
+    );
+    stage.requestDraw();
+  });
   bus.on('medalAwarded', () => hud.setMedals(state));
   bus.on('obstacleRemoved', ({ obstacle }) => {
     hud.log(`  ${OBSTACLES[obstacle].label} abandonnés — protection perdue.`);
@@ -110,6 +131,12 @@ function refresh() {
     );
   } else if (state.phase === 'card') {
     hud.setPrompt('Jouez une carte de commandement.');
+  } else if (ui.takeGround) {
+    hud.setPrompt('Prise de terrain : cliquez l’hex libéré pour avancer, ailleurs pour rester.');
+  } else if (ui.breakthrough) {
+    hud.setPrompt(
+      'Percée de blindés : cliquez une cible au contour rouge pour attaquer encore, ailleurs pour terminer.',
+    );
   } else {
     hud.setPrompt(
       ui.selected
@@ -152,9 +179,52 @@ function moveTo(u, hex) {
 }
 
 async function attackTarget(u, target) {
+  ui.breakthrough = null;
+  ui.targets = [];
   const outcome = attackUnit(state, u, target.unit);
   await modal.play(state, outcome, { auto: false });
+  const hex = state.winner ? null : takeGroundHex(state, u, outcome);
+  if (hex) {
+    ui.takeGround = { unit: u, hex };
+    ui.selected = u;
+    ui.moves = [{ ...hex, cost: 1 }];
+    refresh();
+    return;
+  }
   finish(u);
+}
+
+// Le joueur accepte la prise de terrain ; si le blindé peut percer, on lui
+// propose aussitôt ses nouvelles cibles.
+function confirmTakeGround() {
+  const { unit, hex } = ui.takeGround;
+  ui.takeGround = null;
+  ui.moves = [];
+  takeGround(state, unit, hex);
+  if (canBreakthrough(state, unit)) {
+    const targets = targetsFor(state, unit, state.moved[unit.id]);
+    if (targets.length) {
+      ui.breakthrough = unit;
+      ui.selected = unit;
+      ui.targets = targets;
+      refresh();
+      return;
+    }
+  }
+  finish(unit);
+}
+
+function declineTakeGround() {
+  const { unit } = ui.takeGround;
+  ui.takeGround = null;
+  ui.moves = [];
+  finish(unit);
+}
+
+function finishBreakthrough() {
+  const unit = ui.breakthrough;
+  ui.breakthrough = null;
+  finish(unit);
 }
 
 function finish(u) {
@@ -162,6 +232,8 @@ function finish(u) {
   ui.selected = null;
   ui.moves = [];
   ui.targets = [];
+  ui.takeGround = null;
+  ui.breakthrough = null;
   if (state.winner) {
     refresh();
     return;
@@ -172,7 +244,15 @@ function finish(u) {
 
 function endTurn() {
   if (state.winner) return;
-  Object.assign(ui, { selected: null, moves: [], targets: [], orderable: [], drag: null });
+  Object.assign(ui, {
+    selected: null,
+    moves: [],
+    targets: [],
+    orderable: [],
+    drag: null,
+    takeGround: null,
+    breakthrough: null,
+  });
   endPlayerTurn(state);
   refresh();
   setTimeout(playAxisTurn, 700);
@@ -198,8 +278,20 @@ async function playAxisTurn() {
       await sleep(500);
     }
     if (plan.target && state.units.includes(plan.target) && diceFor(state, u, plan.target) > 0) {
-      const outcome = attackUnit(state, u, plan.target);
+      let outcome = attackUnit(state, u, plan.target);
       await modal.play(state, outcome, { auto: true });
+      // prise de terrain, puis éventuelle percée de blindés
+      let hex = takeGroundHex(state, u, outcome);
+      while (hex && !state.winner && aiTakesGround(state, u, hex)) {
+        takeGround(state, u, hex);
+        stage.requestDraw();
+        await sleep(350);
+        const next = canBreakthrough(state, u) ? aiBreakthroughTarget(state, u) : null;
+        if (!next) break;
+        outcome = attackUnit(state, u, next);
+        await modal.play(state, outcome, { auto: true });
+        hex = takeGroundHex(state, u, outcome);
+      }
     }
     stage.requestDraw();
     await sleep(350);
