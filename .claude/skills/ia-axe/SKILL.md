@@ -12,14 +12,17 @@ Gloutonne, évaluation à 1 coup, aucun état propre : elle ne parle qu'aux règ
 
 ## Heuristiques → implémentation
 
-| Décision              | Fonction        | Heuristique                                                                                                                                                                                      |
-| --------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Probabilité de touche | `P_HIT` (const) | par dé, selon la CIBLE : inf 3/6, arm 2/6, art 3/6                                                                                                                                               |
-| Choix de carte        | `aiPickCard`    | score = `n × 2` (+3 par unité, parmi les `n` premières, ayant déjà une cible via `targetsFor`)                                                                                                   |
-| Choix des unités      | `aiChooseMoves` | tri : peut frapper (+10) − distance à l'ennemi le plus proche ; garde les `cd.n` meilleures                                                                                                      |
-| Plan d'une unité      | `aiPlanUnit`    | pour chaque destination (`sur place` + `reachable(moveNoFire)`) : score tir = `espérance × 10` (+12 si létal) ; score position = `(10 − near) × 0.8` + `def × 1.5` ; artillerie −6 si `near < 3` |
+| Décision              | Fonction               | Heuristique                                                                                                                                                                                      |
+| --------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Probabilité de touche | `P_HIT` (const)        | par dé, selon la CIBLE : inf 3/6, arm 2/6, art 3/6                                                                                                                                               |
+| Choix de carte        | `aiPickCard`           | score = `n × 2` (+3 par unité, parmi les `n` premières, ayant déjà une cible via `targetsFor`)                                                                                                   |
+| Choix des unités      | `aiChooseMoves`        | tri : peut frapper (+10) − distance à l'ennemi le plus proche ; garde les `cd.n` meilleures                                                                                                      |
+| Plan d'une unité      | `aiPlanUnit`           | pour chaque destination (`sur place` + `reachable(moveNoFire)`) : score tir = `espérance × 10` (+12 si létal) ; score position = `(10 − near) × 0.8` + `def × 1.5` ; artillerie −6 si `near < 3` |
+| Prise de terrain      | `aiTakesGround`        | le blindé avance toujours (percée possible) ; l'infanterie seulement si la couverture de l'hex pris (`defenseReduction` vs inf) est ≥ à celle de son hex                                         |
+| Cible de percée       | `aiBreakthroughTarget` | meilleure cible de `targetsFor` : `espérance` (+2 si létal) ; null si aucun tir possible                                                                                                         |
 
-`aiPlanUnit` est **privée** au module ; l'API publique est `aiPickCard` + `aiChooseMoves`.
+`aiPlanUnit` est **privée** au module ; l'API publique est `aiPickCard`, `aiChooseMoves`,
+`aiTakesGround` et `aiBreakthroughTarget`.
 
 ## Exécution du tour (render/app.js `playAxisTurn`)
 
@@ -29,8 +32,11 @@ Gloutonne, évaluation à 1 coup, aucun état propre : elle ne parle qu'aux règ
    (l'unité passe alors son activation).
 3. Garde-fous par plan : `state.winner`, unité encore vivante (`state.units.includes`),
    tir encore légal (`diceFor > 0`).
-4. Tempo : sleeps 450/500/350 ms, modale de combat en `auto: true` (fermeture 2100 ms).
-5. `endAxisTurn(state)` → retour aux alliés.
+4. Après un combat rapproché gagné : boucle prise de terrain (`takeGroundHex` +
+   `aiTakesGround` → `takeGround`), puis percée de blindés (`canBreakthrough` +
+   `aiBreakthroughTarget` → seconde attaque, une seule fois).
+5. Tempo : sleeps 450/500/350 ms, modale de combat en `auto: true` (fermeture 2100 ms).
+6. `endAxisTurn(state)` → retour aux alliés.
 
 ## Modifier l'heuristique
 

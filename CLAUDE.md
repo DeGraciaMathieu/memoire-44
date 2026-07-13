@@ -41,8 +41,9 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
 - Types d'unités : `inf` / `arm` / `art` (Infanterie, Blindé, Artillerie) — définis dans
   `UNITS` (`src/config.js`).
 - Vocabulaire : figurines (`figs`), médailles (victoire à `MEDALS_TO_WIN` = 4), secteurs
-  `gauche` / `centre` / `droite`, cartes de commandement, drapeaux (repli), phases
-  `card` / `orders`.
+  `gauche` / `centre` / `droite`, cartes de commandement, drapeaux (repli), combat
+  rapproché / tir, prise de terrain (`takeGround`), percée de blindés (`canBreakthrough`),
+  phases `card` / `orders`.
 - Visuel : palette CSS dans `styles.css` (`:root`), doublée côté canvas par `COL`
   (`render/gfx.js`) ; symboles `SYM` / `UNIT_GLYPH` (`render/html.js`) ; typographies
   Courier New (texte) et Impact (titres).
