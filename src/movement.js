@@ -25,7 +25,8 @@ export function reachable(state, unit, maxMove) {
   const startObstacle = OBSTACLES[obstacleAt(state, unit.c, unit.r)];
   if (unit.type === 'art' && startObstacle?.fixesArtillery) return [];
   const start = TERRAIN[state.terrain[key(unit.c, unit.r)]];
-  const max = start.exitAdjacentOnly ? Math.min(maxMove, 1) : maxMove;
+  let max = start.exitAdjacentOnly ? Math.min(maxMove, 1) : maxMove;
+  if (start.moveCap) max = Math.min(max, start.moveCap); // plage : 2 hexes max dans le sable
   const seen = { [key(unit.c, unit.r)]: 0 };
   const out = [];
   const frontier = [{ c: unit.c, r: unit.r, cost: 0, stopped: false }];
@@ -41,6 +42,7 @@ export function reachable(state, unit, maxMove) {
       if (t.impassable && !o?.makesPassable) continue; // rivière : pont obligatoire
       if (o?.infantryOnly && unit.type !== 'inf') continue; // bunker : infanterie seulement
       const cost = cur.cost + 1;
+      if (t.moveCap && cost > t.moveCap) continue; // plage : on n'entre jamais au-delà du cap
       if (k in seen && seen[k] <= cost) continue;
       seen[k] = cost;
       out.push({ c: n.c, r: n.r, cost });

@@ -40,6 +40,13 @@ export const TERRAIN = {
     noRetreatInto: true, // impossible de battre en retraite dans l'eau
     // jamais de blocksSight : la mer ne coupe pas la ligne de mire
   },
+  plage: {
+    label: 'Plage',
+    dice: { def: 0 },
+    stops: false,
+    moveCap: 2, // 2 hexes maximum dans le sable, blindés compris
+    // aucune restriction de combat, jamais de blocksSight
+  },
 };
 
 // Obstacles posés SUR un terrain. Leur protection ne se cumule pas avec celle

@@ -107,6 +107,13 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   assert.match(sea, /Sortie<b>1 hex puis arrêt/);
   assert.match(sea, /Ligne de mire<b>libre/);
 
+  state.terrain[key(0, 5)] = 'plage';
+  const beach = tipHTML(state, emptyUi, { c: 0, r: 5 });
+  assert.match(beach, /Plage/);
+  assert.match(beach, /Mouvement<b>2 hex maximum/);
+  assert.match(beach, /Ligne de mire<b>libre/);
+  assert.ok(!beach.includes('Combat')); // aucune restriction de combat
+
   const withUnit = tipHTML(state, emptyUi, { c: 1, r: 7 }); // infanterie alliée
   assert.match(withUnit, /Infanterie/);
   assert.match(withUnit, /Figurines/);

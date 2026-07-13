@@ -88,7 +88,9 @@ export function tipHTML(state, ui, hex) {
             ? 'entrée adjacente, stoppe net'
             : t.stops
               ? 'stoppe net'
-              : 'libre'
+              : t.moveCap
+                ? `${t.moveCap} hex maximum`
+                : 'libre'
       }</b></div>${
         t.exitAdjacentOnly ? `<div class="row">Sortie<b>1 hex puis arrêt</b></div>` : ''
       }${t.noFight ? `<div class="row">Combat<b>aucun tir depuis la mer</b></div>` : ''}${

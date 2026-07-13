@@ -65,6 +65,13 @@ export function buildBoardLayer(state, dpr) {
         ctx.fillText('≈ ≈', p.x, p.y - 2);
         ctx.fillText('≈ ≈', p.x, p.y + 10);
       }
+      if (t === 'plage') {
+        ctx.fillStyle = 'rgba(0,0,0,.25)';
+        ctx.font = 'bold 11px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('· · ·', p.x, p.y - 1);
+        ctx.fillText('· ·', p.x, p.y + 9);
+      }
     }
   return layer;
 }

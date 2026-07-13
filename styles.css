@@ -502,6 +502,10 @@ a.act:hover {
   background: #3d6480;
   color: #e8e2d0;
 }
+#tip .thead.plage {
+  background: #d9cca3;
+  color: #22261f;
+}
 #tip .thead em {
   font-style: normal;
   font-size: 10px;

@@ -340,6 +340,28 @@ test('repli : impossible de battre en retraite dans l’eau', () => {
   assert.equal(def.figs, 3);
 });
 
+test('plage : aucune restriction de combat, aucun couvert, ligne de mire libre', () => {
+  const atk = inf('a', 'allies', 6, 5);
+  const enemy = inf('e', 'axis', 6, 4);
+  const state = battleState({
+    terrain: { [key(6, 5)]: 'plage', [key(6, 4)]: 'plage' },
+    units: [atk, enemy],
+  });
+  // on tire normalement depuis le sable, même après avoir bougé
+  assert.equal(targetsFor(state, atk, 0).length, 1);
+  assert.equal(targetsFor(state, atk, 1).length, 1);
+  // et le sable n'offre aucun couvert
+  assert.equal(defenseReduction(state, 'inf', enemy), 0);
+  assert.equal(diceFor(state, atk, enemy), 3);
+
+  // une plage interposée ne bloque pas la ligne de mire
+  const art = { id: 'r', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const far = inf('f', 'axis', 6, 4);
+  const los = battleState({ terrain: { [key(4, 4)]: 'plage' }, units: [art, far] });
+  assert.ok(hasLineOfSight(los, art, far));
+  assert.equal(diceFor(los, art, far), 2);
+});
+
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {
   const a = rollDice(20, mulberry32(7));
   const b = rollDice(20, mulberry32(7));

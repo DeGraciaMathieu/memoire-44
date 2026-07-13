@@ -110,6 +110,27 @@ test('mer : 1 hex par tour en barge, entrer dans l’eau stoppe le mouvement', (
   for (const h of fromLand) assert.equal(h.cost, 1);
 });
 
+test('plage : 2 hexes maximum dans le sable, blindés compris', () => {
+  // un blindé (3 de mouvement) qui débute sur la plage est plafonné à 2
+  const tank = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
+  const onSand = reachable(flatState('plage', [tank]), tank, 3);
+  assert.equal(onSand.length, 18); // anneaux 1 et 2 seulement
+  for (const h of onSand) assert.ok(h.cost <= 2);
+
+  // depuis la terre ferme, impossible d'entrer dans le sable au 3e hex
+  const state = flatState('plage', [tank]);
+  state.terrain[key(6, 4)] = 'plaine';
+  const fromLand = reachable(state, tank, 3);
+  assert.equal(fromLand.length, 18);
+  for (const h of fromLand) assert.ok(h.cost <= 2);
+
+  // mais traverser 2 hexes de sable puis ressortir sur la terre ferme reste permis
+  const st2 = flatState('plaine', [tank]);
+  st2.terrain[key(7, 4)] = 'plage';
+  st2.terrain[key(8, 4)] = 'plage';
+  assert.ok(reachable(st2, tank, 3).some((h) => h.c === 9 && h.r === 4 && h.cost === 3));
+});
+
 test('les terrains qui stoppent arrêtent net le mouvement', () => {
   const u = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
   const out = reachable(flatState('foret', [u]), u, 3);
