@@ -1,6 +1,6 @@
-// Éditeur de cartes : peint terrains, obstacles et unités sur le plateau,
-// exporte et importe le JSON compris par src/map.js. Aucune règle métier ici :
-// la légalité d'un placement et la validation viennent de src/map.js.
+// Éditeur de cartes : peint terrains, obstacles, objectifs et unités sur le
+// plateau, exporte et importe le JSON compris par src/map.js. Aucune règle
+// métier ici : la légalité d'un placement et la validation viennent de src/map.js.
 
 import { W, H, TERRAIN, OBSTACLES, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
@@ -21,7 +21,7 @@ const fileImport = document.getElementById('fileImport');
 function blankMap() {
   const terrain = {};
   for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) terrain[key(c, r)] = 'plaine';
-  return { terrain, obstacles: {}, units: [] };
+  return { terrain, obstacles: {}, objectives: {}, units: [] };
 }
 
 let map = blankMap();
@@ -82,6 +82,13 @@ for (const [id, o] of Object.entries(OBSTACLES))
   addTool(obstacleTools, o.label, { kind: 'obstacle', id });
 addTool(obstacleTools, 'Enlever l’obstacle', { kind: 'obstacle', id: null });
 
+const objectiveTools = document.getElementById('objectiveTools');
+addTool(objectiveTools, 'Objectif ★', { kind: 'objective', id: true }, (el) => {
+  el.style.setProperty('--swatch', COL.objective);
+  el.classList.add('swatched');
+});
+addTool(objectiveTools, 'Enlever l’objectif', { kind: 'objective', id: null });
+
 const unitTools = document.getElementById('unitTools');
 for (const side of ['allies', 'axis'])
   for (const [type, u] of Object.entries(UNITS))
@@ -120,6 +127,15 @@ function applyTool(hex) {
     }
     map.obstacles = next;
     stage.requestDraw();
+    return;
+  }
+  if (tool.kind === 'objective') {
+    // dessiné dans la couche statique du plateau : re-raster nécessaire
+    const next = { ...map.objectives };
+    if (tool.id === null) delete next[k];
+    else next[k] = true;
+    map.objectives = next;
+    repaintTerrain();
     return;
   }
   // unité : pose (en remplaçant l'occupant) ou retrait
@@ -205,7 +221,12 @@ fileImport.onchange = async () => {
   if (!file) return;
   try {
     const loaded = parseMap(await file.text());
-    map = { terrain: loaded.terrain, obstacles: loaded.obstacles, units: loaded.units };
+    map = {
+      terrain: loaded.terrain,
+      obstacles: loaded.obstacles,
+      objectives: loaded.objectives,
+      units: loaded.units,
+    };
     nameInput.value = loaded.name;
     repaintTerrain();
     setStatus(`Carte « ${loaded.name || file.name} » chargée dans l’éditeur.`);

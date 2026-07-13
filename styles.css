@@ -379,6 +379,15 @@ a.act:hover {
 }
 
 /* --- éditeur de cartes --- */
+/* palette plus large que le panneau du jeu : les outils tiennent sur moins de lignes */
+.editor .side {
+  width: 430px;
+}
+@media (max-width: 900px) {
+  .editor .side {
+    width: auto;
+  }
+}
 .tools {
   display: flex;
   flex-wrap: wrap;
