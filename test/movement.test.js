@@ -94,6 +94,22 @@ test('rivière : infranchissable, sauf par un pont (qui ne stoppe pas)', () => {
   assert.ok(out.some((h) => h.c === 8 && h.r === 4 && h.cost === 2));
 });
 
+test('mer : 1 hex par tour en barge, entrer dans l’eau stoppe le mouvement', () => {
+  // un blindé (3 de mouvement) qui débute en mer n'avance que d'un hex
+  const barge = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
+  const atSea = reachable(flatState('mer', [barge]), barge, 3);
+  assert.equal(atSea.length, 6);
+  for (const h of atSea) assert.equal(h.cost, 1);
+
+  // depuis la terre, chaque premier pas dans l'eau arrête net
+  const tank = { id: 'b', side: 'allies', type: 'arm', c: 6, r: 4 };
+  const state = flatState('mer', [tank]);
+  state.terrain[key(6, 4)] = 'plaine';
+  const fromLand = reachable(state, tank, 3);
+  assert.equal(fromLand.length, 6);
+  for (const h of fromLand) assert.equal(h.cost, 1);
+});
+
 test('les terrains qui stoppent arrêtent net le mouvement', () => {
   const u = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
   const out = reachable(flatState('foret', [u]), u, 3);

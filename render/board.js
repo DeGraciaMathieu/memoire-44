@@ -58,6 +58,13 @@ export function buildBoardLayer(state, dpr) {
         ctx.textAlign = 'center';
         ctx.fillText('≈≈', p.x, p.y + 5);
       }
+      if (t === 'mer') {
+        ctx.fillStyle = 'rgba(232,226,208,.40)';
+        ctx.font = '15px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('≈ ≈', p.x, p.y - 2);
+        ctx.fillText('≈ ≈', p.x, p.y + 10);
+      }
     }
   return layer;
 }

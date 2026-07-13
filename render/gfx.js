@@ -13,6 +13,7 @@ export const COL = {
   village: '#9A9086',
   bocage: '#8CA061',
   riviere: '#527D98',
+  mer: '#3D6480',
   allies: '#4E7A4B',
   axis: '#7A736B',
   ink: '#E8E2D0',

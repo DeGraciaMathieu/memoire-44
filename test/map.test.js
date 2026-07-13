@@ -64,6 +64,8 @@ test('unitAllowedOn : obstacles réservés à l’infanterie et rivière sans po
   assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 0, 0), true); // hex sans obstacle
   assert.equal(unitAllowedOn(terrain, obstacles, 'inf', 5, 5), false); // rivière sans pont
   assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 6, 6), true); // rivière avec pont
+  terrain[key(2, 2)] = 'mer';
+  assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 2, 2), true); // mer : débarquement permis
 });
 
 test('setupFromMap matérialise des unités neuves sans partager la carte', () => {

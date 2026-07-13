@@ -59,6 +59,7 @@ export function targetsFor(state, unit, movedCost) {
   if (unit.type === 'art' && movedCost > 0) return [];
   if (unit.type === 'inf' && movedCost > 1) return [];
   const here = TERRAIN[state.terrain[key(unit.c, unit.r)]];
+  if (here.noFight) return []; // mer : aucun combat à bord d'une barge
   if (here.noFightOnEnter && movedCost > 0) return []; // bocage : pas de combat le tour d'entrée
   return state.units
     .filter((e) => e.side !== unit.side && diceFor(state, unit, e) > 0)
@@ -117,6 +118,7 @@ export function resolveCombat(state, attacker, defender, faces) {
               const t = TERRAIN[state.terrain[key(h.c, h.r)]];
               const ob = OBSTACLES[obstacleAt(state, h.c, h.r)];
               if (t.impassable && !ob?.makesPassable) return false; // rivière sans pont
+              if (t.noRetreatInto) return false; // mer : pas de retraite dans l'eau
               return !ob?.infantryOnly || defender.type === 'inf';
             })
             .filter((h) => Math.abs(h.r - home) < Math.abs(defender.r - home))

@@ -308,6 +308,38 @@ test('repli : une rivière sans pont bloque la retraite, un pont la permet', () 
   assert.equal(def2.figs, 4);
 });
 
+test('mer : aucun tir depuis l’eau, cible sans couvert, ligne de mire libre', () => {
+  // la barge ne combat jamais, même sans avoir bougé et avec un ennemi adjacent
+  const barge = inf('b', 'allies', 6, 5);
+  const enemy = inf('e', 'axis', 6, 4);
+  const state = battleState({ terrain: { [key(6, 5)]: 'mer' }, units: [barge, enemy] });
+  assert.equal(targetsFor(state, barge, 0).length, 0);
+
+  // elle reste une cible, sans aucune protection
+  assert.equal(defenseReduction(state, 'inf', barge), 0);
+  assert.equal(diceFor(state, enemy, barge), 3);
+
+  // une mer interposée ne bloque pas la ligne de mire
+  const art = { id: 'a', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const far = inf('f', 'axis', 6, 4);
+  const los = battleState({ terrain: { [key(4, 4)]: 'mer' }, units: [art, far] });
+  assert.ok(hasLineOfSight(los, art, far));
+  assert.equal(diceFor(los, art, far), 2);
+});
+
+test('repli : impossible de battre en retraite dans l’eau', () => {
+  const atk = inf('a', 'allies', 6, 2);
+  const def = inf('d', 'axis', 6, 1);
+  const state = battleState({
+    terrain: { [key(6, 0)]: 'mer', [key(7, 0)]: 'mer' },
+    units: [atk, def],
+  });
+  const rep = resolveCombat(state, atk, def, ['flag']);
+  assert.equal(rep.retreated, null);
+  assert.equal(rep.extraLoss, 1);
+  assert.equal(def.figs, 3);
+});
+
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {
   const a = rollDice(20, mulberry32(7));
   const b = rollDice(20, mulberry32(7));

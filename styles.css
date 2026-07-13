@@ -498,6 +498,10 @@ a.act:hover {
   background: #527d98;
   color: #e8e2d0;
 }
+#tip .thead.mer {
+  background: #3d6480;
+  color: #e8e2d0;
+}
 #tip .thead em {
   font-style: normal;
   font-size: 10px;

@@ -100,6 +100,13 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   assert.match(bridge, /Franchissement<b>rend l'hex franchissable/);
   assert.ok(!bridge.includes('Protection')); // aucun couvert sur un pont
 
+  state.terrain[key(0, 6)] = 'mer';
+  const sea = tipHTML(state, emptyUi, { c: 0, r: 6 });
+  assert.match(sea, /Mer/);
+  assert.match(sea, /Combat<b>aucun tir depuis la mer/);
+  assert.match(sea, /Sortie<b>1 hex puis arrêt/);
+  assert.match(sea, /Ligne de mire<b>libre/);
+
   const withUnit = tipHTML(state, emptyUi, { c: 1, r: 7 }); // infanterie alliée
   assert.match(withUnit, /Infanterie/);
   assert.match(withUnit, /Figurines/);

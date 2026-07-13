@@ -31,6 +31,15 @@ export const TERRAIN = {
     impassable: true, // entrée interdite — sauf obstacle makesPassable (pont)
     // jamais de blocksSight : une rivière ne coupe pas la ligne de mire
   },
+  mer: {
+    label: 'Mer',
+    dice: { def: 0 },
+    stops: true, // entrer dans l'eau arrête le mouvement du tour
+    exitAdjacentOnly: true, // en mer (barge) : 1 hex par tour, jusqu'à la plage
+    noFight: true, // aucun tir tant que l'unité est en mer
+    noRetreatInto: true, // impossible de battre en retraite dans l'eau
+    // jamais de blocksSight : la mer ne coupe pas la ligne de mire
+  },
 };
 
 // Obstacles posés SUR un terrain. Leur protection ne se cumule pas avec celle

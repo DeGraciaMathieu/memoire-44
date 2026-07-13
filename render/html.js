@@ -91,7 +91,9 @@ export function tipHTML(state, ui, hex) {
               : 'libre'
       }</b></div>${
         t.exitAdjacentOnly ? `<div class="row">Sortie<b>1 hex puis arrêt</b></div>` : ''
-      }${t.noFightOnEnter ? `<div class="row">Combat<b>pas de tir le tour d'entrée</b></div>` : ''}
+      }${t.noFight ? `<div class="row">Combat<b>aucun tir depuis la mer</b></div>` : ''}${
+        t.noFightOnEnter ? `<div class="row">Combat<b>pas de tir le tour d'entrée</b></div>` : ''
+      }
       <div class="row">Ligne de mire<b>${
         t.blocksSight ? 'bloquée' : t.elevated ? 'bloquée en contrebas' : 'libre'
       }</b></div>

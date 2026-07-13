@@ -61,6 +61,7 @@ function aiPlanUnit(state, unit) {
       !(unit.type === 'art' && d.cost > 0) &&
       !(unit.type === 'inf' && d.cost > 1) &&
       !(unit.type === 'arm' && d.cost > UNITS.arm.move) &&
+      !destT.noFight &&
       !(destT.noFightOnEnter && d.cost > 0);
     if (unit.type === 'inf' && d.cost > UNITS.inf.moveNoFire) continue;
 
