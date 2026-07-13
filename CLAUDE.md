@@ -40,8 +40,9 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
 - Camps : `allies` / `axis` — affichés « Alliés » / « Axe » (`SIDE_FR`, `render/html.js`).
 - Types d'unités : `inf` / `arm` / `art` (Infanterie, Blindé, Artillerie) — définis dans
   `UNITS` (`src/config.js`).
-- Vocabulaire : figurines (`figs`), médailles (victoire à `MEDALS_TO_WIN` = 4), secteurs
-  `gauche` / `centre` / `droite`, cartes de commandement, drapeaux (repli), combat
+- Vocabulaire : figurines (`figs`), médailles (victoire à `MEDALS_TO_WIN` = 6 — total
+  `medalCount` = destructions et objectifs occupés), objectifs (tuiles `state.objectives`),
+  secteurs `gauche` / `centre` / `droite`, cartes de commandement, drapeaux (repli), combat
   rapproché / tir, prise de terrain (`takeGround`), percée de blindés (`canBreakthrough`),
   phases `card` / `orders`.
 - Visuel : palette CSS dans `styles.css` (`:root`), doublée côté canvas par `COL`
