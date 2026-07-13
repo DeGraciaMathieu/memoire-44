@@ -1,5 +1,7 @@
 // Couche statique du plateau (terrain, quadrillage, glyphes),
 // rasterisée une seule fois par partie dans un canvas hors écran.
+// Les obstacles sont dessinés par stage.js : ils peuvent disparaître
+// en cours de partie (sacs de sable abandonnés).
 
 import { W, H } from '../src/config.js';
 import { key } from '../src/hex.js';
@@ -49,20 +51,6 @@ export function buildBoardLayer(state, dpr) {
         ctx.font = '16px serif';
         ctx.textAlign = 'center';
         ctx.fillText('▦', p.x, p.y + 5);
-      }
-      const o = state.obstacles?.[key(c, r)];
-      if (o === 'bunker') {
-        ctx.strokeStyle = 'rgba(0,0,0,.5)';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(p.x - 11, p.y - 8, 22, 16);
-        ctx.fillStyle = 'rgba(0,0,0,.5)';
-        ctx.fillRect(p.x - 5, p.y - 2, 10, 3); // meurtrière
-      }
-      if (o === 'antichar') {
-        ctx.fillStyle = 'rgba(0,0,0,.45)';
-        ctx.font = 'bold 13px serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('✕✕', p.x, p.y + 4); // hérissons tchèques
       }
     }
   return layer;

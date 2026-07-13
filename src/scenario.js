@@ -43,6 +43,8 @@ export function scenario() {
     [key(4, 6)]: 'bunker',
     [key(2, 1)]: 'antichar',
     [key(10, 2)]: 'antichar',
+    [key(3, 7)]: 'sacs',
+    [key(8, 7)]: 'sacs',
   };
 
   const units = [];

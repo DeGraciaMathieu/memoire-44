@@ -102,6 +102,7 @@ export function tipHTML(state, ui, hex) {
     if (o.fixesArtillery) h += `<div class="row">Artillerie<b>retranchée, ne sort plus</b></div>`;
     if (o.ignoreFirstFlag)
       h += `<div class="row">Drapeaux<b>le premier du jet est ignoré</b></div>`;
+    if (o.removedOnExit) h += `<div class="row">Abandon<b>retirés dès que l'unité sort</b></div>`;
     if (o.blocksSight) h += `<div class="row">Ligne de mire<b>bloquée</b></div>`;
     h += `</div>`;
   }

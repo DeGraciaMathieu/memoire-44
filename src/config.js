@@ -44,6 +44,12 @@ export const OBSTACLES = {
     infantryOnly: true, // seule l'infanterie y pénètre, sans restriction de mouvement
     ignoreFirstFlag: true,
   },
+  sacs: {
+    label: 'Sacs de sable',
+    dice: { def: 1, defArt: 0 }, // −1 infanterie et blindés, rien contre l'artillerie
+    ignoreFirstFlag: true,
+    removedOnExit: true, // abandonnés dès que l'unité quitte l'hex (même en repli)
+  },
 };
 
 export const UNITS = {

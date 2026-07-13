@@ -8,7 +8,7 @@ import { hexDistance, key } from './hex.js';
 import { inSector } from './sectors.js';
 import { buildDeck, cardById } from './cards.js';
 import { scenario } from './scenario.js';
-import { obstacleAt, reachable } from './movement.js';
+import { dropObstacleOnExit, obstacleAt, reachable } from './movement.js';
 import { defenseReduction, diceFor, resolveCombat, rollDice } from './combat.js';
 
 export function shuffle(list, rng) {
@@ -81,6 +81,7 @@ export function moveUnit(state, unit, hex) {
   unit.r = hex.r;
   state.moved[unit.id] = step.cost;
   state.bus.emit('unitMoved', { unit, from, cost: step.cost });
+  dropObstacleOnExit(state, from.c, from.r);
   return step.cost;
 }
 

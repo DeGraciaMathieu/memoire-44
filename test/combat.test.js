@@ -233,6 +233,34 @@ test('antichar : aucune protection ni blocage de vue, mais premier drapeau ignor
   assert.equal(def.figs, 4);
 });
 
+test('sacs de sable : −1 sauf artillerie, vue libre, abandonnés au repli', () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const def = inf('d', 'axis', 5, 4);
+  const state = battleState({ units: [atk, def] });
+  state.obstacles = { [key(5, 4)]: 'sacs' };
+  // protégé de tous les côtés : −1 contre infanterie et blindés, rien contre l'artillerie
+  assert.equal(defenseReduction(state, 'inf', def), 1);
+  assert.equal(defenseReduction(state, 'arm', def), 1);
+  assert.equal(defenseReduction(state, 'art', def), 0);
+  assert.equal(diceFor(state, atk, def), 2);
+
+  // ne coupe pas la ligne de mire
+  const art = { id: 'b', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const enemy = inf('e', 'axis', 6, 4);
+  const los = battleState({ units: [art, enemy] });
+  los.obstacles = { [key(4, 4)]: 'sacs' };
+  assert.ok(hasLineOfSight(los, art, enemy));
+
+  // premier drapeau ignoré ; le second force le repli et les sacs sont retirés
+  const events = [];
+  state.bus.on('obstacleRemoved', (p) => events.push(p));
+  const rep = resolveCombat(state, atk, def, ['flag', 'flag']);
+  assert.equal(rep.flagsIgnored, 1);
+  assert.ok(rep.retreated);
+  assert.equal(state.obstacles[key(5, 4)], undefined);
+  assert.deepEqual(events, [{ c: 5, r: 4, obstacle: 'sacs' }]);
+});
+
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {
   const a = rollDice(20, mulberry32(7));
   const b = rollDice(20, mulberry32(7));

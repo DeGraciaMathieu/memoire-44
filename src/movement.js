@@ -8,6 +8,15 @@ export const unitAt = (state, c, r) => state.units.find((u) => u.c === c && u.r 
 // Clé de l'obstacle posé sur l'hex ('bunker'…), ou undefined.
 export const obstacleAt = (state, c, r) => state.obstacles?.[key(c, r)];
 
+// Un obstacle removedOnExit (sacs de sable) est définitivement retiré du
+// plateau quand l'unité quitte l'hex — volontairement ou en repli.
+export function dropObstacleOnExit(state, c, r) {
+  const dropped = obstacleAt(state, c, r);
+  if (!OBSTACLES[dropped]?.removedOnExit) return;
+  delete state.obstacles[key(c, r)];
+  state.bus.emit('obstacleRemoved', { c, r, obstacle: dropped });
+}
+
 // hexes atteignables : coût 1/hex, les terrains "stops" arrêtent le mouvement.
 // enterAdjacentOnly (bocage) : entrée possible uniquement comme premier pas ;
 // exitAdjacentOnly (bocage) : la sortie s'arrête sur l'hex adjacent.

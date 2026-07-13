@@ -33,6 +33,13 @@ export function createStage(canvas, getScene) {
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(boardLayer, 0, 0, width, height);
 
+    // obstacles — dynamiques : les sacs de sable disparaissent en cours de partie
+    for (const [k, o] of Object.entries(state.obstacles)) {
+      const [c, r] = k.split(',').map(Number);
+      const p = hexCenter(c, r);
+      drawObstacle(o, p.x, p.y);
+    }
+
     // secteur activé par la carte en cours
     const cd = state.playedCard && cardById(state.playedCard);
     const live =
@@ -134,6 +141,30 @@ export function createStage(canvas, getScene) {
     }
     if (ui.drag) {
       drawCounter(ui.drag.unit, ui.drag.x, ui.drag.y, { sel: true, canOrder: true, lifted: true });
+    }
+  }
+
+  function drawObstacle(type, x, y) {
+    if (type === 'bunker') {
+      ctx.strokeStyle = 'rgba(0,0,0,.5)';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x - 11, y - 8, 22, 16);
+      ctx.fillStyle = 'rgba(0,0,0,.5)';
+      ctx.fillRect(x - 5, y - 2, 10, 3); // meurtrière
+    }
+    if (type === 'antichar') {
+      ctx.fillStyle = 'rgba(0,0,0,.45)';
+      ctx.font = 'bold 13px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✕✕', x, y + 4); // hérissons tchèques
+    }
+    if (type === 'sacs') {
+      ctx.fillStyle = 'rgba(0,0,0,.4)';
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.arc(x + i * 9, y + 12, 4.5, Math.PI, 0); // rangée de sacs empilés
+        ctx.fill();
+      }
     }
   }
 

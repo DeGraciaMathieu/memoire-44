@@ -15,6 +15,7 @@ import {
 import { reachable } from '../src/movement.js';
 import { cardById } from '../src/cards.js';
 import { UNITS, HAND_SIZE } from '../src/config.js';
+import { key } from '../src/hex.js';
 import { mulberry32 } from './helpers.js';
 
 test('deux parties créées avec la même graine sont identiques', () => {
@@ -93,6 +94,21 @@ test("attackUnit produit un rapport cohérent avec les dés tirés et l'émet su
       outcome.figsBefore - outcome.report.hits - outcome.report.extraLoss,
     );
   }
+});
+
+test("les sacs de sable sont abandonnés quand l'unité quitte volontairement l'hex", () => {
+  const state = createGame({ rng: mulberry32(11) });
+  const unit = state.units.find((u) => u.side === 'allies' && u.type === 'inf');
+  unit.c = 3;
+  unit.r = 7; // posée sur les sacs du scénario
+  const events = [];
+  state.bus.on('obstacleRemoved', (p) => events.push(p));
+
+  assert.equal(moveUnit(state, unit, { c: 3, r: 8 }), 1);
+  assert.equal(state.obstacles[key(3, 7)], undefined);
+  assert.deepEqual(events, [{ c: 3, r: 7, obstacle: 'sacs' }]);
+  // l'autre position de sacs reste en place
+  assert.equal(state.obstacles[key(8, 7)], 'sacs');
 });
 
 test('la pioche épuisée est rebattue automatiquement', () => {

@@ -72,6 +72,13 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   assert.ok(!hedgehog.includes('Protection')); // aucun couvert
   assert.ok(!/uname">Obstacle antichar[\s\S]*?Ligne de mire<b>bloquée/.test(hedgehog));
 
+  const sandbags = tipHTML(state, emptyUi, { c: 8, r: 7 }); // sacs de sable du scénario
+  assert.match(sandbags, /Sacs de sable/);
+  assert.match(sandbags, /Protection<b>−1 \(artillerie sans malus\), non cumulée/);
+  assert.match(sandbags, /le premier du jet est ignoré/);
+  assert.match(sandbags, /Abandon<b>retirés dès que l'unité sort/);
+  assert.ok(!sandbags.includes('infanterie seulement'));
+
   const hedge = tipHTML(state, emptyUi, { c: 3, r: 3 }); // bocage du scénario
   assert.match(hedge, /Bocage/);
   assert.match(hedge, /entrée adjacente/);

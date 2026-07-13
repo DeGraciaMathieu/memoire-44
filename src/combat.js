@@ -2,7 +2,7 @@
 
 import { FACES, H, MEDALS_TO_WIN, OBSTACLES, TERRAIN, UNITS } from './config.js';
 import { hexDistance, hexLine, key, neighbors } from './hex.js';
-import { obstacleAt, unitAt } from './movement.js';
+import { dropObstacleOnExit, obstacleAt, unitAt } from './movement.js';
 
 // Un terrain blocksSight (forêt, village) entre le tireur et la cible coupe
 // le tir. Une colline (elevated) intermédiaire ne bloque que si le tireur ET
@@ -120,9 +120,11 @@ export function resolveCombat(state, attacker, defender, faces) {
             .filter((h) => Math.abs(h.r - home) < Math.abs(defender.r - home))
             .sort((a, b) => hexDistance(b, attacker) - hexDistance(a, attacker));
       if (opts.length) {
+        const from = { c: defender.c, r: defender.r };
         defender.c = opts[0].c;
         defender.r = opts[0].r;
         report.retreated = { c: defender.c, r: defender.r };
+        dropObstacleOnExit(state, from.c, from.r);
       } else {
         defender.figs--;
         report.extraLoss++; // dos au mur

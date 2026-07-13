@@ -90,6 +90,10 @@ function wireBus(bus) {
     }
   });
   bus.on('medalAwarded', () => hud.setMedals(state));
+  bus.on('obstacleRemoved', ({ obstacle }) => {
+    hud.log(`  ${OBSTACLES[obstacle].label} abandonnés — protection perdue.`);
+    stage.requestDraw();
+  });
 }
 
 /* --- actions du joueur (appelées par input.js et hand.js) --------------- */

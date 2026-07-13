@@ -32,6 +32,8 @@ test("les bunkers du scénario, dont celui de l'artillerie de l'Axe", () => {
   assert.equal(obstacles[key(4, 6)], 'bunker');
   assert.equal(obstacles[key(2, 1)], 'antichar');
   assert.equal(obstacles[key(10, 2)], 'antichar');
+  assert.equal(obstacles[key(3, 7)], 'sacs');
+  assert.equal(obstacles[key(8, 7)], 'sacs');
   const gun = units.find((u) => u.side === 'axis' && u.type === 'art');
   assert.deepEqual({ c: gun.c, r: gun.r }, { c: 6, r: 0 }); // retranchée dès le départ
 });
