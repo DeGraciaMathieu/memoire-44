@@ -44,6 +44,12 @@ export function buildBoardLayer(state, dpr) {
         ctx.fillStyle = 'rgba(0,0,0,.30)';
         ctx.fillRect(p.x - 9, p.y - 6, 18, 12);
       }
+      if (t === 'bocage') {
+        ctx.fillStyle = 'rgba(0,0,0,.28)';
+        ctx.font = '16px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('▦', p.x, p.y + 5);
+      }
     }
   return layer;
 }

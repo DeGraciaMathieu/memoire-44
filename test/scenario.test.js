@@ -22,5 +22,6 @@ test('le terrain couvre tout le plateau, avec le bocage attendu', () => {
   assert.equal(terrain[key(1, 2)], 'foret');
   assert.equal(terrain[key(4, 4)], 'colline');
   assert.equal(terrain[key(6, 4)], 'village');
+  assert.equal(terrain[key(3, 3)], 'bocage');
   assert.equal(terrain[key(0, 0)], 'plaine');
 });

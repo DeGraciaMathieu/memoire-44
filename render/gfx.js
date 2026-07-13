@@ -11,6 +11,7 @@ export const COL = {
   foret: '#55703F',
   colline: '#B08D5B',
   village: '#9A9086',
+  bocage: '#8CA061',
   allies: '#4E7A4B',
   axis: '#7A736B',
   ink: '#E8E2D0',

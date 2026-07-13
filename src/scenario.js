@@ -30,6 +30,12 @@ export function scenario() {
     [2, 7],
     [10, 1],
   ]);
+  put('bocage', [
+    [3, 3],
+    [7, 3],
+    [5, 2],
+    [9, 6],
+  ]);
 
   const units = [];
   let id = 0;

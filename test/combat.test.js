@@ -138,6 +138,28 @@ test('colline : bloque en contrebas, mais pas si une extrémité est à la même
   assert.ok(!hasLineOfSight(forestWall, shooter, target));
 });
 
+test("bocage : couvert par type, ligne de mire coupée, pas de tir le tour d'entrée", () => {
+  // défense : inf −1, blindé −2 (plancher 1), artillerie sans malus
+  const atk = inf('a', 'allies', 5, 5);
+  const state = battleState({ terrain: { [key(4, 5)]: 'bocage' }, units: [atk] });
+  assert.equal(diceFor(state, atk, { c: 4, r: 5, type: 'inf' }), 2);
+  assert.equal(diceFor(state, { ...atk, type: 'arm' }, { c: 4, r: 5, type: 'inf' }), 1);
+  assert.equal(diceFor(state, { ...atk, type: 'art' }, { c: 4, r: 5, type: 'inf' }), 3);
+
+  // un bocage interposé coupe la ligne de mire
+  const art = { id: 'b', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const enemy = inf('e', 'axis', 6, 4);
+  const blocked = battleState({ terrain: { [key(4, 4)]: 'bocage' }, units: [art, enemy] });
+  assert.ok(!hasLineOfSight(blocked, art, enemy));
+
+  // une unité entrée dans un bocage ce tour-ci ne combat pas ; sur place, si
+  const entered = inf('i', 'allies', 6, 5);
+  const near = inf('x', 'axis', 6, 4);
+  const st = battleState({ terrain: { [key(6, 5)]: 'bocage' }, units: [entered, near] });
+  assert.equal(targetsFor(st, entered, 1).length, 0);
+  assert.equal(targetsFor(st, entered, 0).length, 1);
+});
+
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {
   const a = rollDice(20, mulberry32(7));
   const b = rollDice(20, mulberry32(7));

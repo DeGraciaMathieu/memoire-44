@@ -70,7 +70,11 @@ export function tipHTML(state, ui, hex) {
       <div class="row">Dés retirés à l'assaillant<b>${red ? '−' + red : '—'}${
         extras.length ? ' (' + extras.join(', ') + ')' : ''
       }</b></div>
-      <div class="row">Mouvement<b>${t.stops ? 'stoppe net' : 'libre'}</b></div>
+      <div class="row">Mouvement<b>${
+        t.enterAdjacentOnly ? 'entrée adjacente, stoppe net' : t.stops ? 'stoppe net' : 'libre'
+      }</b></div>${
+        t.exitAdjacentOnly ? `<div class="row">Sortie<b>1 hex puis arrêt</b></div>` : ''
+      }${t.noFightOnEnter ? `<div class="row">Combat<b>pas de tir le tour d'entrée</b></div>` : ''}
       <div class="row">Ligne de mire<b>${
         t.blocksSight ? 'bloquée' : t.elevated ? 'bloquée en contrebas' : 'libre'
       }</b></div>

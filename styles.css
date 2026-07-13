@@ -417,6 +417,10 @@ button.act:hover {
   background: #9a9086;
   color: #22261f;
 }
+#tip .thead.bocage {
+  background: #8ca061;
+  color: #22261f;
+}
 #tip .thead em {
   font-style: normal;
   font-size: 10px;

@@ -48,6 +48,8 @@ export function diceFor(state, unit, target) {
 export function targetsFor(state, unit, movedCost) {
   if (unit.type === 'art' && movedCost > 0) return [];
   if (unit.type === 'inf' && movedCost > 1) return [];
+  const here = TERRAIN[state.terrain[key(unit.c, unit.r)]];
+  if (here.noFightOnEnter && movedCost > 0) return []; // bocage : pas de combat le tour d'entrée
   return state.units
     .filter((e) => e.side !== unit.side && diceFor(state, unit, e) > 0)
     .map((e) => ({ unit: e, dice: diceFor(state, unit, e), range: hexDistance(unit, e) }));

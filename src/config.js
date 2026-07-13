@@ -15,6 +15,15 @@ export const TERRAIN = {
   },
   colline: { label: 'Colline', dice: { def: 1 }, stops: true, elevated: true },
   village: { label: 'Village', dice: { def: 1, defArmor: 2 }, stops: true, blocksSight: true },
+  bocage: {
+    label: 'Bocage',
+    dice: { def: 1, defArmor: 2, defArt: 0 },
+    stops: true,
+    blocksSight: true,
+    enterAdjacentOnly: true, // entrée seulement depuis l'hex de départ (adjacent)
+    exitAdjacentOnly: true, // la sortie s'arrête sur l'hex adjacent
+    noFightOnEnter: true, // pas de combat le tour où l'unité y entre
+  },
 };
 
 export const UNITS = {

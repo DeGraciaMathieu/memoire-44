@@ -56,10 +56,12 @@ function aiPlanUnit(state, unit) {
 
   for (const d of dests) {
     const ghost = { ...unit, c: d.c, r: d.r };
+    const destT = TERRAIN[state.terrain[key(d.c, d.r)]];
     const canFire =
       !(unit.type === 'art' && d.cost > 0) &&
       !(unit.type === 'inf' && d.cost > 1) &&
-      !(unit.type === 'arm' && d.cost > UNITS.arm.move);
+      !(unit.type === 'arm' && d.cost > UNITS.arm.move) &&
+      !(destT.noFightOnEnter && d.cost > 0);
     if (unit.type === 'inf' && d.cost > UNITS.inf.moveNoFire) continue;
 
     let score = 0;
@@ -80,8 +82,7 @@ function aiPlanUnit(state, unit) {
     // avancer vers l'ennemi le plus proche, se couvrir en terrain
     const near = Math.min(...enemies.map((e) => hexDistance(ghost, e)));
     score += (10 - near) * 0.8;
-    const t = TERRAIN[state.terrain[key(d.c, d.r)]];
-    score += (t.dice.def || 0) * 1.5;
+    score += (destT.dice.def || 0) * 1.5;
     if (unit.type === 'art') score -= near < 3 ? 6 : 0; // l'artillerie reste en retrait
 
     if (!best || score > best.score) best = { score, dest: d, target };
