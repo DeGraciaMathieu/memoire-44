@@ -18,14 +18,14 @@ import {
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
 import { cardById } from '../src/cards.js';
-import { targetsFor } from '../src/combat.js';
-import { UNITS, HAND_SIZE } from '../src/config.js';
+import { medalCount, targetsFor } from '../src/combat.js';
+import { UNITS, HAND_SIZE, MEDALS_TO_WIN } from '../src/config.js';
 import { key } from '../src/hex.js';
 import { mulberry32 } from './helpers.js';
 
 // Duel sur mesure : une carte minimale, phase d'ordres déjà ouverte.
-function duel({ units, terrain = {}, obstacles = {} }) {
-  const map = parseMap({ name: 'duel', terrain, obstacles, units });
+function duel({ units, terrain = {}, obstacles = {}, objectives = {} }) {
+  const map = parseMap({ name: 'duel', terrain, obstacles, objectives, units });
   return createGame({ rng: mulberry32(44), map });
 }
 
@@ -285,6 +285,45 @@ test('percée de blindés : le bocage pris interdit la seconde attaque (noFightO
   assert.ok(canBreakthrough(state, arm));
   // la percée est théoriquement ouverte, mais le terrain la bloque
   assert.equal(targetsFor(state, arm, state.moved[arm.id]).length, 0);
+});
+
+test("objectif : possédé tant qu'une unité l'occupe, rendu dès qu'elle le quitte", () => {
+  const state = duel({
+    objectives: { [key(5, 5)]: true },
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 6 },
+      { side: 'axis', type: 'inf', c: 0, r: 0 },
+    ],
+  });
+  const [inf] = state.units;
+  assert.equal(medalCount(state, 'allies'), 0);
+
+  moveUnit(state, inf, { c: 5, r: 5 });
+  assert.equal(medalCount(state, 'allies'), 1);
+  assert.equal(medalCount(state, 'axis'), 0);
+  assert.equal(state.medals.allies, 0); // pas une médaille de destruction
+
+  moveUnit(state, inf, { c: 5, r: 6 });
+  assert.equal(medalCount(state, 'allies'), 0); // possession perdue en quittant la tuile
+});
+
+test("victoire à 6 médailles : l'occupation d'un objectif peut donner la dernière", () => {
+  assert.equal(MEDALS_TO_WIN, 6);
+  const state = duel({
+    objectives: { [key(5, 5)]: true },
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 6 },
+      { side: 'axis', type: 'inf', c: 0, r: 0 },
+    ],
+  });
+  state.medals.allies = 5;
+  const events = [];
+  state.bus.on('gameWon', (p) => events.push(p));
+
+  moveUnit(state, state.units[0], { c: 5, r: 5 });
+  assert.equal(medalCount(state, 'allies'), 6);
+  assert.equal(state.winner, 'allies');
+  assert.deepEqual(events, [{ side: 'allies' }]);
 });
 
 test('la pioche épuisée est rebattue automatiquement', () => {

@@ -47,6 +47,12 @@ export function scenario() {
     [key(8, 7)]: 'sacs',
   };
 
+  // objectifs : une médaille pour le camp qui occupe la tuile
+  const objectives = {
+    [key(6, 4)]: true, // village nord du centre
+    [key(6, 5)]: true, // village sud du centre
+  };
+
   const units = [];
   let id = 0;
   const add = (side, type, c, r) =>
@@ -68,5 +74,5 @@ export function scenario() {
   add('axis', 'arm', 9, 0);
   add('axis', 'art', 6, 0);
 
-  return { terrain, units, obstacles };
+  return { terrain, units, obstacles, objectives };
 }

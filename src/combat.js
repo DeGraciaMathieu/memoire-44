@@ -68,6 +68,35 @@ export function targetsFor(state, unit, movedCost) {
   return targets.some((t) => t.range === 1) ? targets.filter((t) => t.range === 1) : targets;
 }
 
+// Objectifs possédés : une tuile objectif compte pour le camp dont une unité
+// l'occupe — possession perdue dès que l'unité la quitte.
+export function objectivesHeld(state, side) {
+  let held = 0;
+  for (const k of Object.keys(state.objectives ?? {})) {
+    const [c, r] = k.split(',').map(Number);
+    if (unitAt(state, c, r)?.side === side) held++;
+  }
+  return held;
+}
+
+// Total de médailles d'un camp : unités détruites + objectifs occupés.
+export function medalCount(state, side) {
+  return state.medals[side] + objectivesHeld(state, side);
+}
+
+// À appeler après tout événement qui change le décompte (destruction, repli,
+// mouvement, prise de terrain) : pose state.winner et émet gameWon.
+export function checkVictory(state) {
+  if (state.winner) return;
+  for (const side of ['allies', 'axis']) {
+    if (medalCount(state, side) >= MEDALS_TO_WIN) {
+      state.winner = side;
+      state.bus.emit('gameWon', { side });
+      return;
+    }
+  }
+}
+
 export function rollDice(n, rng) {
   const faces = [];
   for (let i = 0; i < n; i++) faces.push(FACES[(rng() * 6) | 0]);
@@ -144,10 +173,8 @@ export function resolveCombat(state, attacker, defender, faces) {
     state.units = state.units.filter((x) => x.id !== defender.id);
     state.medals[attacker.side]++;
     state.bus.emit('medalAwarded', { side: attacker.side, medals: state.medals[attacker.side] });
-    if (state.medals[attacker.side] >= MEDALS_TO_WIN) {
-      state.winner = attacker.side;
-      state.bus.emit('gameWon', { side: attacker.side });
-    }
   }
+  // destruction, mais aussi repli sur/hors d'un objectif : on recompte tout
+  checkVictory(state);
   return report;
 }

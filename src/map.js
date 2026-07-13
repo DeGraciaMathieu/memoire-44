@@ -1,7 +1,8 @@
 // Cartes personnalisées créées par l'éditeur : sérialisation JSON,
 // validation et mise en place d'une partie à partir d'une carte.
 // Format JSON : { name, terrain: { "c,r": type } (hexes non plaine seulement),
-//                 obstacles: { "c,r": type }, units: [{ side, type, c, r }] }
+//                 obstacles: { "c,r": type }, objectives: { "c,r": true },
+//                 units: [{ side, type, c, r }] }
 
 import { W, H, TERRAIN, OBSTACLES, UNITS } from './config.js';
 import { inBounds, key } from './hex.js';
@@ -18,13 +19,14 @@ export function unitAllowedOn(terrain, obstacles, type, c, r) {
 }
 
 // Carte → objet JSON compact : seuls les hexes non plaine sont conservés.
-export function serializeMap({ name = '', terrain, obstacles, units }) {
+export function serializeMap({ name = '', terrain, obstacles, objectives = {}, units }) {
   const t = {};
   for (const [k, v] of Object.entries(terrain)) if (v !== 'plaine') t[k] = v;
   return {
     name,
     terrain: t,
     obstacles: { ...obstacles },
+    objectives: { ...objectives },
     units: units.map((u) => ({ side: u.side, type: u.type, c: u.c, r: u.r })),
   };
 }
@@ -68,6 +70,12 @@ export function parseMap(raw) {
     obstacles[key(c, r)] = o;
   }
 
+  const objectives = {};
+  for (const k of Object.keys(data.objectives ?? {})) {
+    const [c, r] = parseHexKey(k);
+    objectives[key(c, r)] = true;
+  }
+
   const units = [];
   const taken = new Set();
   for (const u of data.units ?? []) {
@@ -87,7 +95,13 @@ export function parseMap(raw) {
   for (const side of SIDES)
     if (!units.some((u) => u.side === side)) fail(`aucune unité pour le camp « ${side} »`);
 
-  return { name: typeof data.name === 'string' ? data.name : '', terrain, obstacles, units };
+  return {
+    name: typeof data.name === 'string' ? data.name : '',
+    terrain,
+    obstacles,
+    objectives,
+    units,
+  };
 }
 
 // Carte validée → mise en place neuve (copies fraîches, unités matérialisées),
@@ -96,6 +110,7 @@ export function setupFromMap(map) {
   return {
     terrain: { ...map.terrain },
     obstacles: { ...map.obstacles },
+    objectives: { ...map.objectives },
     units: map.units.map((u, i) => ({
       id: 'u' + i,
       side: u.side,

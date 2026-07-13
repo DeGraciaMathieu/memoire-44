@@ -2,7 +2,7 @@
 
 export const W = 13;
 export const H = 9;
-export const MEDALS_TO_WIN = 4;
+export const MEDALS_TO_WIN = 6;
 export const HAND_SIZE = 5;
 
 export const TERRAIN = {

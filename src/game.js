@@ -10,7 +10,7 @@ import { buildDeck, cardById } from './cards.js';
 import { scenario } from './scenario.js';
 import { setupFromMap } from './map.js';
 import { dropObstacleOnExit, obstacleAt, reachable, unitAt } from './movement.js';
-import { defenseReduction, diceFor, resolveCombat, rollDice } from './combat.js';
+import { checkVictory, defenseReduction, diceFor, resolveCombat, rollDice } from './combat.js';
 
 export function shuffle(list, rng) {
   const out = list.slice();
@@ -23,11 +23,12 @@ export function shuffle(list, rng) {
 
 // `map` : carte validée par parseMap (src/map.js) ; défaut = scénario « bocage ».
 export function createGame({ rng = Math.random, map = null } = {}) {
-  const { terrain, units, obstacles } = map ? setupFromMap(map) : scenario();
+  const { terrain, units, obstacles, objectives } = map ? setupFromMap(map) : scenario();
   const deck = shuffle(buildDeck(), rng);
   return {
     terrain,
     obstacles,
+    objectives,
     units,
     decks: { allies: deck.slice(0, 10), axis: deck.slice(10) },
     hands: { allies: [], axis: [] },
@@ -86,6 +87,7 @@ export function moveUnit(state, unit, hex) {
   state.moved[unit.id] = step.cost;
   state.bus.emit('unitMoved', { unit, from, cost: step.cost });
   dropObstacleOnExit(state, from.c, from.r);
+  checkVictory(state); // l'occupation d'un objectif peut donner la 6e médaille
   return step.cost;
 }
 
@@ -144,6 +146,7 @@ export function takeGround(state, unit, hex) {
   state.moved[unit.id] = (state.moved[unit.id] || 0) + 1;
   state.bus.emit('groundTaken', { unit, from });
   dropObstacleOnExit(state, from.c, from.r);
+  checkVictory(state);
 }
 
 // Percée de blindés : après sa première attaque (suivie d'une prise de

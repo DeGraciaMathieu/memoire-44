@@ -8,6 +8,7 @@ const sampleMap = () => ({
   name: 'Test',
   terrain: { [key(2, 3)]: 'foret', [key(5, 5)]: 'colline' },
   obstacles: { [key(6, 0)]: 'bunker' },
+  objectives: { [key(5, 5)]: true },
   units: [
     { side: 'allies', type: 'inf', c: 1, r: 7 },
     { side: 'allies', type: 'arm', c: 4, r: 8 },
@@ -27,6 +28,7 @@ test('parseMap complète le terrain en plaine et valide les unités', () => {
   assert.equal(map.terrain[key(2, 3)], 'foret');
   assert.equal(map.terrain[key(0, 0)], 'plaine');
   assert.equal(map.obstacles[key(6, 0)], 'bunker');
+  assert.deepEqual(map.objectives, { [key(5, 5)]: true });
   assert.equal(map.units.length, 3);
 });
 

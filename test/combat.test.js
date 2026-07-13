@@ -421,7 +421,7 @@ test("resolveCombat : l'anéantissement retire l'unité, décerne une médaille 
   const atk = inf('a', 'allies', 5, 5);
   const def = inf('d', 'axis', 6, 5, 1);
   const state = battleState({ units: [atk, def] });
-  state.medals.allies = 3;
+  state.medals.allies = 5;
   const events = [];
   state.bus.on('medalAwarded', (p) => events.push(['medalAwarded', p]));
   state.bus.on('gameWon', (p) => events.push(['gameWon', p]));
@@ -429,10 +429,10 @@ test("resolveCombat : l'anéantissement retire l'unité, décerne une médaille 
   const report = resolveCombat(state, atk, def, ['inf']);
   assert.equal(report.killed, true);
   assert.ok(!state.units.includes(def));
-  assert.equal(state.medals.allies, 4);
+  assert.equal(state.medals.allies, 6);
   assert.equal(state.winner, 'allies');
   assert.deepEqual(events, [
-    ['medalAwarded', { side: 'allies', medals: 4 }],
+    ['medalAwarded', { side: 'allies', medals: 6 }],
     ['gameWon', { side: 'allies' }],
   ]);
 });
