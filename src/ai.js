@@ -5,7 +5,7 @@ import { hexDistance, key } from './hex.js';
 import { cardById } from './cards.js';
 import { orderableUnits } from './game.js';
 import { reachable } from './movement.js';
-import { diceFor, targetsFor } from './combat.js';
+import { defenseReduction, diceFor, targetsFor } from './combat.js';
 
 const P_HIT = { inf: 3 / 6, arm: 2 / 6, art: 3 / 6 }; // proba par dé selon la cible
 
@@ -44,6 +44,28 @@ export function aiChooseMoves(state, cardId) {
     .sort((a, b) => b.s - a.s);
 
   return scored.slice(0, cd.n).map((x) => aiPlanUnit(state, x.u));
+}
+
+// Prise de terrain : le blindé avance toujours (percée possible) ;
+// l'infanterie n'abandonne jamais une couverture meilleure que l'hex pris.
+export function aiTakesGround(state, unit, hex) {
+  if (unit.type === 'arm') return true;
+  return defenseReduction(state, 'inf', hex) >= defenseReduction(state, 'inf', unit);
+}
+
+// Meilleure cible pour une percée de blindés, ou null si aucun tir possible.
+export function aiBreakthroughTarget(state, unit) {
+  let best = null;
+  let bestScore = 0;
+  for (const t of targetsFor(state, unit, state.moved[unit.id] || 0)) {
+    const exp = t.dice * P_HIT[t.unit.type];
+    const s = exp + (exp >= t.unit.figs ? 2 : 0);
+    if (s > bestScore) {
+      bestScore = s;
+      best = t.unit;
+    }
+  }
+  return best;
 }
 
 function aiPlanUnit(state, unit) {

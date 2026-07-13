@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   attackUnit,
+  canBreakthrough,
   createGame,
   drawCards,
   endPlayerTurn,
@@ -11,13 +12,25 @@ import {
   moveUnit,
   orderableUnits,
   playCard,
+  takeGround,
+  takeGroundHex,
 } from '../src/game.js';
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
 import { cardById } from '../src/cards.js';
+import { targetsFor } from '../src/combat.js';
 import { UNITS, HAND_SIZE } from '../src/config.js';
 import { key } from '../src/hex.js';
 import { mulberry32 } from './helpers.js';
+
+// Duel sur mesure : une carte minimale, phase d'ordres déjà ouverte.
+function duel({ units, terrain = {}, obstacles = {} }) {
+  const map = parseMap({ name: 'duel', terrain, obstacles, units });
+  return createGame({ rng: mulberry32(44), map });
+}
+
+const ALL_HITS = () => 0; // FACES[0] = 'inf' : touche l'infanterie à tous les coups
+const ALL_FLAGS = () => 0.99; // FACES[5] = 'flag' : repli forcé
 
 test('deux parties créées avec la même graine sont identiques', () => {
   const a = createGame({ rng: mulberry32(44) });
@@ -130,6 +143,148 @@ test('createGame accepte une carte de l’éditeur à la place du scénario', ()
   state.units[0].figs = 1;
   const rematch = createGame({ rng: mulberry32(44), map });
   assert.equal(rematch.units[0].figs, UNITS[rematch.units[0].type].figs);
+});
+
+test("prise de terrain : l'infanterie avance sur l'hex d'un ennemi détruit au contact", () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 5 },
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+    ],
+  });
+  const [atk, def] = state.units;
+  def.figs = 1;
+  state.rng = ALL_HITS;
+  const events = [];
+  state.bus.on('groundTaken', (p) => events.push(p));
+
+  const outcome = attackUnit(state, atk, def);
+  assert.ok(outcome.report.killed);
+  assert.equal(state.attacks[atk.id], 1);
+
+  const hex = takeGroundHex(state, atk, outcome);
+  assert.deepEqual(hex, { c: 5, r: 4 });
+  takeGround(state, atk, hex);
+  assert.deepEqual({ c: atk.c, r: atk.r }, { c: 5, r: 4 });
+  assert.equal(state.moved[atk.id], 1);
+  assert.deepEqual(events, [{ unit: atk, from: { c: 5, r: 5 } }]);
+  // l'infanterie n'a jamais droit à une percée
+  assert.ok(!canBreakthrough(state, atk));
+});
+
+test("prise de terrain : aussi après un repli, jamais pour l'artillerie ni à distance", () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 5 },
+      { side: 'allies', type: 'art', c: 6, r: 5 },
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+      { side: 'axis', type: 'inf', c: 6, r: 4 },
+    ],
+  });
+  const [inf, art, def, def2] = state.units;
+
+  // repli : l'hex quitté est pris
+  state.rng = ALL_FLAGS;
+  const retreat = attackUnit(state, inf, def);
+  assert.ok(retreat.report.retreated);
+  assert.deepEqual(takeGroundHex(state, inf, retreat), { c: 5, r: 4 });
+
+  // artillerie au contact : jamais de prise de terrain
+  state.rng = ALL_HITS;
+  def2.figs = 1;
+  const byArt = attackUnit(state, art, def2);
+  assert.ok(byArt.report.killed);
+  assert.equal(takeGroundHex(state, art, byArt), null);
+
+  // tir à distance (portée 2) : pas de prise de terrain
+  const state2 = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 5 },
+      { side: 'axis', type: 'inf', c: 5, r: 3 },
+    ],
+  });
+  const [shooter, farDef] = state2.units;
+  farDef.figs = 1;
+  state2.rng = ALL_HITS;
+  const ranged = attackUnit(state2, shooter, farDef);
+  assert.ok(ranged.report.killed);
+  assert.equal(ranged.range, 2);
+  assert.equal(takeGroundHex(state2, shooter, ranged), null);
+});
+
+test("prise de terrain : les restrictions d'entrée du terrain s'appliquent au blindé", () => {
+  const setup = () => {
+    const state = duel({
+      obstacles: { [key(5, 4)]: 'antichar' },
+      units: [
+        { side: 'allies', type: 'arm', c: 5, r: 5 },
+        { side: 'allies', type: 'inf', c: 4, r: 4 },
+        { side: 'axis', type: 'inf', c: 5, r: 4 },
+      ],
+    });
+    state.units[2].figs = 1;
+    state.rng = ALL_HITS;
+    return state;
+  };
+  // l'obstacle antichar interdit la prise au blindé…
+  let state = setup();
+  const byArm = attackUnit(state, state.units[0], state.units[2]);
+  assert.ok(byArm.report.killed);
+  assert.equal(takeGroundHex(state, state.units[0], byArm), null);
+  // …mais pas à l'infanterie
+  state = setup();
+  const byInf = attackUnit(state, state.units[1], state.units[2]);
+  assert.ok(byInf.report.killed);
+  assert.deepEqual(takeGroundHex(state, state.units[1], byInf), { c: 5, r: 4 });
+});
+
+test('percée de blindés : une seconde attaque, puis une prise classique mais pas de troisième', () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'arm', c: 5, r: 5 },
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+      { side: 'axis', type: 'inf', c: 5, r: 3 },
+    ],
+  });
+  const [arm, e1, e2] = state.units;
+  e1.figs = 1;
+  e2.figs = 1;
+  state.rng = ALL_HITS;
+
+  const first = attackUnit(state, arm, e1);
+  assert.ok(first.report.killed);
+  takeGround(state, arm, takeGroundHex(state, arm, first));
+  assert.ok(canBreakthrough(state, arm)); // percée disponible après la prise
+
+  const second = attackUnit(state, arm, e2);
+  assert.ok(second.report.killed);
+  assert.ok(!canBreakthrough(state, arm)); // une seule percée par activation
+  // la seconde prise de terrain classique reste possible
+  const hex = takeGroundHex(state, arm, second);
+  assert.deepEqual(hex, { c: 5, r: 3 });
+  takeGround(state, arm, hex);
+  assert.deepEqual({ c: arm.c, r: arm.r }, { c: 5, r: 3 });
+});
+
+test('percée de blindés : le bocage pris interdit la seconde attaque (noFightOnEnter)', () => {
+  const state = duel({
+    terrain: { [key(5, 4)]: 'bocage' },
+    units: [
+      { side: 'allies', type: 'arm', c: 5, r: 5 },
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+      { side: 'axis', type: 'inf', c: 5, r: 3 },
+    ],
+  });
+  const [arm, e1] = state.units;
+  e1.figs = 1;
+  state.rng = ALL_HITS;
+
+  const outcome = attackUnit(state, arm, e1);
+  assert.ok(outcome.report.killed);
+  takeGround(state, arm, takeGroundHex(state, arm, outcome));
+  assert.ok(canBreakthrough(state, arm));
+  // la percée est théoriquement ouverte, mais le terrain la bloque
+  assert.equal(targetsFor(state, arm, state.moved[arm.id]).length, 0);
 });
 
 test('la pioche épuisée est rebattue automatiquement', () => {
