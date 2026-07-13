@@ -68,7 +68,10 @@ function aiPlanUnit(state, unit) {
     let score = 0;
     let target = null;
     if (canFire) {
+      // combat rapproché obligatoire : au contact, seuls les adjacents sont ciblables
+      const contact = enemies.some((e) => hexDistance(ghost, e) === 1);
       for (const e of enemies) {
+        if (contact && hexDistance(ghost, e) > 1) continue;
         const dd = diceFor(state, ghost, e);
         if (!dd) continue;
         const exp = dd * P_HIT[e.type];

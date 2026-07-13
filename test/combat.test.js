@@ -55,6 +55,25 @@ test("targetsFor : l'artillerie ne tire pas après un mouvement, l'infanterie ap
   assert.equal(targetsFor({ ...state, units: [foot, enemy] }, foot, 2).length, 0);
 });
 
+test("combat rapproché obligatoire : au contact d'un ennemi, aucun tir plus distant", () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const close = inf('c', 'axis', 6, 5);
+  const far = inf('f', 'axis', 5, 3);
+  const state = battleState({ units: [atk, close, far] });
+  // sans ennemi adjacent, la cible distante est tirable
+  assert.deepEqual(
+    targetsFor({ ...state, units: [atk, far] }, atk, 0).map((t) => t.unit.id),
+    ['f'],
+  );
+  // avec un ennemi au contact, seul le combat rapproché est proposé
+  const targets = targetsFor(state, atk, 0);
+  assert.deepEqual(
+    targets.map((t) => t.unit.id),
+    ['c'],
+  );
+  assert.equal(targets[0].range, 1);
+});
+
 test('la forêt bloque la ligne de mire : plus de tir ni de cible à travers', () => {
   const art = { id: 'a', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
   const enemy = inf('e', 'axis', 6, 4);

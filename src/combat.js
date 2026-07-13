@@ -61,9 +61,11 @@ export function targetsFor(state, unit, movedCost) {
   const here = TERRAIN[state.terrain[key(unit.c, unit.r)]];
   if (here.noFight) return []; // mer : aucun combat à bord d'une barge
   if (here.noFightOnEnter && movedCost > 0) return []; // bocage : pas de combat le tour d'entrée
-  return state.units
+  const targets = state.units
     .filter((e) => e.side !== unit.side && diceFor(state, unit, e) > 0)
     .map((e) => ({ unit: e, dice: diceFor(state, unit, e), range: hexDistance(unit, e) }));
+  // combat rapproché obligatoire : au contact d'un ennemi, pas de tir plus loin
+  return targets.some((t) => t.range === 1) ? targets.filter((t) => t.range === 1) : targets;
 }
 
 export function rollDice(n, rng) {
