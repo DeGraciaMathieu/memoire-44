@@ -8,18 +8,18 @@ auto_invoke: true
 
 ## Concepts → implémentation
 
-| Concept              | Implémentation                                                                                                                                                          |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Carte                | `{ id, name, sector, n }` dans `CARDS` (`src/cards.js`) — `sector` ∈ `gauche`/`centre`/`droite`/`'*'` (tout le front), `n` = unités activables                          |
-| Pioche               | `buildDeck()` : 24 cartes (copies dans `COPIES`, ex. `recon` ×4, `assaut` ×2)                                                                                           |
-| Répartition initiale | `createGame` : `decks.allies` = 10 premières cartes mélangées, `decks.axis` = les 14 restantes — **asymétrie héritée du proto, question ouverte**                       |
-| Main                 | `HAND_SIZE` = 5 ; `drawCards(state, side)` complète la main et **rebâtit/remélange** la pioche épuisée (via `state.rng`) ; émet `cardsDrawn`                            |
-| Jouer une carte      | `playCard(state, side, cardId)` (`src/game.js`) : retire de la main, `phase = 'orders'`, `ordersLeft = min(n, activables)`, reset `acted` et `moved`, émet `cardPlayed` |
-| Unités activables    | `orderableUnits(state, side, cardId)` — `inSector` (`src/sectors.js`) ; un hex à cheval est activable par les cartes des DEUX secteurs                                  |
-| Fin d'activation     | `finishUnit(state, unit)` : `acted = true`, `ordersLeft--`                                                                                                              |
-| Fin de tour allié    | `endPlayerTurn(state)` : reset `acted`, pioche alliée, `turn = 'axis'`, `phase = 'card'`                                                                                |
-| Fin de tour Axe      | `endAxisTurn(state)` : pioche Axe, retour aux alliés (sauf `winner`)                                                                                                    |
-| Phases               | `'card'` (jouer une carte) → `'orders'` (activer) — `state.phase`                                                                                                       |
+| Concept              | Implémentation                                                                                                                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Carte                | `{ id, name, sector, n }` dans `CARDS` (`src/cards.js`) — `sector` ∈ `gauche`/`centre`/`droite`/`flancs` (gauche + droite)/`'*'` (tout le front) — expansion via `cardSectors` (`src/sectors.js`), `n` = unités activables |
+| Pioche               | `buildDeck()` : 26 cartes (copies dans `COPIES`, ex. `recon` ×4, `assaut` ×2, `tenaille` ×2)                                                                                                                               |
+| Répartition initiale | `createGame` : `decks.allies` = 10 premières cartes mélangées, `decks.axis` = les 16 restantes — **asymétrie héritée du proto, question ouverte**                                                                          |
+| Main                 | `HAND_SIZE` = 5 ; `drawCards(state, side)` complète la main et **rebâtit/remélange** la pioche épuisée (via `state.rng`) ; émet `cardsDrawn`                                                                               |
+| Jouer une carte      | `playCard(state, side, cardId)` (`src/game.js`) : retire de la main, `phase = 'orders'`, `ordersLeft = min(n, activables)`, reset `acted` et `moved`, émet `cardPlayed`                                                    |
+| Unités activables    | `orderableUnits(state, side, cardId)` — `inSector` (`src/sectors.js`) ; un hex à cheval est activable par les cartes des DEUX secteurs                                                                                     |
+| Fin d'activation     | `finishUnit(state, unit)` : `acted = true`, `ordersLeft--`                                                                                                                                                                 |
+| Fin de tour allié    | `endPlayerTurn(state)` : reset `acted`, pioche alliée, `turn = 'axis'`, `phase = 'card'`                                                                                                                                   |
+| Fin de tour Axe      | `endAxisTurn(state)` : pioche Axe, retour aux alliés (sauf `winner`)                                                                                                                                                       |
+| Phases               | `'card'` (jouer une carte) → `'orders'` (activer) — `state.phase`                                                                                                                                                          |
 
 ## Séquence d'un tour allié (côté rendu)
 
@@ -34,7 +34,7 @@ auto_invoke: true
 
 1. `src/cards.js` → entrée dans `CARDS` (`id`, `name` en français, `sector`, `n`) +
    nombre de copies dans `COPIES`.
-2. `test/cards.test.js` → ajuster le total (actuellement 24) et la répartition.
+2. `test/cards.test.js` → ajuster le total (actuellement 26) et la répartition.
 3. Carte standard (secteur + n) : **rien d'autre** — `cardHTML` (`render/html.js`) et
    `playCard` sont génériques.
 4. Carte à effet spécial (au-delà de secteur + n) : la règle va dans `src/game.js`

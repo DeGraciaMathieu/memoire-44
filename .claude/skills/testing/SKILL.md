@@ -36,8 +36,8 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `test/events.test.js`   | Bus : livraison, payload, désabonnement                                                                                   |
 | `test/hex.test.js`      | Coordonnées cube, `hexDistance`, `neighbors`, bords                                                                       |
-| `test/sectors.test.js`  | Hexes à cheval (colonnes 4/8), rangées impaires, `inSector`                                                               |
-| `test/cards.test.js`    | Composition de la pioche (24 cartes, copies), `cardById`                                                                  |
+| `test/sectors.test.js`  | Hexes à cheval (colonnes 4/8), rangées impaires, `inSector`, `cardSectors` (flancs)                                       |
+| `test/cards.test.js`    | Composition de la pioche (26 cartes, copies), `cardById`                                                                  |
 | `test/scenario.test.js` | Mise en place : 14 unités, terrain du bocage                                                                              |
 | `test/map.test.js`      | Cartes de l'éditeur : aller-retour JSON, validation `parseMap`, `setupFromMap`, `unitAllowedOn`                           |
 | `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer, plage                                |

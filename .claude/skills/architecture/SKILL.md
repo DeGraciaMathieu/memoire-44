@@ -20,8 +20,8 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 | `src/config.js`         | Constantes du domaine (`W`, `H`, `TERRAIN`, `OBSTACLES`, `UNITS`, `FACES`, `MEDALS_TO_WIN`, `HAND_SIZE`)                                                             | —                                                      |
 | `src/events.js`         | `createBus()` — on/emit minimaliste                                                                                                                                  | —                                                      |
 | `src/hex.js`            | Géométrie pure odd-r : `key`, `inBounds`, `toCube`, `hexDistance`, `neighbors`, `hexLine`                                                                            | `config`                                               |
-| `src/sectors.js`        | `SECTORS`, `sectorsOf`, `inSector` (hexes à cheval)                                                                                                                  | —                                                      |
-| `src/cards.js`          | `CARDS`, `cardById`, `buildDeck` (24 cartes)                                                                                                                         | —                                                      |
+| `src/sectors.js`        | `SECTORS`, `sectorsOf`, `cardSectors`, `inSector` (hexes à cheval)                                                                                                   | —                                                      |
+| `src/cards.js`          | `CARDS`, `cardById`, `buildDeck` (26 cartes)                                                                                                                         | —                                                      |
 | `src/scenario.js`       | `scenario()` — terrain initial + 14 unités                                                                                                                           | `config`, `hex`                                        |
 | `src/map.js`            | Cartes de l'éditeur : `serializeMap`, `parseMap` (validation), `setupFromMap`, `unitAllowedOn`                                                                       | `config`, `hex`                                        |
 | `src/movement.js`       | `unitAt`, `obstacleAt`, `dropObstacleOnExit`, `reachable`                                                                                                            | `config`, `hex`                                        |
@@ -47,7 +47,7 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 | `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage'\|'riviere'\|'mer'\|'plage' }`                                        |
 | `obstacles`  | `{ "c,r": 'bunker'\|'antichar'\|'sacs'\|'pont' }` — obstacles posés sur le terrain (`OBSTACLES`), mutable : les sacs se retirent |
 | `units`      | `[{ id, side, type, c, r, figs, acted }]`                                                                                        |
-| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14                                                              |
+| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/16                                                              |
 | `hands`      | `{ allies: [cardId], axis: [cardId] }`                                                                                           |
 | `medals`     | `{ allies, axis }` — victoire à `MEDALS_TO_WIN` (4)                                                                              |
 | `turn`       | `'allies'` \| `'axis'`                                                                                                           |
