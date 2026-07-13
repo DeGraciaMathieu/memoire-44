@@ -17,14 +17,14 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 
 | Module                  | Rôle                                                                                                                                                   | Dépendances clés                                       |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| `src/config.js`         | Constantes du domaine (`W`, `H`, `TERRAIN`, `UNITS`, `FACES`, `MEDALS_TO_WIN`, `HAND_SIZE`)                                                            | —                                                      |
+| `src/config.js`         | Constantes du domaine (`W`, `H`, `TERRAIN`, `OBSTACLES`, `UNITS`, `FACES`, `MEDALS_TO_WIN`, `HAND_SIZE`)                                               | —                                                      |
 | `src/events.js`         | `createBus()` — on/emit minimaliste                                                                                                                    | —                                                      |
 | `src/hex.js`            | Géométrie pure odd-r : `key`, `inBounds`, `toCube`, `hexDistance`, `neighbors`, `hexLine`                                                              | `config`                                               |
 | `src/sectors.js`        | `SECTORS`, `sectorsOf`, `inSector` (hexes à cheval)                                                                                                    | —                                                      |
 | `src/cards.js`          | `CARDS`, `cardById`, `buildDeck` (24 cartes)                                                                                                           | —                                                      |
 | `src/scenario.js`       | `scenario()` — terrain initial + 14 unités                                                                                                             | `config`, `hex`                                        |
-| `src/movement.js`       | `unitAt`, `reachable`                                                                                                                                  | `config`, `hex`                                        |
-| `src/combat.js`         | `defenseReduction`, `diceFor`, `targetsFor`, `hasLineOfSight`, `rollDice`, `resolveCombat`                                                             | `config`, `hex`, `movement`                            |
+| `src/movement.js`       | `unitAt`, `obstacleAt`, `reachable`                                                                                                                    | `config`, `hex`                                        |
+| `src/combat.js`         | `reductionOf`, `defenseReduction`, `diceFor`, `targetsFor`, `hasLineOfSight`, `rollDice`, `resolveCombat`                                              | `config`, `hex`, `movement`                            |
 | `src/game.js`           | `createGame` + séquence : `drawCards`, `playCard`, `moveUnit`, `attackUnit`, `finishUnit`, `endPlayerTurn`, `endAxisTurn`, `orderableUnits`, `shuffle` | tous les modules `src/`                                |
 | `src/ai.js`             | `aiPickCard`, `aiChooseMoves` (+ `aiPlanUnit` privé)                                                                                                   | `config`, `hex`, `cards`, `game`, `movement`, `combat` |
 | `render/app.js`         | Chef d'orchestre : câble bus → rendu, actions joueur, tempo du tour Axe, cycle de vie (`startGame`)                                                    | `src/*` + tous les modules `render/`                   |
@@ -35,26 +35,27 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 | `render/combatModal.js` | Animation d'un combat **déjà résolu** (reçoit l'outcome)                                                                                               | `html`, `src/config`, `src/hex`                        |
 | `render/input.js`       | Pointeur : clic, glisser-déposer, survol/infobulle                                                                                                     | `gfx`, `html`, `src/movement`                          |
 | `render/uiState.js`     | `createUiState()` — état d'interaction, purement visuel                                                                                                | —                                                      |
-| `render/html.js`        | **PUR** : fragments HTML en chaînes (`cardHTML`, `tipHTML`, `calcHTML`, `forcePanelHTML`) + `SYM`, `UNIT_GLYPH`, `SIDE_FR`                             | `src` (config, hex, sectors, movement)                 |
+| `render/html.js`        | **PUR** : fragments HTML en chaînes (`cardHTML`, `tipHTML`, `calcHTML`, `forcePanelHTML`) + `SYM`, `UNIT_GLYPH`, `SIDE_FR`                             | `src` (config, hex, sectors, movement, combat)         |
 | `render/gfx.js`         | **PUR** : `LAYOUT`, `COL`, `boardSize`, `hexCenter`, `hexPath`, `pickHex`, `sectorLinesX`, `sectorLabelsX`                                             | `src/config`                                           |
 
 ## L'objet `state` (créé par `createGame({ rng })`, `src/game.js`)
 
-| Champ        | Contenu                                                             |
-| ------------ | ------------------------------------------------------------------- |
-| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage' }`      |
-| `units`      | `[{ id, side, type, c, r, figs, acted }]`                           |
-| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14 |
-| `hands`      | `{ allies: [cardId], axis: [cardId] }`                              |
-| `medals`     | `{ allies, axis }` — victoire à `MEDALS_TO_WIN` (4)                 |
-| `turn`       | `'allies'` \| `'axis'`                                              |
-| `phase`      | `'card'` (jouer une carte) \| `'orders'` (activer les unités)       |
-| `playedCard` | id de la carte en cours, ou `null`                                  |
-| `ordersLeft` | ordres restants sur la carte jouée                                  |
-| `moved`      | `{ unitId: coût }` des déplacements de l'activation en cours        |
-| `winner`     | `null` \| `'allies'` \| `'axis'`                                    |
-| `bus`        | bus d'événements (`createBus()`)                                    |
-| `rng`        | source d'aléa injectable (défaut `Math.random`)                     |
+| Champ        | Contenu                                                              |
+| ------------ | -------------------------------------------------------------------- |
+| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage' }`       |
+| `obstacles`  | `{ "c,r": 'bunker' }` — obstacles posés sur le terrain (`OBSTACLES`) |
+| `units`      | `[{ id, side, type, c, r, figs, acted }]`                            |
+| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14  |
+| `hands`      | `{ allies: [cardId], axis: [cardId] }`                               |
+| `medals`     | `{ allies, axis }` — victoire à `MEDALS_TO_WIN` (4)                  |
+| `turn`       | `'allies'` \| `'axis'`                                               |
+| `phase`      | `'card'` (jouer une carte) \| `'orders'` (activer les unités)        |
+| `playedCard` | id de la carte en cours, ou `null`                                   |
+| `ordersLeft` | ordres restants sur la carte jouée                                   |
+| `moved`      | `{ unitId: coût }` des déplacements de l'activation en cours         |
+| `winner`     | `null` \| `'allies'` \| `'axis'`                                     |
+| `bus`        | bus d'événements (`createBus()`)                                     |
+| `rng`        | source d'aléa injectable (défaut `Math.random`)                      |
 
 L'état d'interaction (sélection, drag, hover, `justDrew`, `modalOpen`) vit dans
 `render/uiState.js`, **pas** dans `state` : purement visuel ou dérivable de `src/`.
