@@ -40,7 +40,7 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 | `test/cards.test.js`    | Composition de la pioche (24 cartes, copies), `cardById`                                                                  |
 | `test/scenario.test.js` | Mise en place : 14 unités, terrain du bocage                                                                              |
 | `test/map.test.js`      | Cartes de l'éditeur : aller-retour JSON, validation `parseMap`, `setupFromMap`, `unitAllowedOn`                           |
-| `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer                                       |
+| `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer, plage                                |
 | `test/combat.test.js`   | `diceFor`, `targetsFor`, `rollDice`, `resolveCombat` (repli, dos au mur, médaille, victoire, événements)                  |
 | `test/ai.test.js`       | `aiPickCard`, `aiChooseMoves` (forme des plans)                                                                           |
 | `test/game.test.js`     | **MACRO** : déterminisme par graine, tour allié complet, `attackUnit`, rebattage de pioche, partie sur carte de l'éditeur |
