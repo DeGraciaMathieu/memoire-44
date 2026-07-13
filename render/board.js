@@ -50,12 +50,19 @@ export function buildBoardLayer(state, dpr) {
         ctx.textAlign = 'center';
         ctx.fillText('▦', p.x, p.y + 5);
       }
-      if (state.obstacles?.[key(c, r)] === 'bunker') {
+      const o = state.obstacles?.[key(c, r)];
+      if (o === 'bunker') {
         ctx.strokeStyle = 'rgba(0,0,0,.5)';
         ctx.lineWidth = 3;
         ctx.strokeRect(p.x - 11, p.y - 8, 22, 16);
         ctx.fillStyle = 'rgba(0,0,0,.5)';
         ctx.fillRect(p.x - 5, p.y - 2, 10, 3); // meurtrière
+      }
+      if (o === 'antichar') {
+        ctx.fillStyle = 'rgba(0,0,0,.45)';
+        ctx.font = 'bold 13px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✕✕', p.x, p.y + 4); // hérissons tchèques
       }
     }
   return layer;

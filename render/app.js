@@ -2,7 +2,7 @@
 // orchestre le tempo (tours, IA, modale). Aucune règle métier ici : toutes
 // les décisions viennent de src/.
 
-import { TERRAIN, UNITS } from '../src/config.js';
+import { OBSTACLES, TERRAIN, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
 import {
   attackUnit,
@@ -78,7 +78,8 @@ function wireBus(bus) {
     );
     let txt = `  → ${o.report.hits} touche(s)`;
     if (o.report.flags) txt += `, ${o.report.flags} drapeau(x)`;
-    if (o.report.flagsIgnored) txt += ` · 1 drapeau ignoré (bunker)`;
+    if (o.report.flagsIgnored)
+      txt += ` · 1 drapeau ignoré (${OBSTACLES[o.obstacleKey].label.toLowerCase()})`;
     if (o.report.extraLoss) txt += ` · repli impossible : ${o.report.extraLoss} perte(s)`;
     hud.log(txt, o.report.hits || o.report.extraLoss ? 'bad' : '');
     if (o.report.killed) {

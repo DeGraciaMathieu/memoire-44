@@ -2,7 +2,7 @@
 // play() reçoit l'outcome d'attackUnit et déroule l'animation ; elle ne
 // décide rien.
 
-import { FACES, UNITS } from '../src/config.js';
+import { FACES, OBSTACLES, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
 import { SYM, SIDE_FR, calcHTML, forcePanelHTML } from './html.js';
 
@@ -92,7 +92,7 @@ export function createCombatModal({ requestDraw, getUi }) {
     );
     await sleep(280);
     if (report.flagsIgnored) {
-      line('1 drapeau ignoré (bunker)', 'flagline');
+      line(`1 drapeau ignoré (${OBSTACLES[outcome.obstacleKey].label.toLowerCase()})`, 'flagline');
       await sleep(280);
     }
     const flagsLeft = report.flags - report.flagsIgnored;

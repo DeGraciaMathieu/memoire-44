@@ -41,6 +41,8 @@ export function scenario() {
   const obstacles = {
     [key(6, 0)]: 'bunker', // l'artillerie de l'Axe y est retranchée (fixe)
     [key(4, 6)]: 'bunker',
+    [key(2, 1)]: 'antichar',
+    [key(10, 2)]: 'antichar',
   };
 
   const units = [];

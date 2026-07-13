@@ -95,8 +95,9 @@ export function tipHTML(state, ui, hex) {
   if (oKey) {
     const o = OBSTACLES[oKey];
     h += `<div class="unit">
-      <div class="uname">${o.label}</div>
-      <div class="row">Protection<b>${reductionLabel(o.dice)}, non cumulée</b></div>`;
+      <div class="uname">${o.label}</div>`;
+    if (o.dice.def || o.dice.defArmor || o.dice.defArt)
+      h += `<div class="row">Protection<b>${reductionLabel(o.dice)}, non cumulée</b></div>`;
     if (o.infantryOnly) h += `<div class="row">Accès<b>infanterie seulement</b></div>`;
     if (o.fixesArtillery) h += `<div class="row">Artillerie<b>retranchée, ne sort plus</b></div>`;
     if (o.ignoreFirstFlag)

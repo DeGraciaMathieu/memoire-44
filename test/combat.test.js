@@ -210,6 +210,29 @@ test("bunker : l'artillerie retranchée ne peut pas replier et encaisse", () => 
   assert.deepEqual({ c: gun.c, r: gun.r }, { c: 6, r: 3 });
 });
 
+test('antichar : aucune protection ni blocage de vue, mais premier drapeau ignoré', () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const def = inf('d', 'axis', 5, 4);
+  const state = battleState({ units: [atk, def] });
+  state.obstacles = { [key(5, 4)]: 'antichar' };
+  // pas de couvert : 3 dés pleins à bout portant
+  assert.equal(defenseReduction(state, 'inf', def), 0);
+  assert.equal(diceFor(state, atk, def), 3);
+
+  // ne coupe pas la ligne de mire
+  const art = { id: 'b', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const enemy = inf('e', 'axis', 6, 4);
+  const los = battleState({ units: [art, enemy] });
+  los.obstacles = { [key(4, 4)]: 'antichar' };
+  assert.ok(hasLineOfSight(los, art, enemy));
+
+  // premier drapeau du jet ignoré, comme au bunker
+  const rep = resolveCombat(state, atk, def, ['flag']);
+  assert.equal(rep.flagsIgnored, 1);
+  assert.equal(rep.retreated, null);
+  assert.equal(def.figs, 4);
+});
+
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {
   const a = rollDice(20, mulberry32(7));
   const b = rollDice(20, mulberry32(7));

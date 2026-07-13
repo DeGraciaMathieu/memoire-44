@@ -66,6 +66,21 @@ test("bunker : seule l'infanterie entre, l'artillerie retranchée est fixe", () 
   assert.equal(reachable(st3, gun, 1).length, 0);
 });
 
+test("antichar : réservé à l'infanterie, qui passe sans aucune restriction", () => {
+  const foot = { id: 'a', side: 'allies', type: 'inf', c: 6, r: 4 };
+  const state = flatState('plaine', [foot]);
+  state.obstacles = { [key(7, 4)]: 'antichar' };
+  const out = reachable(state, foot, 2);
+  // l'infanterie entre, et peut même continuer au travers
+  assert.ok(out.some((h) => h.c === 7 && h.r === 4 && h.cost === 1));
+  assert.ok(out.some((h) => h.c === 8 && h.r === 4 && h.cost === 2));
+
+  const tank = { id: 'b', side: 'allies', type: 'arm', c: 6, r: 4 };
+  const st2 = flatState('plaine', [tank]);
+  st2.obstacles = { [key(7, 4)]: 'antichar' };
+  assert.ok(!reachable(st2, tank, 3).some((h) => h.c === 7 && h.r === 4));
+});
+
 test('les terrains qui stoppent arrêtent net le mouvement', () => {
   const u = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
   const out = reachable(flatState('foret', [u]), u, 3);

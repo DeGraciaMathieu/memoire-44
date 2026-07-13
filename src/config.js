@@ -38,6 +38,12 @@ export const OBSTACLES = {
     fixesArtillery: true, // une artillerie qui y débute ne peut plus bouger
     ignoreFirstFlag: true, // le premier drapeau de chaque jet est ignoré
   },
+  antichar: {
+    label: 'Obstacle antichar',
+    dice: { def: 0 }, // aucune protection
+    infantryOnly: true, // seule l'infanterie y pénètre, sans restriction de mouvement
+    ignoreFirstFlag: true,
+  },
 };
 
 export const UNITS = {
