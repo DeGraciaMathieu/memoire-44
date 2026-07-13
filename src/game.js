@@ -8,6 +8,7 @@ import { hexDistance, key } from './hex.js';
 import { inSector } from './sectors.js';
 import { buildDeck, cardById } from './cards.js';
 import { scenario } from './scenario.js';
+import { setupFromMap } from './map.js';
 import { dropObstacleOnExit, obstacleAt, reachable } from './movement.js';
 import { defenseReduction, diceFor, resolveCombat, rollDice } from './combat.js';
 
@@ -20,8 +21,9 @@ export function shuffle(list, rng) {
   return out;
 }
 
-export function createGame({ rng = Math.random } = {}) {
-  const { terrain, units, obstacles } = scenario();
+// `map` : carte validée par parseMap (src/map.js) ; défaut = scénario « bocage ».
+export function createGame({ rng = Math.random, map = null } = {}) {
+  const { terrain, units, obstacles } = map ? setupFromMap(map) : scenario();
   const deck = shuffle(buildDeck(), rng);
   return {
     terrain,

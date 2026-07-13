@@ -13,6 +13,7 @@ import {
   playCard,
 } from '../src/game.js';
 import { reachable } from '../src/movement.js';
+import { parseMap } from '../src/map.js';
 import { cardById } from '../src/cards.js';
 import { UNITS, HAND_SIZE } from '../src/config.js';
 import { key } from '../src/hex.js';
@@ -109,6 +110,26 @@ test("les sacs de sable sont abandonnés quand l'unité quitte volontairement l'
   assert.deepEqual(events, [{ c: 3, r: 7, obstacle: 'sacs' }]);
   // l'autre position de sacs reste en place
   assert.equal(state.obstacles[key(8, 7)], 'sacs');
+});
+
+test('createGame accepte une carte de l’éditeur à la place du scénario', () => {
+  const map = parseMap({
+    name: 'Duel',
+    terrain: { [key(6, 4)]: 'village' },
+    obstacles: { [key(6, 0)]: 'bunker' },
+    units: [
+      { side: 'allies', type: 'inf', c: 1, r: 7 },
+      { side: 'axis', type: 'inf', c: 6, r: 0 },
+    ],
+  });
+  const state = createGame({ rng: mulberry32(44), map });
+  assert.equal(state.units.length, 2);
+  assert.equal(state.terrain[key(6, 4)], 'village');
+  assert.equal(state.obstacles[key(6, 0)], 'bunker');
+  // la carte reste rejouable : une seconde partie repart d'unités neuves
+  state.units[0].figs = 1;
+  const rematch = createGame({ rng: mulberry32(44), map });
+  assert.equal(rematch.units[0].figs, UNITS[rematch.units[0].type].figs);
 });
 
 test('la pioche épuisée est rebattue automatiquement', () => {

@@ -53,6 +53,11 @@ body {
   letter-spacing: 2px;
   color: var(--ink-dim);
 }
+.barlinks {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
 .medals {
   display: flex;
   gap: 22px;
@@ -305,7 +310,8 @@ canvas {
   gap: 6px;
   z-index: 35;
 }
-button.act {
+button.act,
+a.act {
   background: var(--panel);
   border: 1px solid var(--rule);
   color: var(--ink);
@@ -318,7 +324,12 @@ button.act {
   border-radius: 3px;
   cursor: pointer;
 }
-button.act:hover {
+a.act {
+  display: inline-block;
+  text-decoration: none;
+}
+button.act:hover,
+a.act:hover {
   border-color: var(--brass);
   color: var(--brass);
 }
@@ -365,6 +376,68 @@ button.act:hover {
   .card.dealt {
     animation: none;
   }
+}
+
+/* --- éditeur de cartes --- */
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.tool {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--panel-hi);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font:
+    11px/1.2 'Courier New',
+    monospace;
+  padding: 7px 9px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.tool.swatched::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--swatch);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  flex: 0 0 auto;
+}
+.tool:hover {
+  border-color: var(--brass);
+}
+.tool.on {
+  border-color: var(--brass);
+  color: var(--brass);
+}
+.mapbox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+}
+#mapName {
+  background: var(--table);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font:
+    12px/1 'Courier New',
+    monospace;
+  padding: 9px 10px;
+  border-radius: 3px;
+}
+#mapName:focus {
+  outline: none;
+  border-color: var(--brass);
+}
+.prompt.bad {
+  color: var(--flag);
 }
 
 /* --- infobulle de plateau --- */

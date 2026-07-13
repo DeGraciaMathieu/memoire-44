@@ -16,6 +16,7 @@ import {
   playCard,
 } from '../src/game.js';
 import { reachable } from '../src/movement.js';
+import { parseMap } from '../src/map.js';
 import { diceFor, targetsFor } from '../src/combat.js';
 import { aiChooseMoves, aiPickCard } from '../src/ai.js';
 import { createUiState } from './uiState.js';
@@ -33,6 +34,7 @@ const canvas = document.getElementById('cv');
 let state;
 let ui;
 let boardLayer;
+let currentMap = null; // carte de l'éditeur chargée, null = scénario par défaut
 
 const hud = createHud();
 const stage = createStage(canvas, () => ({ state, ui, boardLayer }));
@@ -209,7 +211,7 @@ async function playAxisTurn() {
 /* --- cycle de vie -------------------------------------------------------- */
 
 function startGame(message) {
-  state = createGame();
+  state = createGame({ map: currentMap });
   ui = createUiState();
   boardLayer = buildBoardLayer(state, DPR);
   wireBus(state.bus);
@@ -224,5 +226,22 @@ function startGame(message) {
 function restart() {
   startGame('Nouvelle partie. Les Alliés ouvrent le feu.');
 }
+
+// Charger une carte JSON de l'éditeur : la partie (et les suivantes via
+// « Nouvelle partie ») se joue alors sur cette carte.
+const mapFile = document.getElementById('mapFile');
+document.getElementById('btnLoadMap').onclick = () => mapFile.click();
+mapFile.onchange = async () => {
+  const file = mapFile.files[0];
+  mapFile.value = '';
+  if (!file) return;
+  try {
+    currentMap = parseMap(await file.text());
+  } catch (err) {
+    hud.log(`✖ ${err.message}`, 'bad');
+    return;
+  }
+  startGame(`Carte « ${currentMap.name || file.name} ». Les Alliés ouvrent le feu.`);
+};
 
 startGame('Secteur bocage. 4 médailles pour l’emporter.');

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ordre de Bataille — éditeur de cartes</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bar">
+      <div class="title">Éditeur de cartes<small>ordre de bataille</small></div>
+      <div class="barlinks">
+        <a class="act" href="index.html">← Retour au jeu</a>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="boardwrap"><canvas id="cv"></canvas></div>
+      <div class="side">
+        <h2>Terrain</h2>
+        <div class="tools" id="terrainTools"></div>
+        <h2>Obstacles</h2>
+        <div class="tools" id="obstacleTools"></div>
+        <h2>Unités</h2>
+        <div class="tools" id="unitTools"></div>
+        <h2>Carte</h2>
+        <div class="mapbox">
+          <input id="mapName" type="text" placeholder="Nom de la carte" maxlength="40" />
+          <button class="act" id="btnExport">Exporter en JSON</button>
+          <button class="act" id="btnImport">Importer un JSON</button>
+          <input type="file" id="fileImport" accept=".json,application/json" hidden />
+          <button class="act" id="btnClear">Vider le plateau</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prompt" id="status">
+      Choisissez un outil puis cliquez sur le plateau (le terrain se peint aussi en glissant).
+    </div>
+
+    <script type="module" src="render/editor.js"></script>
+  </body>
+</html>
