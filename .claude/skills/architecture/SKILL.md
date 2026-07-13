@@ -40,22 +40,22 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 
 ## L'objet `state` (créé par `createGame({ rng })`, `src/game.js`)
 
-| Champ        | Contenu                                                              |
-| ------------ | -------------------------------------------------------------------- |
-| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage' }`       |
-| `obstacles`  | `{ "c,r": 'bunker' }` — obstacles posés sur le terrain (`OBSTACLES`) |
-| `units`      | `[{ id, side, type, c, r, figs, acted }]`                            |
-| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14  |
-| `hands`      | `{ allies: [cardId], axis: [cardId] }`                               |
-| `medals`     | `{ allies, axis }` — victoire à `MEDALS_TO_WIN` (4)                  |
-| `turn`       | `'allies'` \| `'axis'`                                               |
-| `phase`      | `'card'` (jouer une carte) \| `'orders'` (activer les unités)        |
-| `playedCard` | id de la carte en cours, ou `null`                                   |
-| `ordersLeft` | ordres restants sur la carte jouée                                   |
-| `moved`      | `{ unitId: coût }` des déplacements de l'activation en cours         |
-| `winner`     | `null` \| `'allies'` \| `'axis'`                                     |
-| `bus`        | bus d'événements (`createBus()`)                                     |
-| `rng`        | source d'aléa injectable (défaut `Math.random`)                      |
+| Champ        | Contenu                                                                          |
+| ------------ | -------------------------------------------------------------------------------- |
+| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage' }`                   |
+| `obstacles`  | `{ "c,r": 'bunker'\|'antichar' }` — obstacles posés sur le terrain (`OBSTACLES`) |
+| `units`      | `[{ id, side, type, c, r, figs, acted }]`                                        |
+| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14              |
+| `hands`      | `{ allies: [cardId], axis: [cardId] }`                                           |
+| `medals`     | `{ allies, axis }` — victoire à `MEDALS_TO_WIN` (4)                              |
+| `turn`       | `'allies'` \| `'axis'`                                                           |
+| `phase`      | `'card'` (jouer une carte) \| `'orders'` (activer les unités)                    |
+| `playedCard` | id de la carte en cours, ou `null`                                               |
+| `ordersLeft` | ordres restants sur la carte jouée                                               |
+| `moved`      | `{ unitId: coût }` des déplacements de l'activation en cours                     |
+| `winner`     | `null` \| `'allies'` \| `'axis'`                                                 |
+| `bus`        | bus d'événements (`createBus()`)                                                 |
+| `rng`        | source d'aléa injectable (défaut `Math.random`)                                  |
 
 L'état d'interaction (sélection, drag, hover, `justDrew`, `modalOpen`) vit dans
 `render/uiState.js`, **pas** dans `state` : purement visuel ou dérivable de `src/`.
