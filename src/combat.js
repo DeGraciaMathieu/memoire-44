@@ -28,10 +28,14 @@ export function hasLineOfSight(state, from, to) {
   return clear(1) || clear(-1);
 }
 
-// Dés retirés par le terrain du défenseur (les blindés subissent defArmor).
+// Dés retirés par le terrain du défenseur, selon le type de l'attaquant :
+// defArmor pour les blindés, defArt pour l'artillerie (0 = sans malus),
+// def sinon.
 export function defenseReduction(state, attackerType, target) {
   const t = TERRAIN[state.terrain[key(target.c, target.r)]];
-  return attackerType === 'arm' && t.dice.defArmor != null ? t.dice.defArmor : t.dice.def;
+  if (attackerType === 'arm' && t.dice.defArmor != null) return t.dice.defArmor;
+  if (attackerType === 'art' && t.dice.defArt != null) return t.dice.defArt;
+  return t.dice.def;
 }
 
 export function diceFor(state, unit, target) {

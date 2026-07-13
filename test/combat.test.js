@@ -36,6 +36,11 @@ test('diceFor : portée, couvert du terrain, et minimum de 1 dé', () => {
   const arm = { ...atk, type: 'arm' };
   assert.equal(defenseReduction(state, 'arm', { c: 6, r: 4 }), 2);
   assert.equal(diceFor(state, arm, { c: 6, r: 4, type: 'inf' }), 1);
+  // l'artillerie attaque la forêt sans malus (defArt: 0), le village reste à −1
+  const art = { ...atk, type: 'art' };
+  assert.equal(defenseReduction(state, 'art', { c: 5, r: 4 }), 0);
+  assert.equal(diceFor(state, art, { c: 5, r: 4, type: 'inf' }), 3); // forêt adjacente : 3 dés pleins
+  assert.equal(diceFor(state, art, { c: 6, r: 4, type: 'inf' }), 2); // village adjacent : 3 − 1
 });
 
 test("targetsFor : l'artillerie ne tire pas après un mouvement, l'infanterie après 2 hexes", () => {

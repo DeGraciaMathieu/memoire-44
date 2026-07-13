@@ -60,11 +60,15 @@ export function tipHTML(state, ui, hex) {
 
   const red = t.dice.def;
   const redA = t.dice.defArmor != null ? t.dice.defArmor : red;
+  const redArt = t.dice.defArt != null ? t.dice.defArt : red;
+  const extras = [];
+  if (redA !== red) extras.push('−' + redA + ' blindé');
+  if (redArt !== red) extras.push(redArt ? '−' + redArt + ' artillerie' : 'artillerie sans malus');
 
   let h = `<div class="thead ${tkey}">${t.label}<em>${secs.join(' + ')}</em></div>
     <div class="tbody">
       <div class="row">Dés retirés à l'assaillant<b>${red ? '−' + red : '—'}${
-        redA !== red ? ' (−' + redA + ' blindé)' : ''
+        extras.length ? ' (' + extras.join(', ') + ')' : ''
       }</b></div>
       <div class="row">Mouvement<b>${t.stops ? 'stoppe net' : 'libre'}</b></div>
       <div class="row">Ligne de mire<b>${
