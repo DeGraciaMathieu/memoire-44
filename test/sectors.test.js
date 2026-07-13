@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { inSector, sectorsOf } from '../src/sectors.js';
+import { cardSectors, inSector, sectorsOf } from '../src/sectors.js';
 
 test('rangées paires : les colonnes 4 et 8 sont à cheval sur deux secteurs', () => {
   assert.deepEqual(sectorsOf(4, 0), ['gauche', 'centre']);
@@ -21,4 +21,14 @@ test("inSector : '*' accepte tout, sinon le secteur doit correspondre", () => {
   assert.ok(inSector({ c: 4, r: 0 }, 'gauche'));
   assert.ok(inSector({ c: 4, r: 0 }, 'centre'));
   assert.ok(!inSector({ c: 4, r: 1 }, 'gauche'));
+});
+
+test("'flancs' couvre les secteurs gauche et droite, jamais le centre seul", () => {
+  assert.deepEqual(cardSectors('flancs'), ['gauche', 'droite']);
+  assert.deepEqual(cardSectors('*'), ['gauche', 'centre', 'droite']);
+  assert.deepEqual(cardSectors('centre'), ['centre']);
+  assert.ok(inSector({ c: 0, r: 0 }, 'flancs')); // gauche
+  assert.ok(inSector({ c: 12, r: 0 }, 'flancs')); // droite
+  assert.ok(!inSector({ c: 6, r: 0 }, 'flancs')); // plein centre
+  assert.ok(inSector({ c: 4, r: 0 }, 'flancs')); // hex à cheval gauche/centre
 });

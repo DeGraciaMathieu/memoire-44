@@ -20,5 +20,12 @@ export function sectorsOf(c, r) {
   return s;
 }
 
-export const inSector = (unit, sector) =>
-  sector === '*' || sectorsOf(unit.c, unit.r).includes(sector);
+// Secteurs couverts par la valeur de secteur d'une carte :
+// '*' = tout le front, 'flancs' = gauche + droite, sinon le secteur nommé.
+export const cardSectors = (sector) =>
+  sector === '*' ? SECTORS : sector === 'flancs' ? ['gauche', 'droite'] : [sector];
+
+export const inSector = (unit, sector) => {
+  const covered = cardSectors(sector);
+  return sectorsOf(unit.c, unit.r).some((s) => covered.includes(s));
+};

@@ -7,6 +7,7 @@ export const CARDS = [
   { id: 'snd-g', name: 'Sonder à gauche', sector: 'gauche', n: 2 },
   { id: 'snd-c', name: 'Sonder au centre', sector: 'centre', n: 2 },
   { id: 'snd-d', name: 'Sonder à droite', sector: 'droite', n: 2 },
+  { id: 'tenaille', name: 'Attaque en tenaille', sector: 'flancs', n: 3 },
   { id: 'recon', name: 'Reconnaissance', sector: '*', n: 1 },
   { id: 'assaut', name: 'Assaut général', sector: '*', n: 4 },
 ];
@@ -18,6 +19,7 @@ const COPIES = {
   'snd-g': 3,
   'snd-c': 3,
   'snd-d': 3,
+  tenaille: 2,
   recon: 4,
   assaut: 2,
 };

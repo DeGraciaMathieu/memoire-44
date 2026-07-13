@@ -33,7 +33,7 @@ test('un tour allié complet : pioche, carte, mouvement, fin de tour', () => {
   }
 
   assert.equal(state.units.length, 14);
-  assert.equal(state.decks.allies.length + state.decks.axis.length, 24);
+  assert.equal(state.decks.allies.length + state.decks.axis.length, 26);
 
   drawCards(state, 'allies');
   assert.equal(state.hands.allies.length, HAND_SIZE);
@@ -138,5 +138,5 @@ test('la pioche épuisée est rebattue automatiquement', () => {
   state.hands.allies = [];
   drawCards(state, 'allies');
   assert.equal(state.hands.allies.length, HAND_SIZE);
-  assert.equal(state.decks.allies.length, 24 - HAND_SIZE);
+  assert.equal(state.decks.allies.length, 26 - HAND_SIZE);
 });

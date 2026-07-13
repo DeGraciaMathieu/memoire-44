@@ -2,7 +2,7 @@
 // et dessin de la couche dynamique par-dessus le raster du plateau.
 
 import { W, H } from '../src/config.js';
-import { sectorsOf } from '../src/sectors.js';
+import { cardSectors, sectorsOf } from '../src/sectors.js';
 import { cardById } from '../src/cards.js';
 import { UNIT_GLYPH } from './html.js';
 import { COL, LAYOUT, boardSize, hexCenter, hexPath, sectorLabelsX, sectorLinesX } from './gfx.js';
@@ -40,18 +40,18 @@ export function createStage(canvas, getScene) {
       drawObstacle(o, p.x, p.y);
     }
 
-    // secteur activé par la carte en cours
+    // secteurs activés par la carte en cours ('flancs' en couvre deux)
     const cd = state.playedCard && cardById(state.playedCard);
     const live =
       state.phase === 'orders' && state.turn === 'allies' && cd && cd.sector !== '*'
-        ? cd.sector
+        ? cardSectors(cd.sector)
         : null;
     if (live) {
       for (let r = 0; r < H; r++)
         for (let c = 0; c < W; c++) {
           const p = hexCenter(c, r);
           hexPath(ctx, p.x, p.y);
-          ctx.fillStyle = sectorsOf(c, r).includes(live)
+          ctx.fillStyle = sectorsOf(c, r).some((s) => live.includes(s))
             ? 'rgba(201,162,39,.14)'
             : 'rgba(12,14,11,.24)';
           ctx.fill();
@@ -80,7 +80,7 @@ export function createStage(canvas, getScene) {
     ctx.textAlign = 'center';
     ctx.font = 'bold 11px "Courier New"';
     for (const [name, x] of Object.entries(sectorLabelsX())) {
-      ctx.fillStyle = live === name ? '#C9A227' : 'rgba(232,226,208,.45)';
+      ctx.fillStyle = live && live.includes(name) ? '#C9A227' : 'rgba(232,226,208,.45)';
       ctx.letterSpacing = '3px';
       ctx.fillText(name.toUpperCase(), x, 15);
       ctx.fillText(name.toUpperCase(), x, height - 7);

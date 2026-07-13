@@ -2,7 +2,7 @@
 
 import { OBSTACLES, TERRAIN, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
-import { SECTORS, sectorsOf } from '../src/sectors.js';
+import { SECTORS, cardSectors, sectorsOf } from '../src/sectors.js';
 import { obstacleAt, unitAt } from '../src/movement.js';
 import { reductionOf } from '../src/combat.js';
 
@@ -32,9 +32,11 @@ export function cardHTML(card) {
   return `<div class="n">${card.n}<small>unité${card.n > 1 ? 's' : ''}</small></div>
     <div class="cname">${card.name}</div>
     <div class="secs">${SECTORS.map(
-      (s) => `<i class="${card.sector === '*' || card.sector === s ? 'on' : ''}"></i>`,
+      (s) => `<i class="${cardSectors(card.sector).includes(s) ? 'on' : ''}"></i>`,
     ).join('')}</div>
-    <div class="ctag">${card.sector === '*' ? 'tout le front' : card.sector}</div>`;
+    <div class="ctag">${
+      card.sector === '*' ? 'tout le front' : card.sector === 'flancs' ? 'les flancs' : card.sector
+    }</div>`;
 }
 
 export function forcePanelHTML(unit, terrainKey, role, figsShown, lost) {

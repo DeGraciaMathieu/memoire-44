@@ -17,6 +17,11 @@ test('cardHTML : nom, nombre d’unités et secteur', () => {
   const h2 = cardHTML(cardById('atk-g'));
   assert.match(h2, /Attaque à gauche/);
   assert.match(h2, /unités/);
+  // la tenaille allume les deux bandes de flanc, pas celle du centre
+  const h3 = cardHTML(cardById('tenaille'));
+  assert.match(h3, /Attaque en tenaille/);
+  assert.match(h3, /les flancs/);
+  assert.equal(h3.match(/<i class="on"/g).length, 2);
 });
 
 test('forcePanelHTML : une pip par figurine, les pertes marquées gone', () => {
