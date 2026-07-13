@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/run-tests.sh\"",
+            "timeout": 120,
+            "statusMessage": "Tests (node --test)…"
+          },
+          {
+            "type": "agent",
+            "prompt": "Tu es le vérificateur de cohérence documentaire du projet « Ordre de Bataille » (memoire-44). Lance `git diff HEAD -- src render index.html CLAUDE.md .claude/skills` pour voir ce qui a changé. Vérifie que la doc vivante reflète fidèlement le code : 1) CLAUDE.md (conventions, vocabulaire, valeurs citées comme MEDALS_TO_WIN = 4) ; 2) les tables des skills dans .claude/skills/*/SKILL.md — en particulier l'objet state et le tableau des événements du bus (skill architecture), les valeurs de UNITS/TERRAIN/FACES et les totaux (24 cartes, 14 unités) cités dans les skills combat, plateau-mouvement et cartes-tours ; 3) les textes de règles codés en dur côté rendu : MOVE_LBL et RANGE_LBL dans render/html.js, l'objectif de médailles affiché par l'élément #mGoal dans index.html, et le message de démarrage « 4 médailles pour l'emporter » dans render/app.js — tous doivent rester cohérents avec src/config.js et les règles de src/. IGNORE tout ce qui est calculé à l'exécution depuis la config et ne peut donc pas se désynchroniser : contenu des cartes (cardHTML), valeurs de l'infobulle (tipHTML : figurines, dés, portées affichées dynamiquement), détail du calcul de combat (calcHTML), compteurs #mAllies/#mAxis. Règle de sortie stricte : réponds exactement accept si rien n'a changé ou si la doc reflète fidèlement les changements ; sinon réponds block en listant précisément les passages périmés (fichier + citation) et la correction attendue.",
+            "model": "claude-sonnet-4-6",
+            "timeout": 120,
+            "statusMessage": "Vérification synchro doc…"
+          }
+        ]
+      }
+    ]
+  }
+}
