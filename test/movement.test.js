@@ -81,6 +81,19 @@ test("antichar : réservé à l'infanterie, qui passe sans aucune restriction", 
   assert.ok(!reachable(st2, tank, 3).some((h) => h.c === 7 && h.r === 4));
 });
 
+test('rivière : infranchissable, sauf par un pont (qui ne stoppe pas)', () => {
+  const u = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
+  const state = flatState('plaine', [u]);
+  state.terrain[key(7, 4)] = 'riviere';
+  assert.ok(!reachable(state, u, 3).some((h) => h.c === 7 && h.r === 4));
+
+  // avec un pont : on entre, et on peut même poursuivre sur l'autre rive
+  state.obstacles = { [key(7, 4)]: 'pont' };
+  const out = reachable(state, u, 3);
+  assert.ok(out.some((h) => h.c === 7 && h.r === 4 && h.cost === 1));
+  assert.ok(out.some((h) => h.c === 8 && h.r === 4 && h.cost === 2));
+});
+
 test('les terrains qui stoppent arrêtent net le mouvement', () => {
   const u = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
   const out = reachable(flatState('foret', [u]), u, 3);

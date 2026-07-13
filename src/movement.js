@@ -38,6 +38,7 @@ export function reachable(state, unit, maxMove) {
       const t = TERRAIN[state.terrain[k]];
       if (t.enterAdjacentOnly && cur.cost > 0) continue; // bocage : premier pas seulement
       const o = OBSTACLES[obstacleAt(state, n.c, n.r)];
+      if (t.impassable && !o?.makesPassable) continue; // rivière : pont obligatoire
       if (o?.infantryOnly && unit.type !== 'inf') continue; // bunker : infanterie seulement
       const cost = cur.cost + 1;
       if (k in seen && seen[k] <= cost) continue;

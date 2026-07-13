@@ -261,6 +261,53 @@ test('sacs de sable : −1 sauf artillerie, vue libre, abandonnés au repli', ()
   assert.deepEqual(events, [{ c: 5, r: 4, obstacle: 'sacs' }]);
 });
 
+test('rivière : ne bloque jamais la ligne de mire, combat normal sur un pont', () => {
+  // une rivière interposée laisse passer le tir
+  const art = { id: 'b', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const enemy = inf('e', 'axis', 6, 4);
+  const state = battleState({ terrain: { [key(4, 4)]: 'riviere' }, units: [art, enemy] });
+  assert.ok(hasLineOfSight(state, art, enemy));
+  assert.equal(diceFor(state, art, enemy), 2); // portée 4 : 2 dés pleins
+
+  // une unité sur un pont attaque et se défend sans aucune réduction
+  const foot = inf('f', 'allies', 6, 5); // adjacent à l'ennemi sur le pont
+  state.units.push(foot);
+  state.terrain[key(6, 4)] = 'riviere';
+  state.obstacles = { [key(6, 4)]: 'pont' };
+  assert.equal(defenseReduction(state, 'inf', enemy), 0);
+  assert.equal(defenseReduction(state, 'arm', enemy), 0);
+  assert.equal(diceFor(state, foot, enemy), 3); // 3 dés pleins contre le pont
+  // depuis le pont, il tire normalement — même le tour où il vient d'y entrer
+  assert.equal(targetsFor(state, enemy, 0).length, 1);
+  assert.equal(targetsFor(state, enemy, 1).length, 1);
+});
+
+test('repli : une rivière sans pont bloque la retraite, un pont la permet', () => {
+  // les deux hexes de repli de (6,1) vers la rangée 0 sont en rivière : perte
+  const atk = inf('a', 'allies', 6, 2);
+  const def = inf('d', 'axis', 6, 1);
+  const state = battleState({
+    terrain: { [key(6, 0)]: 'riviere', [key(7, 0)]: 'riviere' },
+    units: [atk, def],
+  });
+  const rep = resolveCombat(state, atk, def, ['flag']);
+  assert.equal(rep.retreated, null);
+  assert.equal(rep.extraLoss, 1);
+  assert.equal(def.figs, 3);
+
+  // un pont sur l'un des deux hexes rouvre le repli
+  const atk2 = inf('a2', 'allies', 6, 2);
+  const def2 = inf('d2', 'axis', 6, 1);
+  const st2 = battleState({
+    terrain: { [key(6, 0)]: 'riviere', [key(7, 0)]: 'riviere' },
+    units: [atk2, def2],
+  });
+  st2.obstacles = { [key(6, 0)]: 'pont' };
+  const rep2 = resolveCombat(st2, atk2, def2, ['flag']);
+  assert.deepEqual(rep2.retreated, { c: 6, r: 0 });
+  assert.equal(def2.figs, 4);
+});
+
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {
   const a = rollDice(20, mulberry32(7));
   const b = rollDice(20, mulberry32(7));

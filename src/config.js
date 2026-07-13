@@ -24,6 +24,13 @@ export const TERRAIN = {
     exitAdjacentOnly: true, // la sortie s'arrête sur l'hex adjacent
     noFightOnEnter: true, // pas de combat le tour où l'unité y entre
   },
+  riviere: {
+    label: 'Rivière',
+    dice: { def: 0 },
+    stops: false,
+    impassable: true, // entrée interdite — sauf obstacle makesPassable (pont)
+    // jamais de blocksSight : une rivière ne coupe pas la ligne de mire
+  },
 };
 
 // Obstacles posés SUR un terrain. Leur protection ne se cumule pas avec celle
@@ -49,6 +56,11 @@ export const OBSTACLES = {
     dice: { def: 1, defArt: 0 }, // −1 infanterie et blindés, rien contre l'artillerie
     ignoreFirstFlag: true,
     removedOnExit: true, // abandonnés dès que l'unité quitte l'hex (même en repli)
+  },
+  pont: {
+    label: 'Pont',
+    dice: { def: 0 }, // aucune protection : on y combat normalement
+    makesPassable: true, // rend franchissable un terrain impassable (rivière)
   },
 };
 

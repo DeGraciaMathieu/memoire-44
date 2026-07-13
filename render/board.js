@@ -52,6 +52,12 @@ export function buildBoardLayer(state, dpr) {
         ctx.textAlign = 'center';
         ctx.fillText('▦', p.x, p.y + 5);
       }
+      if (t === 'riviere') {
+        ctx.fillStyle = 'rgba(232,226,208,.45)';
+        ctx.font = '16px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('≈≈', p.x, p.y + 5);
+      }
     }
   return layer;
 }

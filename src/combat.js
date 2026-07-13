@@ -114,7 +114,9 @@ export function resolveCombat(state, attacker, defender, faces) {
         : neighbors(defender.c, defender.r)
             .filter((h) => !unitAt(state, h.c, h.r))
             .filter((h) => {
+              const t = TERRAIN[state.terrain[key(h.c, h.r)]];
               const ob = OBSTACLES[obstacleAt(state, h.c, h.r)];
+              if (t.impassable && !ob?.makesPassable) return false; // rivière sans pont
               return !ob?.infantryOnly || defender.type === 'inf';
             })
             .filter((h) => Math.abs(h.r - home) < Math.abs(defender.r - home))

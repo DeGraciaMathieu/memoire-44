@@ -94,33 +94,39 @@ addTool(unitTools, 'Enlever l’unité', { kind: 'unit', side: null, type: null 
 
 /* --- application d'un outil sur un hex ------------------------------------ */
 
+const BLOCKED_MSG = 'Hex refusé : rivière sans pont ou obstacle réservé à l’infanterie.';
+
 function applyTool(hex) {
   const k = key(hex.c, hex.r);
+  const occupant = map.units.find((x) => x.c === hex.c && x.r === hex.r);
   if (tool.kind === 'terrain') {
     if (map.terrain[k] === tool.id) return;
-    map.terrain[k] = tool.id;
+    const next = { ...map.terrain, [k]: tool.id };
+    if (occupant && !unitAllowedOn(next, map.obstacles, occupant.type, hex.c, hex.r)) {
+      setStatus(BLOCKED_MSG, true);
+      return;
+    }
+    map.terrain = next;
     repaintTerrain();
     return;
   }
   if (tool.kind === 'obstacle') {
-    if (tool.id === null) {
-      delete map.obstacles[k];
-    } else {
-      const u = map.units.find((x) => x.c === hex.c && x.r === hex.r);
-      if (u && !unitAllowedOn({ [k]: tool.id }, u.type, hex.c, hex.r)) {
-        setStatus(`${OBSTACLES[tool.id].label} : réservé à l’infanterie, hex occupé.`, true);
-        return;
-      }
-      map.obstacles[k] = tool.id;
+    const next = { ...map.obstacles };
+    if (tool.id === null) delete next[k];
+    else next[k] = tool.id;
+    if (occupant && !unitAllowedOn(map.terrain, next, occupant.type, hex.c, hex.r)) {
+      setStatus(BLOCKED_MSG, true);
+      return;
     }
+    map.obstacles = next;
     stage.requestDraw();
     return;
   }
   // unité : pose (en remplaçant l'occupant) ou retrait
   map.units = map.units.filter((x) => x.c !== hex.c || x.r !== hex.r);
   if (tool.type !== null) {
-    if (!unitAllowedOn(map.obstacles, tool.type, hex.c, hex.r)) {
-      setStatus(`${UNITS[tool.type].label} : cet obstacle est réservé à l’infanterie.`, true);
+    if (!unitAllowedOn(map.terrain, map.obstacles, tool.type, hex.c, hex.r)) {
+      setStatus(BLOCKED_MSG, true);
       stage.requestDraw();
       return;
     }
@@ -183,7 +189,9 @@ document.getElementById('btnExport').onclick = () => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'carte';
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  a.href = URL.createObjectURL(
+    new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+  );
   a.download = `${slug}.json`;
   a.click();
   URL.revokeObjectURL(a.href);

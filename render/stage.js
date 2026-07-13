@@ -166,6 +166,23 @@ export function createStage(canvas, getScene) {
         ctx.fill();
       }
     }
+    if (type === 'pont') {
+      ctx.strokeStyle = 'rgba(0,0,0,.55)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 15, y - 9);
+      ctx.lineTo(x + 15, y - 9); // parapets
+      ctx.moveTo(x - 15, y + 9);
+      ctx.lineTo(x + 15, y + 9);
+      ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = -1; i <= 1; i++) {
+        ctx.moveTo(x + i * 9, y - 9); // madriers
+        ctx.lineTo(x + i * 9, y + 9);
+      }
+      ctx.stroke();
+    }
   }
 
   function drawCounter(u, x, y, { sel, canOrder, lifted }) {

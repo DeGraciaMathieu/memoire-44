@@ -494,6 +494,10 @@ a.act:hover {
   background: #8ca061;
   color: #22261f;
 }
+#tip .thead.riviere {
+  background: #527d98;
+  color: #e8e2d0;
+}
 #tip .thead em {
   font-style: normal;
   font-size: 10px;

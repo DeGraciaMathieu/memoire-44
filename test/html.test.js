@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { calcHTML, cardHTML, forcePanelHTML, tipHTML } from '../render/html.js';
 import { cardById } from '../src/cards.js';
 import { createGame } from '../src/game.js';
+import { key } from '../src/hex.js';
 import { mulberry32 } from './helpers.js';
 
 const emptyUi = { targets: [], moves: [], orderable: [] };
@@ -85,6 +86,19 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   assert.match(hedge, /Sortie<b>1 hex puis arrêt/);
   assert.match(hedge, /pas de tir le tour d'entrée/);
   assert.match(hedge, /Ligne de mire<b>bloquée</);
+
+  // rivière puis pont, posés à la main (absents du scénario par défaut)
+  state.terrain[key(0, 4)] = 'riviere';
+  const river = tipHTML(state, emptyUi, { c: 0, r: 4 });
+  assert.match(river, /Rivière/);
+  assert.match(river, /Mouvement<b>infranchissable sans pont/);
+  assert.match(river, /Ligne de mire<b>libre/);
+
+  state.obstacles[key(0, 4)] = 'pont';
+  const bridge = tipHTML(state, emptyUi, { c: 0, r: 4 });
+  assert.match(bridge, /Pont/);
+  assert.match(bridge, /Franchissement<b>rend l'hex franchissable/);
+  assert.ok(!bridge.includes('Protection')); // aucun couvert sur un pont
 
   const withUnit = tipHTML(state, emptyUi, { c: 1, r: 7 }); // infanterie alliée
   assert.match(withUnit, /Infanterie/);

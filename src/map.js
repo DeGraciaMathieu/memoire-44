@@ -8,10 +8,13 @@ import { inBounds, key } from './hex.js';
 
 const SIDES = ['allies', 'axis'];
 
-// Une unité ne peut être posée sur un obstacle réservé à l'infanterie.
-export function unitAllowedOn(obstacles, type, c, r) {
-  const o = obstacles[key(c, r)];
-  return !o || !OBSTACLES[o].infantryOnly || type === 'inf';
+// Une unité ne peut être posée ni sur un terrain infranchissable sans pont
+// (rivière), ni sur un obstacle réservé à l'infanterie si elle n'en est pas.
+export function unitAllowedOn(terrain, obstacles, type, c, r) {
+  const t = TERRAIN[terrain[key(c, r)]];
+  const o = OBSTACLES[obstacles[key(c, r)]];
+  if (t?.impassable && !o?.makesPassable) return false;
+  return !o || !o.infantryOnly || type === 'inf';
 }
 
 // Carte → objet JSON compact : seuls les hexes non plaine sont conservés.
@@ -73,8 +76,11 @@ export function parseMap(raw) {
     if (!Number.isInteger(u.c) || !Number.isInteger(u.r) || !inBounds(u.c, u.r))
       fail(`unité hors plateau en « ${u.c},${u.r} »`);
     if (taken.has(key(u.c, u.r))) fail(`deux unités sur l'hex « ${u.c},${u.r} »`);
-    if (!unitAllowedOn(obstacles, u.type, u.c, u.r))
-      fail(`${UNITS[u.type].label} sur un obstacle réservé à l'infanterie en « ${u.c},${u.r} »`);
+    if (!unitAllowedOn(terrain, obstacles, u.type, u.c, u.r))
+      fail(
+        `emplacement interdit pour ${UNITS[u.type].label} en « ${u.c},${u.r} » ` +
+          `(rivière sans pont ou obstacle réservé à l'infanterie)`,
+      );
     taken.add(key(u.c, u.r));
     units.push({ side: u.side, type: u.type, c: u.c, r: u.r });
   }

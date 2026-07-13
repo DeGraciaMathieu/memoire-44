@@ -82,7 +82,13 @@ export function tipHTML(state, ui, hex) {
     <div class="tbody">
       <div class="row">Dés retirés à l'assaillant<b>${reductionLabel(t.dice)}</b></div>
       <div class="row">Mouvement<b>${
-        t.enterAdjacentOnly ? 'entrée adjacente, stoppe net' : t.stops ? 'stoppe net' : 'libre'
+        t.impassable
+          ? 'infranchissable sans pont'
+          : t.enterAdjacentOnly
+            ? 'entrée adjacente, stoppe net'
+            : t.stops
+              ? 'stoppe net'
+              : 'libre'
       }</b></div>${
         t.exitAdjacentOnly ? `<div class="row">Sortie<b>1 hex puis arrêt</b></div>` : ''
       }${t.noFightOnEnter ? `<div class="row">Combat<b>pas de tir le tour d'entrée</b></div>` : ''}
@@ -98,6 +104,8 @@ export function tipHTML(state, ui, hex) {
       <div class="uname">${o.label}</div>`;
     if (o.dice.def || o.dice.defArmor || o.dice.defArt)
       h += `<div class="row">Protection<b>${reductionLabel(o.dice)}, non cumulée</b></div>`;
+    if (o.makesPassable)
+      h += `<div class="row">Franchissement<b>rend l'hex franchissable</b></div>`;
     if (o.infantryOnly) h += `<div class="row">Accès<b>infanterie seulement</b></div>`;
     if (o.fixesArtillery) h += `<div class="row">Artillerie<b>retranchée, ne sort plus</b></div>`;
     if (o.ignoreFirstFlag)

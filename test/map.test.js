@@ -45,15 +45,25 @@ test('parseMap rejette les cartes invalides avec un message en français', () =>
   bad((d) => d.units.push({ side: 'allies', type: 'inf', c: -1, r: 8 })); // hors plateau
   bad((d) => (d.units = d.units.filter((u) => u.side !== 'axis'))); // camp vide
   bad((d) => (d.units[1] = { side: 'allies', type: 'arm', c: 6, r: 0 })); // blindé sur bunker
+  bad((d) => (d.terrain[key(1, 7)] = 'riviere')); // unité sur une rivière sans pont
   assert.throws(() => parseMap('{pas du json'), /Carte invalide/);
+
+  // la même unité sur la rivière devient valide dès qu'un pont est posé
+  const bridged = sampleMap();
+  bridged.terrain[key(1, 7)] = 'riviere';
+  bridged.obstacles[key(1, 7)] = 'pont';
+  assert.equal(parseMap(bridged).obstacles[key(1, 7)], 'pont');
 });
 
-test('unitAllowedOn réserve bunker et antichar à l’infanterie', () => {
-  const obstacles = { [key(3, 3)]: 'bunker', [key(4, 4)]: 'sacs' };
-  assert.equal(unitAllowedOn(obstacles, 'inf', 3, 3), true);
-  assert.equal(unitAllowedOn(obstacles, 'arm', 3, 3), false);
-  assert.equal(unitAllowedOn(obstacles, 'art', 4, 4), true); // sacs : accès libre
-  assert.equal(unitAllowedOn(obstacles, 'arm', 0, 0), true); // hex sans obstacle
+test('unitAllowedOn : obstacles réservés à l’infanterie et rivière sans pont', () => {
+  const terrain = { [key(5, 5)]: 'riviere', [key(6, 6)]: 'riviere' };
+  const obstacles = { [key(3, 3)]: 'bunker', [key(4, 4)]: 'sacs', [key(6, 6)]: 'pont' };
+  assert.equal(unitAllowedOn(terrain, obstacles, 'inf', 3, 3), true);
+  assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 3, 3), false);
+  assert.equal(unitAllowedOn(terrain, obstacles, 'art', 4, 4), true); // sacs : accès libre
+  assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 0, 0), true); // hex sans obstacle
+  assert.equal(unitAllowedOn(terrain, obstacles, 'inf', 5, 5), false); // rivière sans pont
+  assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 6, 6), true); // rivière avec pont
 });
 
 test('setupFromMap matérialise des unités neuves sans partager la carte', () => {
