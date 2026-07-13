@@ -19,6 +19,7 @@ export const COL = {
   axis: '#7A736B',
   ink: '#E8E2D0',
   line: '#8C8264',
+  objective: '#C9A227',
 };
 
 // Nuances de vert autour de COL.plaine pour casser la monotonie du fond.

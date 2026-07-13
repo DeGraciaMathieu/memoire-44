@@ -72,6 +72,20 @@ export function buildBoardLayer(state, dpr) {
         ctx.fillText('· · ·', p.x, p.y - 1);
         ctx.fillText('· ·', p.x, p.y + 9);
       }
+      // pastille dorée en haut de l'hex : tuile objectif (médaille à occuper)
+      if (state.objectives?.[key(c, r)]) {
+        ctx.fillStyle = COL.objective;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y - 16, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,.45)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(0,0,0,.75)';
+        ctx.font = 'bold 10px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('★', p.x, p.y - 12.5);
+      }
     }
   return layer;
 }

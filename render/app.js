@@ -20,7 +20,7 @@ import {
 } from '../src/game.js';
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
-import { diceFor, targetsFor } from '../src/combat.js';
+import { diceFor, medalCount, targetsFor } from '../src/combat.js';
 import { aiBreakthroughTarget, aiChooseMoves, aiPickCard, aiTakesGround } from '../src/ai.js';
 import { createUiState } from './uiState.js';
 import { buildBoardLayer } from './board.js';
@@ -61,6 +61,12 @@ attachInput(canvas, {
   },
 });
 
+// Totaux affichés : médailles de destruction + objectifs occupés.
+const medalTotals = () => ({
+  allies: medalCount(state, 'allies'),
+  axis: medalCount(state, 'axis'),
+});
+
 /* --- bus → rendu ------------------------------------------------------- */
 
 function wireBus(bus) {
@@ -82,6 +88,7 @@ function wireBus(bus) {
         ? `  ${label} avance de ${cost} hex (${TERRAIN[state.terrain[key(unit.c, unit.r)]].label.toLowerCase()}).`
         : `  Axe · ${label} avance de ${cost} hex.`,
     );
+    hud.setMedals(medalTotals()); // un objectif a pu changer de main
     stage.requestDraw();
   });
   bus.on('combatResolved', (o) => {
@@ -102,6 +109,7 @@ function wireBus(bus) {
         o.attacker.side === 'allies' ? 'good' : 'bad',
       );
     }
+    hud.setMedals(medalTotals()); // un repli a pu prendre ou libérer un objectif
   });
   bus.on('groundTaken', ({ unit }) => {
     const label = UNITS[unit.type].label;
@@ -110,9 +118,10 @@ function wireBus(bus) {
         ? `  ${label} fait une prise de terrain.`
         : `  Axe · ${label} fait une prise de terrain.`,
     );
+    hud.setMedals(medalTotals());
     stage.requestDraw();
   });
-  bus.on('medalAwarded', () => hud.setMedals(state));
+  bus.on('medalAwarded', () => hud.setMedals(medalTotals()));
   bus.on('obstacleRemoved', ({ obstacle }) => {
     hud.log(`  ${OBSTACLES[obstacle].label} abandonnés — protection perdue.`);
     stage.requestDraw();
@@ -122,7 +131,7 @@ function wireBus(bus) {
 /* --- actions du joueur (appelées par input.js et hand.js) --------------- */
 
 function refresh() {
-  hud.setMedals(state);
+  hud.setMedals(medalTotals());
   stage.requestDraw();
   hand.render(state, ui);
   if (state.winner) {
@@ -336,4 +345,4 @@ mapFile.onchange = async () => {
   startGame(`Carte « ${currentMap.name || file.name} ». Les Alliés ouvrent le feu.`);
 };
 
-startGame('Secteur bocage. 4 médailles pour l’emporter.');
+startGame('Secteur bocage. 6 médailles pour l’emporter — tenez les villages objectifs.');

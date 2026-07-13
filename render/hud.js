@@ -38,9 +38,10 @@ export function createHud() {
     els.tray.innerHTML = '';
   }
 
-  function setMedals(state) {
-    els.mAllies.textContent = state.medals.allies;
-    els.mAxis.textContent = state.medals.axis;
+  // Reçoit les totaux déjà calculés (destructions + objectifs, src/combat.js).
+  function setMedals({ allies, axis }) {
+    els.mAllies.textContent = allies;
+    els.mAxis.textContent = axis;
   }
 
   function setPrompt(txt) {
