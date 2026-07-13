@@ -60,6 +60,13 @@ test('la forêt bloque la ligne de mire : plus de tir ni de cible à travers', (
   state.terrain[key(4, 4)] = 'plaine';
   assert.ok(hasLineOfSight(state, art, enemy));
   assert.equal(diceFor(state, art, enemy), 2);
+  // un village interposé coupe aussi la ligne de mire
+  state.terrain[key(4, 4)] = 'village';
+  assert.ok(!hasLineOfSight(state, art, enemy));
+  assert.equal(diceFor(state, art, enemy), 0);
+  // une colline, non
+  state.terrain[key(4, 4)] = 'colline';
+  assert.ok(hasLineOfSight(state, art, enemy));
 });
 
 test("l'hex du tireur et celui de la cible ne bloquent pas la ligne de mire", () => {

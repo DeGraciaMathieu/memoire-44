@@ -9,7 +9,7 @@ export const TERRAIN = {
   plaine: { label: 'Plaine', dice: { def: 0 }, stops: false },
   foret: { label: 'Forêt', dice: { def: 1, defArmor: 2 }, stops: true, blocksSight: true },
   colline: { label: 'Colline', dice: { def: 1 }, stops: true },
-  village: { label: 'Village', dice: { def: 1, defArmor: 2 }, stops: true },
+  village: { label: 'Village', dice: { def: 1, defArmor: 2 }, stops: true, blocksSight: true },
 };
 
 export const UNITS = {
