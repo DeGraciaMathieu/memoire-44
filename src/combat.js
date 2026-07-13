@@ -1,8 +1,23 @@
 // Règles de tir et résolution du combat.
 
 import { FACES, H, MEDALS_TO_WIN, TERRAIN, UNITS } from './config.js';
-import { hexDistance, key, neighbors } from './hex.js';
+import { hexDistance, hexLine, key, neighbors } from './hex.js';
 import { unitAt } from './movement.js';
+
+// Un terrain blocksSight (forêt) entre le tireur et la cible coupe le tir.
+// Les hexes du tireur et de la cible ne comptent pas. Quand la ligne longe
+// exactement une arête, le tir n'est bloqué que si les DEUX hexes riverains
+// bloquent (d'où les deux tracés nudge ±1) ; le hors-plateau ne bloque pas.
+export function hasLineOfSight(state, from, to) {
+  const clear = (nudge) =>
+    hexLine(from, to, nudge)
+      .slice(1, -1)
+      .every((h) => {
+        const t = state.terrain[key(h.c, h.r)];
+        return !t || !TERRAIN[t].blocksSight;
+      });
+  return clear(1) || clear(-1);
+}
 
 // Dés retirés par le terrain du défenseur (les blindés subissent defArmor).
 export function defenseReduction(state, attackerType, target) {
@@ -13,6 +28,7 @@ export function defenseReduction(state, attackerType, target) {
 export function diceFor(state, unit, target) {
   const base = UNITS[unit.type].dice[hexDistance(unit, target) - 1];
   if (base === undefined) return 0;
+  if (!hasLineOfSight(state, unit, target)) return 0;
   return Math.max(1, base - defenseReduction(state, unit.type, target));
 }
 

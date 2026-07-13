@@ -17,6 +17,45 @@ export function hexDistance(a, b) {
   return Math.max(Math.abs(ax - bx), Math.abs(ay - by), Math.abs(az - bz));
 }
 
+function cubeRound(x, y, z) {
+  let rx = Math.round(x);
+  let ry = Math.round(y);
+  let rz = Math.round(z);
+  const dx = Math.abs(rx - x);
+  const dy = Math.abs(ry - y);
+  const dz = Math.abs(rz - z);
+  if (dx > dy && dx > dz) rx = -ry - rz;
+  else if (dy > dz) ry = -rx - rz;
+  else rz = -rx - ry;
+  return [rx, ry, rz];
+}
+
+const cubeToOffset = (x, y, z) => ({ c: x + (z - (z & 1)) / 2, r: z });
+
+// Hexes traversés du centre de a au centre de b, extrémités incluses.
+// nudge (±1) écarte la ligne d'un epsilon pour trancher les cas où elle
+// longe exactement une arête : chaque signe choisit un des deux hexes riverains.
+export function hexLine(a, b, nudge = 1) {
+  const n = hexDistance(a, b);
+  const [ax, ay, az] = toCube(a.c, a.r);
+  const [bx, by, bz] = toCube(b.c, b.r);
+  const e = nudge * 1e-6;
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const t = n ? i / n : 0;
+    out.push(
+      cubeToOffset(
+        ...cubeRound(
+          ax + (bx - ax) * t + e,
+          ay + (by - ay) * t + 2 * e,
+          az + (bz - az) * t - 3 * e,
+        ),
+      ),
+    );
+  }
+  return out;
+}
+
 export function neighbors(c, r) {
   const d =
     r & 1

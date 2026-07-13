@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { defenseReduction, diceFor, resolveCombat, rollDice, targetsFor } from '../src/combat.js';
+import {
+  defenseReduction,
+  diceFor,
+  hasLineOfSight,
+  resolveCombat,
+  rollDice,
+  targetsFor,
+} from '../src/combat.js';
 import { createBus } from '../src/events.js';
 import { FACES, W, H } from '../src/config.js';
 import { key } from '../src/hex.js';
@@ -40,6 +47,50 @@ test("targetsFor : l'artillerie ne tire pas après un mouvement, l'infanterie ap
   const foot = inf('i', 'allies', 6, 5);
   assert.equal(targetsFor({ ...state, units: [foot, enemy] }, foot, 1).length, 1);
   assert.equal(targetsFor({ ...state, units: [foot, enemy] }, foot, 2).length, 0);
+});
+
+test('la forêt bloque la ligne de mire : plus de tir ni de cible à travers', () => {
+  const art = { id: 'a', side: 'allies', type: 'art', c: 2, r: 4, figs: 2 };
+  const enemy = inf('e', 'axis', 6, 4);
+  const state = battleState({ terrain: { [key(4, 4)]: 'foret' }, units: [art, enemy] });
+  assert.ok(!hasLineOfSight(state, art, enemy));
+  assert.equal(diceFor(state, art, enemy), 0);
+  assert.equal(targetsFor(state, art, 0).length, 0);
+  // sans la forêt, le même tir passe (portée 4 → 2 dés)
+  state.terrain[key(4, 4)] = 'plaine';
+  assert.ok(hasLineOfSight(state, art, enemy));
+  assert.equal(diceFor(state, art, enemy), 2);
+});
+
+test("l'hex du tireur et celui de la cible ne bloquent pas la ligne de mire", () => {
+  const shooter = inf('a', 'allies', 4, 4);
+  const target = inf('e', 'axis', 6, 4);
+  const state = battleState({
+    terrain: { [key(4, 4)]: 'foret', [key(6, 4)]: 'foret' },
+    units: [shooter, target],
+  });
+  // tireur en forêt, cible en forêt, plaine entre les deux : tir possible
+  assert.ok(hasLineOfSight(state, shooter, target));
+  assert.equal(diceFor(state, shooter, target), 1); // 2 dés à portée 2, −1 (forêt)
+});
+
+test('ligne longeant une arête : bloquée seulement si les DEUX hexes riverains bloquent', () => {
+  const shooter = inf('a', 'allies', 5, 5);
+  const target = inf('e', 'axis', 5, 3);
+  // la ligne (5,5) → (5,3) longe l'arête entre (5,4) et (6,4)
+  const one = battleState({ terrain: { [key(5, 4)]: 'foret' }, units: [shooter, target] });
+  assert.ok(hasLineOfSight(one, shooter, target));
+  const both = battleState({
+    terrain: { [key(5, 4)]: 'foret', [key(6, 4)]: 'foret' },
+    units: [shooter, target],
+  });
+  assert.ok(!hasLineOfSight(both, shooter, target));
+  // le bord du plateau ne bloque jamais : arête entre (0,1) et le hors-plateau
+  const rim = battleState({
+    terrain: { [key(0, 1)]: 'foret' },
+    units: [inf('a', 'allies', 0, 0), inf('e', 'axis', 0, 2)],
+  });
+  assert.ok(hasLineOfSight(rim, { c: 0, r: 0 }, { c: 0, r: 2 }));
 });
 
 test('rollDice est déterministe avec un RNG injecté et ne tire que des faces valides', () => {
