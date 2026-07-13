@@ -23,11 +23,13 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 | `src/sectors.js`        | `SECTORS`, `sectorsOf`, `inSector` (hexes à cheval)                                                                                                    | —                                                      |
 | `src/cards.js`          | `CARDS`, `cardById`, `buildDeck` (24 cartes)                                                                                                           | —                                                      |
 | `src/scenario.js`       | `scenario()` — terrain initial + 14 unités                                                                                                             | `config`, `hex`                                        |
-| `src/movement.js`       | `unitAt`, `obstacleAt`, `reachable`                                                                                                                    | `config`, `hex`                                        |
+| `src/map.js`            | Cartes de l'éditeur : `serializeMap`, `parseMap` (validation), `setupFromMap`, `unitAllowedOn`                                                         | `config`, `hex`                                        |
+| `src/movement.js`       | `unitAt`, `obstacleAt`, `dropObstacleOnExit`, `reachable`                                                                                              | `config`, `hex`                                        |
 | `src/combat.js`         | `reductionOf`, `defenseReduction`, `diceFor`, `targetsFor`, `hasLineOfSight`, `rollDice`, `resolveCombat`                                              | `config`, `hex`, `movement`                            |
-| `src/game.js`           | `createGame` + séquence : `drawCards`, `playCard`, `moveUnit`, `attackUnit`, `finishUnit`, `endPlayerTurn`, `endAxisTurn`, `orderableUnits`, `shuffle` | tous les modules `src/`                                |
+| `src/game.js`           | `createGame({ rng, map })` + séquence : `drawCards`, `playCard`, `moveUnit`, `attackUnit`, `finishUnit`, `endPlayerTurn`, `endAxisTurn`, `orderableUnits`, `shuffle` | tous les modules `src/`                                |
 | `src/ai.js`             | `aiPickCard`, `aiChooseMoves` (+ `aiPlanUnit` privé)                                                                                                   | `config`, `hex`, `cards`, `game`, `movement`, `combat` |
-| `render/app.js`         | Chef d'orchestre : câble bus → rendu, actions joueur, tempo du tour Axe, cycle de vie (`startGame`)                                                    | `src/*` + tous les modules `render/`                   |
+| `render/app.js`         | Chef d'orchestre : câble bus → rendu, actions joueur, tempo du tour Axe, cycle de vie (`startGame`), chargement d'une carte JSON                       | `src/*` + tous les modules `render/`                   |
+| `render/editor.js`      | Éditeur de cartes (`editor.html`) : palette d'outils, peinture du plateau, export/import JSON                                                          | `src/map`, `board`, `stage`, `gfx`, `uiState`, `html`  |
 | `render/stage.js`       | Canvas : DPR, rendu à la demande (rAF coalescé), scène dynamique, `drawCounter`                                                                        | `gfx`, `html`, `src/cards`, `src/sectors`              |
 | `render/board.js`       | `buildBoardLayer` — raster statique du plateau, 1× par partie                                                                                          | `gfx`, `src/hex`, `src/sectors`                        |
 | `render/hud.js`         | Journal, plateau de dés, médailles, invite, infobulle (DOM)                                                                                            | `html`                                                 |
@@ -38,38 +40,39 @@ Deux couches strictement séparées. **Règle d'or** : « ce qui se passe » →
 | `render/html.js`        | **PUR** : fragments HTML en chaînes (`cardHTML`, `tipHTML`, `calcHTML`, `forcePanelHTML`) + `SYM`, `UNIT_GLYPH`, `SIDE_FR`                             | `src` (config, hex, sectors, movement, combat)         |
 | `render/gfx.js`         | **PUR** : `LAYOUT`, `COL`, `boardSize`, `hexCenter`, `hexPath`, `pickHex`, `sectorLinesX`, `sectorLabelsX`                                             | `src/config`                                           |
 
-## L'objet `state` (créé par `createGame({ rng })`, `src/game.js`)
+## L'objet `state` (créé par `createGame({ rng, map })`, `src/game.js` — `map` : carte validée par `parseMap`, défaut = `scenario()`)
 
-| Champ        | Contenu                                                                          |
-| ------------ | -------------------------------------------------------------------------------- |
-| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage' }`                   |
-| `obstacles`  | `{ "c,r": 'bunker'\|'antichar' }` — obstacles posés sur le terrain (`OBSTACLES`) |
-| `units`      | `[{ id, side, type, c, r, figs, acted }]`                                        |
-| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14              |
-| `hands`      | `{ allies: [cardId], axis: [cardId] }`                                           |
-| `medals`     | `{ allies, axis }` — victoire à `MEDALS_TO_WIN` (4)                              |
-| `turn`       | `'allies'` \| `'axis'`                                                           |
-| `phase`      | `'card'` (jouer une carte) \| `'orders'` (activer les unités)                    |
-| `playedCard` | id de la carte en cours, ou `null`                                               |
-| `ordersLeft` | ordres restants sur la carte jouée                                               |
-| `moved`      | `{ unitId: coût }` des déplacements de l'activation en cours                     |
-| `winner`     | `null` \| `'allies'` \| `'axis'`                                                 |
-| `bus`        | bus d'événements (`createBus()`)                                                 |
-| `rng`        | source d'aléa injectable (défaut `Math.random`)                                  |
+| Champ        | Contenu                                                                                                                           |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| `terrain`    | `{ "c,r": 'plaine'\|'foret'\|'colline'\|'village'\|'bocage' }`                                                                    |
+| `obstacles`  | `{ "c,r": 'bunker'\|'antichar'\|'sacs' }` — obstacles posés sur le terrain (`OBSTACLES`), mutable : les sacs de sable se retirent |
+| `units`      | `[{ id, side, type, c, r, figs, acted }]`                                                                                         |
+| `decks`      | `{ allies: [cardId], axis: [cardId] }` — répartition initiale 10/14                                                               |
+| `hands`      | `{ allies: [cardId], axis: [cardId] }`                                                                                            |
+| `medals`     | `{ allies, axis }` — victoire à `MEDALS_TO_WIN` (4)                                                                               |
+| `turn`       | `'allies'` \| `'axis'`                                                                                                            |
+| `phase`      | `'card'` (jouer une carte) \| `'orders'` (activer les unités)                                                                     |
+| `playedCard` | id de la carte en cours, ou `null`                                                                                                |
+| `ordersLeft` | ordres restants sur la carte jouée                                                                                                |
+| `moved`      | `{ unitId: coût }` des déplacements de l'activation en cours                                                                      |
+| `winner`     | `null` \| `'allies'` \| `'axis'`                                                                                                  |
+| `bus`        | bus d'événements (`createBus()`)                                                                                                  |
+| `rng`        | source d'aléa injectable (défaut `Math.random`)                                                                                   |
 
 L'état d'interaction (sélection, drag, hover, `justDrew`, `modalOpen`) vit dans
 `render/uiState.js`, **pas** dans `state` : purement visuel ou dérivable de `src/`.
 
 ## Événements du bus (seul canal règles → rendu)
 
-| Événement        | Émis par                    | Payload                                                                                    | Consommé par                                                                    |
-| ---------------- | --------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `cardsDrawn`     | `game.js` `drawCards`       | `{ side, count }`                                                                          | `app.js` → animation de pioche                                                  |
-| `cardPlayed`     | `game.js` `playCard`        | `{ side, card, ordersLeft }`                                                               | `app.js` → journal                                                              |
-| `unitMoved`      | `game.js` `moveUnit`        | `{ unit, from, cost }`                                                                     | `app.js` → journal + redraw                                                     |
-| `combatResolved` | `game.js` `attackUnit`      | `{ attacker, defender, range, baseDice, reduction, dice, figsBefore, terrainKey, report }` | `app.js` → dés + journal ; la modale reçoit le même outcome en valeur de retour |
-| `medalAwarded`   | `combat.js` `resolveCombat` | `{ side, medals }`                                                                         | `app.js` → compteurs de médailles                                               |
-| `gameWon`        | `combat.js` `resolveCombat` | `{ side }`                                                                                 | aucun (l'invite lit `state.winner`)                                             |
+| Événement         | Émis par                                                               | Payload                                                                                                 | Consommé par                                                                    |
+| ----------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `cardsDrawn`      | `game.js` `drawCards`                                                  | `{ side, count }`                                                                                       | `app.js` → animation de pioche                                                  |
+| `cardPlayed`      | `game.js` `playCard`                                                   | `{ side, card, ordersLeft }`                                                                            | `app.js` → journal                                                              |
+| `unitMoved`       | `game.js` `moveUnit`                                                   | `{ unit, from, cost }`                                                                                  | `app.js` → journal + redraw                                                     |
+| `combatResolved`  | `game.js` `attackUnit`                                                 | `{ attacker, defender, range, baseDice, reduction, dice, figsBefore, terrainKey, obstacleKey, report }` | `app.js` → dés + journal ; la modale reçoit le même outcome en valeur de retour |
+| `medalAwarded`    | `combat.js` `resolveCombat`                                            | `{ side, medals }`                                                                                      | `app.js` → compteurs de médailles                                               |
+| `gameWon`         | `combat.js` `resolveCombat`                                            | `{ side }`                                                                                              | aucun (l'invite lit `state.winner`)                                             |
+| `obstacleRemoved` | `movement.js` `dropObstacleOnExit` (via `moveUnit` et `resolveCombat`) | `{ c, r, obstacle }`                                                                                    | `app.js` → journal + redraw                                                     |
 
 Tout nouvel événement doit être ajouté à ce tableau (émetteur, payload, consommateurs).
 
@@ -93,6 +96,8 @@ Tout nouvel événement doit être ajouté à ce tableau (émetteur, payload, co
 | Règle de tir / résolution de combat               | `src/combat.js` + test                 |
 | Nouvelle carte / composition de pioche            | `src/cards.js` + test                  |
 | Scénario, mise en place                           | `src/scenario.js` + test               |
+| Format / validation d'une carte JSON              | `src/map.js` + test                    |
+| Outils et export de l'éditeur de cartes           | `render/editor.js` (+ `editor.html`)   |
 | Séquence de tour, nouvelle action de jeu          | `src/game.js` + test (+ événement bus) |
 | Comportement de l'IA                              | `src/ai.js` + test                     |
 | Géométrie hexagonale                              | `src/hex.js` + test                    |
