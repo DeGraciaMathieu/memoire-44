@@ -4,7 +4,7 @@
 
 import { W, H } from '../src/config.js';
 
-export const LAYOUT = { size: 34, mx: 26, my: 26 };
+export const LAYOUT = { size: 42, mx: 26, my: 26 };
 
 export const COL = {
   plaine: '#B5C98C',
