@@ -1,9 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aiChooseMoves, aiPickCard, aiTakesGround } from '../src/ai.js';
+import {
+  aiAirHexes,
+  aiBarrageTarget,
+  aiChooseMoves,
+  aiMedicsTarget,
+  aiPickCard,
+  aiTakesGround,
+} from '../src/ai.js';
 import { createGame } from '../src/game.js';
 import { parseMap } from '../src/map.js';
-import { key } from '../src/hex.js';
+import { hexDistance, key } from '../src/hex.js';
 import { mulberry32 } from './helpers.js';
 
 // Plateau sur mesure pour isoler une préférence de l'IA.
@@ -55,6 +62,62 @@ test("maintien d'objectif : l'unité qui tient la tuile ne la quitte pas", () =>
   const [plan] = aiChooseMoves(state, 'recon');
   assert.deepEqual({ c: plan.dest.c, r: plan.dest.r }, { c: 5, r: 4 });
   assert.equal(plan.dest.cost, 0);
+});
+
+test('aiPickCard préfère le barrage quand une médaille est à portée de dés', () => {
+  const state = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 1, r: 0 },
+      { side: 'allies', type: 'inf', c: 12, r: 8 },
+    ],
+  });
+  state.units[1].figs = 1; // 4 dés suffisent à l'achever
+  state.hands.axis = ['atk-d', 'barrage'];
+  assert.equal(aiPickCard(state), 'barrage');
+});
+
+test("aiBarrageTarget vise l'unité que 4 dés peuvent achever", () => {
+  const state = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 5, r: 2 },
+      { side: 'allies', type: 'inf', c: 4, r: 8 },
+      { side: 'allies', type: 'inf', c: 6, r: 8 },
+    ],
+  });
+  state.units[2].figs = 1;
+  assert.equal(aiBarrageTarget(state), state.units[2]);
+});
+
+test("aiAirHexes couvre le plus d'unités alliées avec une chaîne d'hexs contigus", () => {
+  const state = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 0, r: 0 },
+      { side: 'allies', type: 'inf', c: 5, r: 8 },
+      { side: 'allies', type: 'inf', c: 6, r: 8 },
+      { side: 'allies', type: 'inf', c: 12, r: 0 },
+    ],
+  });
+  const strike = aiAirHexes(state);
+  assert.equal(strike.hexes.length, 4);
+  assert.equal(strike.units, 2); // la paire, pas l'unité isolée
+  // chaque hex de la chaîne touche un hex choisi avant lui
+  for (let i = 1; i < strike.hexes.length; i++) {
+    assert.ok(strike.hexes.slice(0, i).some((h) => hexDistance(h, strike.hexes[i]) === 1));
+  }
+});
+
+test("aiMedicsTarget répare l'unité la plus amochée, ou personne", () => {
+  const state = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 1, r: 1 },
+      { side: 'axis', type: 'arm', c: 3, r: 1 },
+      { side: 'allies', type: 'inf', c: 5, r: 8 },
+    ],
+  });
+  assert.equal(aiMedicsTarget(state), null); // personne d'amoché
+  state.units[0].figs = 3; // 1 perte
+  state.units[1].figs = 1; // 2 pertes
+  assert.equal(aiMedicsTarget(state), state.units[1]);
 });
 
 test('aiTakesGround : ne lâche jamais un objectif tenu, avance toujours sur un objectif', () => {

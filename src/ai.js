@@ -1,9 +1,9 @@
 // IA de l'Axe — ne parle qu'aux règles. Gloutonne, évaluation 1 coup.
 
 import { TERRAIN, UNITS } from './config.js';
-import { hexDistance, key } from './hex.js';
+import { hexDistance, key, neighbors } from './hex.js';
 import { cardById } from './cards.js';
-import { orderableUnits } from './game.js';
+import { barrageTargets, medicTargets, orderableUnits, validAirTarget } from './game.js';
 import { reachable, unitAt } from './movement.js';
 import { defenseReduction, diceFor, targetsFor } from './combat.js';
 
@@ -19,25 +19,101 @@ function openObjectives(state) {
     .filter((h) => unitAt(state, h.c, h.r)?.side !== 'axis');
 }
 
+// Valeur d'une carte en main : unités activables + celles qui ont déjà une
+// cible ; les cartes actions sont évaluées par leur meilleure frappe.
+function cardScore(state, id) {
+  const cd = cardById(id);
+  if (cd.action === 'barrage') {
+    let s = 0;
+    for (const e of barrageTargets(state, 'axis')) {
+      const exp = cd.dice * P_HIT[e.type];
+      s = Math.max(s, exp * 2 + (exp >= e.figs ? 8 : 0));
+    }
+    return s;
+  }
+  if (cd.action === 'air') {
+    const strike = aiAirHexes(state);
+    return strike ? strike.units * 3 : 0;
+  }
+  if (cd.action === 'medics') {
+    const worst = aiMedicsTarget(state);
+    return worst ? (UNITS[worst.type].figs - worst.figs) * 2 : -1;
+  }
+  if (cd.action === 'contre') {
+    const last = state.lastCard.allies && cardById(state.lastCard.allies);
+    return cardScore(state, last && last.action !== 'contre' ? last.id : 'recon');
+  }
+  const us = orderableUnits(state, 'axis', id);
+  let s = Math.min(us.length, cd.n) * 2;
+  for (const u of us.slice(0, cd.n)) {
+    if (targetsFor(state, u, 0).length) s += 3;
+  }
+  return s;
+}
+
 export function aiPickCard(state) {
   const hand = state.hands.axis;
   let best = hand[0];
-  let bestScore = -1;
+  let bestScore = -Infinity;
   for (const id of hand) {
-    const cd = cardById(id);
-    const us = orderableUnits(state, 'axis', id);
-    const n = Math.min(us.length, cd.n);
-    // valeur = unités activables + celles qui ont déjà une cible
-    let s = n * 2;
-    for (const u of us.slice(0, cd.n)) {
-      if (targetsFor(state, u, 0).length) s += 3;
-    }
+    const s = cardScore(state, id);
     if (s > bestScore) {
       bestScore = s;
       best = id;
     }
   }
   return best;
+}
+
+// Cible du barrage : maximiser les touches attendues, bonus si les 4 dés
+// peuvent détruire l'unité (médaille).
+export function aiBarrageTarget(state) {
+  let best = null;
+  let bestScore = -Infinity;
+  for (const e of barrageTargets(state, 'axis')) {
+    const exp = cardById('barrage').dice * P_HIT[e.type];
+    const s = exp + (exp >= e.figs ? 2 : 0);
+    if (s > bestScore) {
+      bestScore = s;
+      best = e;
+    }
+  }
+  return best;
+}
+
+// Attaque aérienne : fait grossir une chaîne d'hexs autour de chaque unité
+// alliée, en absorbant d'abord les hexs occupés par l'ennemi, et garde la
+// chaîne qui couvre le plus d'unités. Renvoie { hexes, units } ou null.
+export function aiAirHexes(state) {
+  const card = cardById('air');
+  const enemies = state.units.filter((u) => u.side === 'allies');
+  let best = null;
+  for (const seed of enemies) {
+    const hexes = [{ c: seed.c, r: seed.r }];
+    while (hexes.length < card.hexes) {
+      const options = hexes
+        .flatMap((h) => neighbors(h.c, h.r))
+        .filter((h) => validAirTarget(hexes, h));
+      if (!options.length) break;
+      const withEnemy = options.find((h) => unitAt(state, h.c, h.r)?.side === 'allies');
+      hexes.push(withEnemy ?? options[0]);
+    }
+    const units = hexes.filter((h) => unitAt(state, h.c, h.r)?.side === 'allies').length;
+    if (!best || units > best.units) best = { hexes, units };
+  }
+  return best;
+}
+
+// Soigner l'unité la plus amochée ; à pertes égales, l'infanterie
+// (2 faces sur 6, la meilleure espérance de réparation).
+export function aiMedicsTarget(state) {
+  const hurt = medicTargets(state, 'axis');
+  if (!hurt.length) return null;
+  return hurt.sort(
+    (a, b) =>
+      UNITS[b.type].figs - b.figs - (UNITS[a.type].figs - a.figs) ||
+      (b.type === 'inf') - (a.type === 'inf'),
+  )[0];
 }
 
 export function aiChooseMoves(state, cardId) {
