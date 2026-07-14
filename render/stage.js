@@ -4,10 +4,14 @@
 import { W, H } from '../src/config.js';
 import { cardSectors, sectorsOf } from '../src/sectors.js';
 import { cardById } from '../src/cards.js';
+import { obstacleAt } from '../src/movement.js';
 import { UNIT_GLYPH } from './html.js';
 import { COL, LAYOUT, boardSize, hexCenter, hexPath, sectorLabelsX, sectorLinesX } from './gfx.js';
 
 export const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+// Glyphe de la pastille d'obstacle affichée sur le pion qui l'occupe.
+const OBSTACLE_BADGE = { bunker: '⌂', antichar: '✕', sacs: '◠', pont: '=', barbeles: '#' };
 
 export function createStage(canvas, getScene) {
   const { width, height } = boardSize();
@@ -170,10 +174,16 @@ export function createStage(canvas, getScene) {
         state.turn === 'allies' &&
         ui.orderable.some((x) => x.id === u.id) &&
         !u.acted;
-      drawCounter(u, p.x, p.y, { sel, canOrder });
+      drawCounter(u, p.x, p.y, { sel, canOrder, obstacle: obstacleAt(state, u.c, u.r) });
     }
     if (ui.drag) {
-      drawCounter(ui.drag.unit, ui.drag.x, ui.drag.y, { sel: true, canOrder: true, lifted: true });
+      const u = ui.drag.unit;
+      drawCounter(u, ui.drag.x, ui.drag.y, {
+        sel: true,
+        canOrder: true,
+        lifted: true,
+        obstacle: obstacleAt(state, u.c, u.r),
+      });
     }
 
     // explosions par-dessus tout, puis prochaine frame tant qu'il en reste
@@ -280,7 +290,7 @@ export function createStage(canvas, getScene) {
     }
   }
 
-  function drawCounter(u, x, y, { sel, canOrder, lifted }) {
+  function drawCounter(u, x, y, { sel, canOrder, lifted, obstacle }) {
     ctx.save();
     ctx.translate(x, y);
     if (lifted) {
@@ -306,6 +316,19 @@ export function createStage(canvas, getScene) {
       ctx.beginPath();
       ctx.arc(-13 + i * 8.5, 12, 2.6, 0, 7);
       ctx.fill();
+    }
+    // pastille au coin supérieur droit : rappel de l'obstacle que le pion cache
+    if (obstacle) {
+      ctx.fillStyle = COL.ink;
+      ctx.strokeStyle = 'rgba(0,0,0,.45)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(21, -18, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,.75)';
+      ctx.font = 'bold 13px "Courier New"';
+      ctx.fillText(OBSTACLE_BADGE[obstacle] ?? '•', 21, -13);
     }
     if (u.acted && u.side === 'allies' && !lifted) {
       ctx.fillStyle = 'rgba(0,0,0,.40)';
