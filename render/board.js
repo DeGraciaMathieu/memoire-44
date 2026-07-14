@@ -91,7 +91,7 @@ export function buildBoardLayer(state, dpr) {
       if (state.objectives?.[key(c, r)]) {
         ctx.fillStyle = COL.objective;
         ctx.beginPath();
-        ctx.arc(p.x, p.y - 16, 8, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y - 26, 8, 0, Math.PI * 2); // au-dessus du pion (haut à y − 19)
         ctx.fill();
         ctx.strokeStyle = 'rgba(0,0,0,.45)';
         ctx.lineWidth = 1;
@@ -99,7 +99,7 @@ export function buildBoardLayer(state, dpr) {
         ctx.fillStyle = 'rgba(0,0,0,.75)';
         ctx.font = 'bold 10px serif';
         ctx.textAlign = 'center';
-        ctx.fillText('★', p.x, p.y - 12.5);
+        ctx.fillText('★', p.x, p.y - 22.5);
       }
     }
   return layer;
