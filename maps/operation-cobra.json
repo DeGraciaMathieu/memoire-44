@@ -1,0 +1,180 @@
+{
+  "name": "operation-cobra",
+  "terrain": {
+    "8,0": "foret",
+    "10,0": "village",
+    "2,1": "bocage",
+    "4,1": "village",
+    "6,1": "foret",
+    "7,1": "bocage",
+    "1,2": "foret",
+    "9,2": "village",
+    "11,2": "bocage",
+    "3,3": "bocage",
+    "6,3": "bocage",
+    "8,3": "bocage",
+    "12,3": "riviere",
+    "0,4": "bocage",
+    "1,4": "village",
+    "6,4": "bocage",
+    "10,4": "bocage",
+    "11,4": "bocage",
+    "12,4": "riviere",
+    "4,5": "bocage",
+    "12,5": "riviere",
+    "0,6": "riviere",
+    "3,6": "foret",
+    "4,6": "foret",
+    "8,6": "bocage",
+    "11,6": "foret",
+    "12,6": "foret",
+    "0,7": "riviere",
+    "3,7": "foret",
+    "4,7": "foret",
+    "0,8": "village",
+    "1,8": "riviere",
+    "3,8": "foret"
+  },
+  "obstacles": {
+    "0,7": "pont"
+  },
+  "objectives": {
+    "4,1": true,
+    "10,0": true,
+    "0,8": true
+  },
+  "units": [
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 4,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 5,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 12,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 11,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 12,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 11,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 10,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 6,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 5,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 6,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 7,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 1,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 2,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 2,
+      "r": 8
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 0,
+      "r": 4
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 7,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 1,
+      "r": 4
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 3,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 6,
+      "r": 4
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 8,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 10,
+      "r": 4
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 11,
+      "r": 4
+    }
+  ]
+}
