@@ -260,23 +260,16 @@ canvas {
   letter-spacing: 0.4px;
   flex: 1;
 }
-/* bandeau en tête de carte, sur toute sa largeur : les trois secteurs
-   (gauche / centre / droite) restent tous visibles, seuls les secteurs
-   actifs s'allument en laiton */
 .secs {
   display: flex;
-  gap: 2px;
-  margin: -10px -11px 8px; /* déborde le padding de .card */
-  padding: 3px;
-  background: rgba(0, 0, 0, 0.45);
-  border-bottom: 1px solid var(--rule);
-  border-radius: 4px 4px 0 0;
+  gap: 3px;
+  margin-bottom: 5px;
 }
 .secs i {
   flex: 1;
-  height: 8px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 1px;
-  background: rgba(232, 226, 208, 0.16);
 }
 .secs i.on {
   background: var(--brass);

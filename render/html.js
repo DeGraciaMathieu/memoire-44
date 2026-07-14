@@ -30,15 +30,15 @@ const MOVE_LBL = {
 
 export function cardHTML(card) {
   if (card.action)
-    return `<div class="secs">${SECTORS.map(() => '<i></i>').join('')}</div>
-    <div class="n">✸<small>action</small></div>
+    return `<div class="n">✸<small>action</small></div>
     <div class="cname">${card.name}</div>
+    <div class="secs">${SECTORS.map(() => '<i></i>').join('')}</div>
     <div class="ctag">${card.desc}</div>`;
-  return `<div class="secs">${SECTORS.map(
-    (s) => `<i class="${cardSectors(card.sector).includes(s) ? 'on' : ''}"></i>`,
-  ).join('')}</div>
-    <div class="n">${card.n}<small>unité${card.n > 1 ? 's' : ''}</small></div>
+  return `<div class="n">${card.n}<small>unité${card.n > 1 ? 's' : ''}</small></div>
     <div class="cname">${card.name}</div>
+    <div class="secs">${SECTORS.map(
+      (s) => `<i class="${cardSectors(card.sector).includes(s) ? 'on' : ''}"></i>`,
+    ).join('')}</div>
     <div class="ctag">${
       card.sector === '*' ? 'tout le front' : card.sector === 'flancs' ? 'les flancs' : card.sector
     }</div>`;
