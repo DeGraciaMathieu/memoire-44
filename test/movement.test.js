@@ -131,6 +131,25 @@ test('plage : 2 hexes maximum dans le sable, blindés compris', () => {
   assert.ok(reachable(st2, tank, 3).some((h) => h.c === 9 && h.r === 4 && h.cost === 3));
 });
 
+test('barbelés : toute unité qui entre s’arrête net, blindés compris', () => {
+  // l'infanterie entre mais ne poursuit pas au travers
+  const foot = { id: 'a', side: 'allies', type: 'inf', c: 6, r: 4 };
+  const state = flatState('plaine', [foot]);
+  state.obstacles = { [key(7, 4)]: 'barbeles' };
+  const out = reachable(state, foot, 2);
+  assert.ok(out.some((h) => h.c === 7 && h.r === 4 && h.cost === 1));
+  assert.ok(!out.some((h) => h.c === 8 && h.r === 4)); // l'unique chemin traverse les barbelés
+
+  // un blindé (3 de mouvement) s'arrête aussi sur chaque hex de barbelés
+  const tank = { id: 'b', side: 'allies', type: 'arm', c: 6, r: 4 };
+  const wired = flatState('plaine', [tank]);
+  wired.obstacles = {};
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) wired.obstacles[key(c, r)] = 'barbeles';
+  const steps = reachable(wired, tank, 3);
+  assert.equal(steps.length, 6);
+  for (const h of steps) assert.equal(h.cost, 1);
+});
+
 test('les terrains qui stoppent arrêtent net le mouvement', () => {
   const u = { id: 'a', side: 'allies', type: 'arm', c: 6, r: 4 };
   const out = reachable(flatState('foret', [u]), u, 3);

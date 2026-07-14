@@ -5,7 +5,9 @@ import assert from 'node:assert/strict';
 import {
   attackUnit,
   canBreakthrough,
+  canCutWire,
   createGame,
+  cutWire,
   drawCards,
   endPlayerTurn,
   finishUnit,
@@ -324,6 +326,56 @@ test("victoire à 6 médailles : l'occupation d'un objectif peut donner la derni
   assert.equal(medalCount(state, 'allies'), 6);
   assert.equal(state.winner, 'allies');
   assert.deepEqual(events, [{ side: 'allies' }]);
+});
+
+test('barbelés : le blindé qui entre les écrase et peut combattre dans la foulée', () => {
+  const state = duel({
+    obstacles: { [key(5, 5)]: 'barbeles' },
+    units: [
+      { side: 'allies', type: 'arm', c: 5, r: 6 },
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+    ],
+  });
+  const [tank] = state.units;
+  const removed = [];
+  state.bus.on('obstacleRemoved', (p) => removed.push(p));
+
+  assert.equal(moveUnit(state, tank, { c: 5, r: 5 }), 1);
+  assert.equal(state.obstacles[key(5, 5)], undefined);
+  assert.deepEqual(removed, [{ c: 5, r: 5, obstacle: 'barbeles' }]);
+  // le combat du tour reste permis, à pleine puissance
+  const targets = targetsFor(state, tank, state.moved[tank.id]);
+  assert.equal(targets.length, 1);
+  assert.equal(targets[0].dice, 3);
+  // rien à couper pour un blindé : les barbelés ont déjà disparu
+  assert.equal(canCutWire(state, tank), false);
+});
+
+test("barbelés : l'infanterie les coupe au lieu de combattre — si elle pouvait combattre", () => {
+  const state = duel({
+    obstacles: { [key(5, 5)]: 'barbeles' },
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 7 },
+      { side: 'axis', type: 'inf', c: 0, r: 0 },
+    ],
+  });
+  const [foot] = state.units;
+  assert.equal(canCutWire(state, foot), false); // pas encore sur les barbelés
+
+  // entrée en 2 hexes : trop de mouvement pour combattre, donc pour couper
+  assert.equal(moveUnit(state, foot, { c: 5, r: 5 }), 2);
+  assert.equal(canCutWire(state, foot), false);
+
+  // activation suivante, sans mouvement : la coupe devient possible
+  state.moved = {};
+  assert.equal(canCutWire(state, foot), true);
+  const removed = [];
+  state.bus.on('obstacleRemoved', (p) => removed.push(p));
+  cutWire(state, foot);
+  assert.equal(state.obstacles[key(5, 5)], undefined);
+  assert.deepEqual(removed, [{ c: 5, r: 5, obstacle: 'barbeles' }]);
+  assert.equal(state.attacks[foot.id], 1); // la coupe tient lieu de combat
+  assert.equal(canCutWire(state, foot), false);
 });
 
 test('la pioche épuisée est rebattue automatiquement', () => {

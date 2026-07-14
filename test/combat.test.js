@@ -436,3 +436,33 @@ test("resolveCombat : l'anéantissement retire l'unité, décerne une médaille 
     ['gameWon', { side: 'allies' }],
   ]);
 });
+
+test('barbelés : l’infanterie empêtrée combat avec 1 dé de moins, la vue reste libre', () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const enemy = inf('e', 'axis', 6, 5);
+  const state = battleState({ units: [atk, enemy] });
+  state.obstacles = { [key(5, 5)]: 'barbeles' };
+  assert.equal(diceFor(state, atk, enemy), 2); // 3 − 1, empêtrée
+  // un blindé au même endroit n'est pas gêné
+  const tank = { id: 't', side: 'allies', type: 'arm', c: 5, r: 5, figs: 3 };
+  assert.equal(diceFor({ ...state, units: [tank, enemy] }, tank, enemy), 3);
+  // aucune protection pour le défenseur, aucune coupure de la ligne de mire
+  const far = inf('f', 'axis', 5, 2);
+  const st2 = battleState({ units: [atk, far] });
+  st2.obstacles = { [key(5, 4)]: 'barbeles', [key(5, 2)]: 'barbeles' };
+  assert.ok(hasLineOfSight(st2, atk, far));
+  assert.equal(diceFor(st2, atk, far), 1); // portée 3 : dés pleins malgré les barbelés
+});
+
+test('barbelés : un blindé qui y entre en repli les écrase aussi', () => {
+  const tank = { id: 'd', side: 'axis', type: 'arm', c: 6, r: 4, figs: 3, acted: false };
+  const state = battleState({ units: [tank] });
+  state.obstacles = { [key(5, 3)]: 'barbeles', [key(6, 3)]: 'barbeles' };
+  const removed = [];
+  state.bus.on('obstacleRemoved', (p) => removed.push(p));
+
+  const report = resolveCombat(state, { side: 'allies', c: 6, r: 5 }, tank, ['flag']);
+  assert.ok(report.retreated);
+  assert.equal(state.obstacles[key(tank.c, tank.r)], undefined);
+  assert.deepEqual(removed, [{ c: tank.c, r: tank.r, obstacle: 'barbeles' }]);
+});

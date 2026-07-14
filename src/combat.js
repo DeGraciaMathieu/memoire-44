@@ -2,7 +2,7 @@
 
 import { FACES, H, MEDALS_TO_WIN, OBSTACLES, TERRAIN, UNITS } from './config.js';
 import { hexDistance, hexLine, key, neighbors } from './hex.js';
-import { dropObstacleOnExit, obstacleAt, unitAt } from './movement.js';
+import { crushObstacleOnEnter, dropObstacleOnExit, obstacleAt, unitAt } from './movement.js';
 
 // Un terrain blocksSight (forêt, village) entre le tireur et la cible coupe
 // le tir. Une colline (elevated) intermédiaire ne bloque que si le tireur ET
@@ -48,19 +48,36 @@ export function defenseReduction(state, attackerType, target) {
   return o ? Math.max(fromTerrain, reductionOf(o.dice, attackerType)) : fromTerrain;
 }
 
+// Malus de l'assaillant : une infanterie empêtrée dans un obstacle
+// entanglesInfantry (barbelés) combat avec 1 dé de moins.
+export function attackerSnare(state, unit) {
+  const o = OBSTACLES[obstacleAt(state, unit.c, unit.r)];
+  return unit.type === 'inf' && o?.entanglesInfantry ? 1 : 0;
+}
+
 export function diceFor(state, unit, target) {
   const base = UNITS[unit.type].dice[hexDistance(unit, target) - 1];
   if (base === undefined) return 0;
   if (!hasLineOfSight(state, unit, target)) return 0;
-  return Math.max(1, base - defenseReduction(state, unit.type, target));
+  return Math.max(
+    1,
+    base - defenseReduction(state, unit.type, target) - attackerSnare(state, unit),
+  );
+}
+
+// Éligibilité au combat pour l'activation en cours : restrictions liées au
+// mouvement effectué et au terrain occupé — indépendante des cibles.
+export function canFight(state, unit, movedCost) {
+  if (unit.type === 'art' && movedCost > 0) return false;
+  if (unit.type === 'inf' && movedCost > 1) return false;
+  const here = TERRAIN[state.terrain[key(unit.c, unit.r)]];
+  if (here.noFight) return false; // mer : aucun combat à bord d'une barge
+  if (here.noFightOnEnter && movedCost > 0) return false; // bocage : pas de combat le tour d'entrée
+  return true;
 }
 
 export function targetsFor(state, unit, movedCost) {
-  if (unit.type === 'art' && movedCost > 0) return [];
-  if (unit.type === 'inf' && movedCost > 1) return [];
-  const here = TERRAIN[state.terrain[key(unit.c, unit.r)]];
-  if (here.noFight) return []; // mer : aucun combat à bord d'une barge
-  if (here.noFightOnEnter && movedCost > 0) return []; // bocage : pas de combat le tour d'entrée
+  if (!canFight(state, unit, movedCost)) return [];
   const targets = state.units
     .filter((e) => e.side !== unit.side && diceFor(state, unit, e) > 0)
     .map((e) => ({ unit: e, dice: diceFor(state, unit, e), range: hexDistance(unit, e) }));
@@ -160,6 +177,7 @@ export function resolveCombat(state, attacker, defender, faces) {
         defender.r = opts[0].r;
         report.retreated = { c: defender.c, r: defender.r };
         dropObstacleOnExit(state, from.c, from.r);
+        crushObstacleOnEnter(state, defender);
       } else {
         defender.figs--;
         report.extraLoss++; // dos au mur

@@ -45,6 +45,8 @@ export function scenario() {
     [key(10, 2)]: 'antichar',
     [key(3, 7)]: 'sacs',
     [key(8, 7)]: 'sacs',
+    [key(3, 2)]: 'barbeles', // devant les lignes de l'Axe
+    [key(8, 2)]: 'barbeles',
   };
 
   // objectifs : une médaille pour le camp qui occupe la tuile

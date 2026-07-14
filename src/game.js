@@ -9,8 +9,22 @@ import { inSector } from './sectors.js';
 import { buildDeck, cardById } from './cards.js';
 import { scenario } from './scenario.js';
 import { setupFromMap } from './map.js';
-import { dropObstacleOnExit, obstacleAt, reachable, unitAt } from './movement.js';
-import { checkVictory, defenseReduction, diceFor, resolveCombat, rollDice } from './combat.js';
+import {
+  crushObstacleOnEnter,
+  dropObstacleOnExit,
+  obstacleAt,
+  reachable,
+  unitAt,
+} from './movement.js';
+import {
+  attackerSnare,
+  canFight,
+  checkVictory,
+  defenseReduction,
+  diceFor,
+  resolveCombat,
+  rollDice,
+} from './combat.js';
 
 export function shuffle(list, rng) {
   const out = list.slice();
@@ -183,8 +197,25 @@ export function moveUnit(state, unit, hex) {
   state.moved[unit.id] = step.cost;
   state.bus.emit('unitMoved', { unit, from, cost: step.cost });
   dropObstacleOnExit(state, from.c, from.r);
+  crushObstacleOnEnter(state, unit); // un blindé écrase les barbelés
   checkVictory(state); // l'occupation d'un objectif peut donner la 6e médaille
   return step.cost;
+}
+
+// Barbelés : une infanterie qui pourrait combattre ce tour-ci peut préférer
+// couper les barbelés de son hex — cela remplace son combat.
+export function canCutWire(state, unit) {
+  if (unit.type !== 'inf') return false;
+  if (!OBSTACLES[obstacleAt(state, unit.c, unit.r)]?.cutInsteadOfFight) return false;
+  if (state.attacks[unit.id]) return false;
+  return canFight(state, unit, state.moved[unit.id] || 0);
+}
+
+export function cutWire(state, unit) {
+  const obstacle = state.obstacles[key(unit.c, unit.r)];
+  delete state.obstacles[key(unit.c, unit.r)];
+  state.attacks[unit.id] = (state.attacks[unit.id] || 0) + 1; // tient lieu de combat
+  state.bus.emit('obstacleRemoved', { c: unit.c, r: unit.r, obstacle });
 }
 
 // Tire les dés, résout le combat et renvoie tout ce que le rendu doit
@@ -197,6 +228,7 @@ export function attackUnit(state, attacker, defender) {
     range,
     baseDice: UNITS[attacker.type].dice[range - 1],
     reduction: defenseReduction(state, attacker.type, defender),
+    snare: attackerSnare(state, attacker),
     dice: diceFor(state, attacker, defender),
     figsBefore: defender.figs,
     defenderHex: { c: defender.c, r: defender.r },
@@ -242,6 +274,7 @@ export function takeGround(state, unit, hex) {
   state.moved[unit.id] = (state.moved[unit.id] || 0) + 1;
   state.bus.emit('groundTaken', { unit, from });
   dropObstacleOnExit(state, from.c, from.r);
+  crushObstacleOnEnter(state, unit); // un blindé écrase les barbelés
   checkVictory(state);
 }
 

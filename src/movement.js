@@ -17,7 +17,18 @@ export function dropObstacleOnExit(state, c, r) {
   state.bus.emit('obstacleRemoved', { c, r, obstacle: dropped });
 }
 
-// hexes atteignables : coût 1/hex, les terrains "stops" arrêtent le mouvement.
+// Un obstacle crushedByArmor (barbelés) est retiré du plateau dès qu'un
+// blindé entre sur l'hex — mouvement, prise de terrain ou repli — sans lui
+// coûter son combat du tour.
+export function crushObstacleOnEnter(state, unit) {
+  const crushed = obstacleAt(state, unit.c, unit.r);
+  if (unit.type !== 'arm' || !OBSTACLES[crushed]?.crushedByArmor) return;
+  delete state.obstacles[key(unit.c, unit.r)];
+  state.bus.emit('obstacleRemoved', { c: unit.c, r: unit.r, obstacle: crushed });
+}
+
+// hexes atteignables : coût 1/hex, les terrains et obstacles "stops"
+// (forêt, barbelés…) arrêtent le mouvement.
 // enterAdjacentOnly (bocage) : entrée possible uniquement comme premier pas ;
 // exitAdjacentOnly (bocage) : la sortie s'arrête sur l'hex adjacent.
 export function reachable(state, unit, maxMove) {
@@ -46,7 +57,7 @@ export function reachable(state, unit, maxMove) {
       if (k in seen && seen[k] <= cost) continue;
       seen[k] = cost;
       out.push({ c: n.c, r: n.r, cost });
-      frontier.push({ c: n.c, r: n.r, cost, stopped: t.stops });
+      frontier.push({ c: n.c, r: n.r, cost, stopped: t.stops || !!o?.stops });
     }
   }
   return out;

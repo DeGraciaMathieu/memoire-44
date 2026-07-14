@@ -78,6 +78,14 @@ export const OBSTACLES = {
     dice: { def: 0 }, // aucune protection : on y combat normalement
     makesPassable: true, // rend franchissable un terrain impassable (rivière)
   },
+  barbeles: {
+    label: 'Barbelés',
+    dice: { def: 0 }, // aucune protection — et jamais de blocksSight
+    stops: true, // toute unité qui entre s'arrête net
+    entanglesInfantry: true, // l'infanterie empêtrée combat avec 1 dé de moins
+    cutInsteadOfFight: true, // l'infanterie peut les couper au lieu de combattre
+    crushedByArmor: true, // un blindé qui entre les retire et peut encore combattre
+  },
 };
 
 export const UNITS = {
