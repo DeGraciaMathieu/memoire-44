@@ -13,7 +13,6 @@
     "3,3": "bocage",
     "6,3": "bocage",
     "8,3": "bocage",
-    "12,3": "riviere",
     "0,4": "bocage",
     "1,4": "village",
     "6,4": "bocage",
@@ -21,7 +20,6 @@
     "11,4": "bocage",
     "12,4": "riviere",
     "4,5": "bocage",
-    "12,5": "riviere",
     "0,6": "riviere",
     "3,6": "foret",
     "4,6": "foret",
@@ -71,7 +69,7 @@
     {
       "side": "allies",
       "type": "inf",
-      "c": 12,
+      "c": 9,
       "r": 7
     },
     {
