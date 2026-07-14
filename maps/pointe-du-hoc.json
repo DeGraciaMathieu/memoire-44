@@ -1,0 +1,160 @@
+{
+  "name": "pointe-du-hoc",
+  "terrain": {
+    "9,0": "foret",
+    "10,0": "foret",
+    "0,4": "colline",
+    "1,4": "colline",
+    "2,4": "colline",
+    "3,4": "colline",
+    "4,4": "colline",
+    "5,4": "colline",
+    "6,4": "colline",
+    "7,4": "colline",
+    "8,4": "colline",
+    "9,4": "colline",
+    "10,4": "colline",
+    "11,4": "colline",
+    "12,4": "colline",
+    "9,5": "colline",
+    "10,5": "colline",
+    "10,6": "colline",
+    "0,7": "mer",
+    "1,7": "mer",
+    "2,7": "mer",
+    "3,7": "mer",
+    "4,7": "mer",
+    "5,7": "mer",
+    "6,7": "mer",
+    "7,7": "mer",
+    "8,7": "mer",
+    "9,7": "mer",
+    "10,7": "mer",
+    "11,7": "mer",
+    "12,7": "mer",
+    "0,8": "mer",
+    "1,8": "mer",
+    "2,8": "mer",
+    "3,8": "mer",
+    "4,8": "mer",
+    "5,8": "mer",
+    "6,8": "mer",
+    "7,8": "mer",
+    "8,8": "mer",
+    "9,8": "mer",
+    "10,8": "mer",
+    "11,8": "mer",
+    "12,8": "mer"
+  },
+  "obstacles": {
+    "1,3": "barbeles",
+    "1,2": "barbeles",
+    "1,1": "barbeles",
+    "10,6": "bunker",
+    "11,3": "bunker",
+    "3,3": "bunker",
+    "7,2": "bunker",
+    "6,1": "sacs",
+    "5,1": "barbeles",
+    "6,0": "barbeles",
+    "10,3": "barbeles",
+    "11,2": "barbeles",
+    "2,2": "bunker"
+  },
+  "objectives": {
+    "9,0": true,
+    "10,0": true
+  },
+  "units": [
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 3,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 2,
+      "r": 2
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 6,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 7,
+      "r": 2
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 10,
+      "r": 6
+    },
+    {
+      "side": "axis",
+      "type": "art",
+      "c": 11,
+      "r": 3
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 0,
+      "r": 6
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 0,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 1,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 3,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 4,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 5,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 6,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 7,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 8,
+      "r": 8
+    }
+  ]
+}
