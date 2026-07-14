@@ -67,10 +67,10 @@ export function createStage(canvas, getScene) {
     const n = Math.min(damage, corners.length);
     for (let i = 0; i < n; i++) {
       const [x, y] = corners[i];
-      fx.push({ x, y, start: now + i * 120, scale: 0.6 });
+      fx.push({ x, y, start: now + i * 120, scale: 0.9 });
     }
     const total = (killed ? n : n - 1) * 120 + FX_MS;
-    if (killed) fx.push({ x: p.x, y: p.y, start: now + n * 120, scale: 1.4 });
+    if (killed) fx.push({ x: p.x, y: p.y, start: now + n * 120, scale: 2 });
     if (retreatedId != null) hold = { id: retreatedId, c: hex.c, r: hex.r, until: now + total };
     if (corpse) ghost = { unit: corpse, c: hex.c, r: hex.r, until: now + total };
     requestDraw();
