@@ -1,0 +1,226 @@
+{
+  "name": "sword-beach",
+  "terrain": {
+    "1,0": "village",
+    "5,0": "village",
+    "10,0": "foret",
+    "12,0": "village",
+    "0,1": "foret",
+    "1,1": "foret",
+    "9,1": "foret",
+    "0,4": "plage",
+    "1,4": "plage",
+    "2,4": "plage",
+    "3,4": "plage",
+    "4,4": "plage",
+    "5,4": "plage",
+    "6,4": "plage",
+    "7,4": "plage",
+    "8,4": "plage",
+    "9,4": "plage",
+    "10,4": "plage",
+    "11,4": "plage",
+    "12,4": "plage",
+    "0,5": "plage",
+    "1,5": "plage",
+    "2,5": "plage",
+    "3,5": "plage",
+    "4,5": "plage",
+    "5,5": "plage",
+    "6,5": "plage",
+    "7,5": "plage",
+    "8,5": "plage",
+    "9,5": "plage",
+    "10,5": "plage",
+    "11,5": "plage",
+    "12,5": "plage",
+    "0,6": "plage",
+    "1,6": "plage",
+    "2,6": "plage",
+    "3,6": "plage",
+    "4,6": "plage",
+    "5,6": "plage",
+    "6,6": "plage",
+    "7,6": "plage",
+    "8,6": "plage",
+    "9,6": "plage",
+    "10,6": "plage",
+    "11,6": "plage",
+    "12,6": "plage",
+    "0,7": "mer",
+    "1,7": "mer",
+    "2,7": "mer",
+    "3,7": "mer",
+    "4,7": "mer",
+    "5,7": "mer",
+    "6,7": "mer",
+    "7,7": "mer",
+    "8,7": "mer",
+    "9,7": "mer",
+    "10,7": "mer",
+    "11,7": "mer",
+    "12,7": "mer",
+    "0,8": "mer",
+    "1,8": "mer",
+    "2,8": "mer",
+    "3,8": "mer",
+    "4,8": "mer",
+    "5,8": "mer",
+    "6,8": "mer",
+    "7,8": "mer",
+    "8,8": "mer",
+    "9,8": "mer",
+    "10,8": "mer",
+    "11,8": "mer",
+    "12,8": "mer"
+  },
+  "obstacles": {
+    "1,6": "antichar",
+    "2,5": "antichar",
+    "3,5": "antichar",
+    "5,6": "antichar",
+    "10,6": "antichar",
+    "8,5": "antichar",
+    "7,5": "antichar",
+    "0,3": "barbeles",
+    "1,4": "barbeles",
+    "2,4": "barbeles",
+    "4,4": "barbeles",
+    "5,4": "barbeles",
+    "6,3": "barbeles",
+    "8,4": "barbeles",
+    "9,4": "barbeles",
+    "10,3": "barbeles",
+    "11,3": "barbeles",
+    "2,3": "bunker",
+    "8,3": "bunker",
+    "6,2": "bunker"
+  },
+  "objectives": {
+    "12,0": true,
+    "5,0": true,
+    "1,0": true
+  },
+  "units": [
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 0,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 2,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 12,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 1,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 4,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 10,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 11,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 9,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 5,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 4,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 5,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 6,
+      "r": 8
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 0,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 1,
+      "r": 2
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 5,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 12,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 8,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 8,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 2,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "art",
+      "c": 6,
+      "r": 2
+    }
+  ]
+}
