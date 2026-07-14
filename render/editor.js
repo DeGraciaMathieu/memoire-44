@@ -154,10 +154,14 @@ function applyTool(hex) {
 
 /* --- pointeur -------------------------------------------------------------- */
 
+// Échelles séparées par axe : max-width ET max-height peuvent contraindre le
+// canvas indépendamment (écran bas), l'échelle n'est alors plus uniforme.
 const toCanvas = (e) => {
   const rect = canvas.getBoundingClientRect();
-  const scale = stage.width / rect.width;
-  return { x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale };
+  return {
+    x: ((e.clientX - rect.left) * stage.width) / rect.width,
+    y: ((e.clientY - rect.top) * stage.height) / rect.height,
+  };
 };
 
 let painting = false;
