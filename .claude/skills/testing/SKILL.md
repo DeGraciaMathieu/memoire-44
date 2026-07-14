@@ -45,7 +45,7 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 | `test/ai.test.js`       | `aiPickCard`, `aiChooseMoves` (forme des plans)                                                                           |
 | `test/game.test.js`     | **MACRO** : déterminisme par graine, tour allié complet, `attackUnit`, rebattage de pioche, partie sur carte de l'éditeur |
 | `test/html.test.js`     | Fragments purs : `cardHTML`, `forcePanelHTML`, `calcHTML`, `tipHTML`                                                      |
-| `test/gfx.test.js`      | `boardSize`, aller-retour `hexCenter`/`pickHex`, lignes de secteur, nuances de plaine (`plaineShade`)                     |
+| `test/gfx.test.js`      | `boardSize`, aller-retour `hexCenter`/`pickHex`, lignes de secteur, nuances de plaine (`plaineShade`), orientation et raccords du pont (`bridgeSpec`) |
 
 ## Où placer un nouveau test
 

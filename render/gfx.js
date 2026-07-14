@@ -3,6 +3,7 @@
 // (hexPath reçoit le contexte en argument).
 
 import { W, H } from '../src/config.js';
+import { key, neighbors } from '../src/hex.js';
 
 export const LAYOUT = { size: 42, mx: 26, my: 26 };
 
@@ -61,6 +62,42 @@ export function hexPath(ctx, x, y, size = LAYOUT.size) {
   ctx.beginPath();
   hexCorners(x, y, size).forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
   ctx.closePath();
+}
+
+// Tablier du pont posé en (c, r) : liste de bras { angle, join } partant du
+// centre de la tuile. Un bras par pont voisin (join — il court jusqu'au bord de
+// la tuile pour rejoindre l'autre tablier, y compris dans les virages de la
+// rivière) ; un pont voisin unique ajoute un bras opposé vers la rive ; sans
+// pont voisin, deux bras opposés perpendiculaires au fil de la rivière déduit
+// des hexes rivière voisins (horizontaux à défaut). Les bras !join portent la
+// culée.
+export function bridgeSpec(terrain, obstacles, c, r, layout = LAYOUT) {
+  const p = hexCenter(c, r, layout);
+  const nbs = neighbors(c, r);
+  const dirTo = (h) => {
+    const q = hexCenter(h.c, h.r, layout);
+    return Math.atan2(q.y - p.y, q.x - p.x);
+  };
+  const ponts = nbs.filter((h) => obstacles[key(h.c, h.r)] === 'pont');
+  if (ponts.length >= 2) return ponts.map((h) => ({ angle: dirTo(h), join: true }));
+  if (ponts.length === 1) {
+    const angle = dirTo(ponts[0]);
+    return [
+      { angle, join: true },
+      { angle: angle + Math.PI, join: false },
+    ];
+  }
+  const rivers = nbs.filter((h) => terrain[key(h.c, h.r)] === 'riviere');
+  let deck = 0;
+  if (rivers.length) {
+    const a = hexCenter(rivers[0].c, rivers[0].r, layout);
+    const b = rivers[1] ? hexCenter(rivers[1].c, rivers[1].r, layout) : p;
+    deck = Math.atan2(a.y - b.y, a.x - b.x) + Math.PI / 2;
+  }
+  return [
+    { angle: deck, join: false },
+    { angle: deck + Math.PI, join: false },
+  ];
 }
 
 // Hex le plus proche du point (x, y), ou null si le point tombe hors plateau.

@@ -10,6 +10,7 @@ import {
   COL,
   LAYOUT,
   boardSize,
+  bridgeSpec,
   hexCenter,
   hexCorners,
   hexPath,
@@ -87,7 +88,7 @@ export function createStage(canvas, getScene) {
     for (const [k, o] of Object.entries(state.obstacles)) {
       const [c, r] = k.split(',').map(Number);
       const p = hexCenter(c, r);
-      drawObstacle(o, p.x, p.y);
+      drawObstacle(o, p.x, p.y, o === 'pont' ? bridgeSpec(state.terrain, state.obstacles, c, r) : null);
     }
 
     // secteurs activés par la carte en cours ('flancs' en couvre deux)
@@ -266,7 +267,7 @@ export function createStage(canvas, getScene) {
     ctx.restore();
   }
 
-  function drawObstacle(type, x, y) {
+  function drawObstacle(type, x, y, bridge = null) {
     if (type === 'bunker') {
       ctx.strokeStyle = 'rgba(0,0,0,.5)';
       ctx.lineWidth = 3;
@@ -308,21 +309,69 @@ export function createStage(canvas, getScene) {
       ctx.fillText('× × ×', x, y + 3); // ardillons
     }
     if (type === 'pont') {
-      ctx.strokeStyle = 'rgba(0,0,0,.55)';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(x - 15, y - 9);
-      ctx.lineTo(x + 15, y - 9); // parapets
-      ctx.moveTo(x - 15, y + 9);
-      ctx.lineTo(x + 15, y + 9);
-      ctx.stroke();
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      for (let i = -1; i <= 1; i++) {
-        ctx.moveTo(x + i * 9, y - 9); // madriers
-        ctx.lineTo(x + i * 9, y + 9);
+      // tablier plein en bras partant du centre : d'une rive à l'autre quand le
+      // pont est seul, prolongé jusqu'au bord de tuile vers chaque pont voisin —
+      // dans les virages, les bras forment un coude au centre de la tuile
+      const edge = (Math.sqrt(3) / 2) * LAYOUT.size;
+      const armLen = (arm) => (arm.join ? edge : LAYOUT.size * 0.82);
+      const planks = (from, to) => {
+        ctx.strokeStyle = 'rgba(0,0,0,.22)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let px = from; px < to; px += 6) {
+          ctx.moveTo(px, -9);
+          ctx.lineTo(px, 9);
+        }
+        ctx.stroke();
+      };
+      const parapets = (from, to) => {
+        ctx.strokeStyle = 'rgba(0,0,0,.55)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(from, -9);
+        ctx.lineTo(to, -9);
+        ctx.moveTo(from, 9);
+        ctx.lineTo(to, 9);
+        ctx.stroke();
+      };
+      const cap = (at) => {
+        ctx.fillStyle = 'rgba(0,0,0,.35)'; // culée en pierre ancrée sur la rive
+        ctx.fillRect(at, -12, 5, 24);
+      };
+      ctx.save();
+      ctx.translate(x, y);
+      const [back, front] = bridge;
+      if (bridge.length === 2 && Math.cos(back.angle - front.angle) < -0.999) {
+        // bras opposés : un seul tenant, planches et parapets continus
+        ctx.rotate(front.angle);
+        const left = armLen(back);
+        const right = armLen(front);
+        ctx.fillStyle = COL.plage;
+        ctx.fillRect(-left, -9, left + right, 18);
+        planks(-left + 6, right - 2);
+        parapets(-left, right);
+        if (!back.join) cap(-left - 3);
+        if (!front.join) cap(right - 2);
+      } else {
+        // coude : les tabliers d'abord, puis les traits — sinon les parapets
+        // d'un bras rayeraient le tablier de l'autre au niveau du joint
+        for (const arm of bridge) {
+          ctx.save();
+          ctx.rotate(arm.angle);
+          ctx.fillStyle = COL.plage;
+          ctx.fillRect(0, -9, armLen(arm), 18);
+          ctx.restore();
+        }
+        for (const arm of bridge) {
+          ctx.save();
+          ctx.rotate(arm.angle);
+          planks(12, armLen(arm) - 2);
+          parapets(6, armLen(arm));
+          if (!arm.join) cap(armLen(arm) - 2);
+          ctx.restore();
+        }
       }
-      ctx.stroke();
+      ctx.restore();
     }
   }
 
