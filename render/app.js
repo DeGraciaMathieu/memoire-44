@@ -12,7 +12,7 @@ import {
   createGame,
   cutWire,
   drawCards,
-  endAxisTurn,
+  endAiTurn,
   endPlayerTurn,
   finishUnit,
   medicTargets,
@@ -55,12 +55,13 @@ let state;
 let ui;
 let boardLayer;
 let currentMap = null; // carte de l'éditeur chargée, null = scénario par défaut
+let currentSide = 'allies'; // camp du joueur, choisi sur la page d'accueil (?side=)
 
 const hud = createHud();
 const stage = createStage(canvas, () => ({ state, ui, boardLayer }));
 const modal = createCombatModal({ requestDraw: stage.requestDraw, getUi: () => ui });
 const hand = createHand({
-  onPlayCard: playAlliedCard,
+  onPlayCard: playPlayerCard,
   onEndTurn: endTurn,
   onNewGame: restart,
   onCutWire: cutSelectedWire,
@@ -94,25 +95,25 @@ const medalTotals = () => ({
 
 function wireBus(bus) {
   bus.on('cardsDrawn', ({ side, count }) => {
-    if (side === 'allies') ui.justDrew = count;
+    if (side === state.playerSide) ui.justDrew = count;
   });
   bus.on('cardPlayed', ({ side, card, as, ordersLeft }) => {
     const name = as ? `${card.name} — rejoue ${as.name}` : card.name;
     hud.log(
-      side === 'allies'
+      side === state.playerSide
         ? (as ?? card).action
           ? `▸ ${name}.`
           : `▸ ${name} — ${ordersLeft} unité(s) activable(s).`
-        : `▸ Axe : ${name}.`,
+        : `▸ ${SIDE_FR[side]} : ${name}.`,
       'hi',
     );
   });
   bus.on('unitMoved', ({ unit, cost }) => {
     const label = UNITS[unit.type].label;
     hud.log(
-      unit.side === 'allies'
+      unit.side === state.playerSide
         ? `  ${label} avance de ${cost} hex (${TERRAIN[state.terrain[key(unit.c, unit.r)]].label.toLowerCase()}).`
-        : `  Axe · ${label} avance de ${cost} hex.`,
+        : `  ${SIDE_FR[unit.side]} · ${label} avance de ${cost} hex.`,
     );
     hud.setMedals(medalTotals()); // un objectif a pu changer de main
     stage.requestDraw();
@@ -132,7 +133,7 @@ function wireBus(bus) {
     if (o.report.killed) {
       hud.log(
         `  ★ ${UNITS[o.defender.type].label} détruite — médaille pour l’${attacker}.`,
-        o.attacker.side === 'allies' ? 'good' : 'bad',
+        o.attacker.side === state.playerSide ? 'good' : 'bad',
       );
     }
     hud.setMedals(medalTotals()); // un repli a pu prendre ou libérer un objectif
@@ -140,9 +141,9 @@ function wireBus(bus) {
   bus.on('groundTaken', ({ unit }) => {
     const label = UNITS[unit.type].label;
     hud.log(
-      unit.side === 'allies'
+      unit.side === state.playerSide
         ? `  ${label} fait une prise de terrain.`
-        : `  Axe · ${label} fait une prise de terrain.`,
+        : `  ${SIDE_FR[unit.side]} · ${label} fait une prise de terrain.`,
     );
     hud.setMedals(medalTotals());
     stage.requestDraw();
@@ -165,7 +166,7 @@ function wireBus(bus) {
       if (report.killed) {
         hud.log(
           `  ★ ${UNITS[defender.type].label} détruite — médaille pour l’${SIDE_FR[side]}.`,
-          side === 'allies' ? 'good' : 'bad',
+          side === state.playerSide ? 'good' : 'bad',
         );
       }
       hud.setMedals(medalTotals());
@@ -183,7 +184,7 @@ function wireBus(bus) {
     hud.showDice(faces);
     hud.log(
       `  ${SIDE_FR[unit.side]} · ${UNITS[unit.type].label} récupère ${restored} figurine(s).`,
-      restored && unit.side === 'allies' ? 'good' : '',
+      restored && unit.side === state.playerSide ? 'good' : '',
     );
     stage.requestDraw();
   });
@@ -225,7 +226,8 @@ function refresh() {
   hand.render(state, ui);
   if (state.winner) {
     hud.setPrompt(
-      state.winner === 'allies' ? '★ Victoire alliée.' : '✖ Les forces de l’Axe l’emportent.',
+      (state.winner === state.playerSide ? '★ ' : '✖ ') +
+        (state.winner === 'allies' ? 'Victoire alliée.' : 'Les forces de l’Axe l’emportent.'),
     );
   } else if (state.phase === 'card') {
     hud.setPrompt('Jouez une carte de commandement.');
@@ -253,14 +255,14 @@ function refresh() {
   }
 }
 
-function playAlliedCard(id) {
-  const cd = playCard(state, 'allies', id);
+function playPlayerCard(id) {
+  const cd = playCard(state, state.playerSide, id);
   if (cd.action === 'barrage') {
-    ui.action = { kind: 'barrage', targets: barrageTargets(state, 'allies') };
+    ui.action = { kind: 'barrage', targets: barrageTargets(state, state.playerSide) };
   } else if (cd.action === 'air') {
     ui.action = { kind: 'air', picks: [] };
   } else if (cd.action === 'medics') {
-    const targets = medicTargets(state, 'allies');
+    const targets = medicTargets(state, state.playerSide);
     if (!targets.length) {
       hud.log('  Aucune unité à soigner : la carte est perdue.');
       endTurn();
@@ -268,7 +270,7 @@ function playAlliedCard(id) {
     }
     ui.action = { kind: 'medics', targets };
   } else {
-    ui.orderable = orderableUnits(state, 'allies', cd.id);
+    ui.orderable = orderableUnits(state, state.playerSide, cd.id);
   }
   refresh();
 }
@@ -286,7 +288,7 @@ function actionClick(hex) {
       return;
     }
     ui.action = null;
-    if (!resolveAirStrike(state, 'allies', act.picks).length)
+    if (!resolveAirStrike(state, state.playerSide, act.picks).length)
       hud.log('  Attaque aérienne : aucune unité ennemie sous les bombes.');
     afterAction();
     return;
@@ -294,7 +296,7 @@ function actionClick(hex) {
   const target = act.targets.find((u) => u.c === hex.c && u.r === hex.r);
   if (!target) return;
   ui.action = null;
-  if (act.kind === 'barrage') resolveBarrage(state, 'allies', target);
+  if (act.kind === 'barrage') resolveBarrage(state, state.playerSide, target);
   else resolveMedics(state, target);
   afterAction();
 }
@@ -421,19 +423,19 @@ function endTurn() {
   });
   endPlayerTurn(state);
   refresh();
-  setTimeout(playAxisTurn, 700);
+  setTimeout(playAiTurn, 700);
 }
 
-/* --- tour de l'Axe : l'IA décide, app.js donne le tempo ------------------ */
+/* --- tour de l'IA : elle décide, app.js donne le tempo ------------------- */
 
-async function playAxisTurn() {
+async function playAiTurn() {
   if (state.winner) return;
-  drawCards(state, 'axis');
+  drawCards(state, state.aiSide);
   const id = aiPickCard(state);
-  const cd = playCard(state, 'axis', id);
+  const cd = playCard(state, state.aiSide, id);
   if (cd.action) {
-    await playAxisAction(cd);
-    endAxisTurn(state);
+    await playAiAction(cd);
+    endAiTurn(state);
     refresh();
     return;
   }
@@ -468,20 +470,20 @@ async function playAxisTurn() {
     stage.requestDraw();
     await sleep(350);
   }
-  endAxisTurn(state);
+  endAiTurn(state);
   refresh();
 }
 
-// Carte action de l'Axe : l'IA choisit la cible, les événements du bus
+// Carte action de l'IA : elle choisit la cible, les événements du bus
 // (actionStruck, unitHealed) racontent la frappe.
-async function playAxisAction(cd) {
+async function playAiAction(cd) {
   await sleep(600);
   if (cd.action === 'barrage') {
     const target = aiBarrageTarget(state);
-    if (target) resolveBarrage(state, 'axis', target);
+    if (target) resolveBarrage(state, state.aiSide, target);
   } else if (cd.action === 'air') {
     const strike = aiAirHexes(state);
-    if (strike) resolveAirStrike(state, 'axis', strike.hexes);
+    if (strike) resolveAirStrike(state, state.aiSide, strike.hexes);
   } else if (cd.action === 'medics') {
     const unit = aiMedicsTarget(state);
     if (unit) resolveMedics(state, unit);
@@ -492,7 +494,7 @@ async function playAxisAction(cd) {
 /* --- cycle de vie -------------------------------------------------------- */
 
 function startGame(message) {
-  state = createGame({ map: currentMap });
+  state = createGame({ map: currentMap, playerSide: currentSide });
   ui = createUiState();
   boardLayer = buildBoardLayer(state, DPR);
   wireBus(state.bus);
@@ -501,7 +503,10 @@ function startGame(message) {
   drawCards(state, 'allies');
   drawCards(state, 'axis');
   hud.log(message, 'hi');
+  if (currentSide === 'axis') hud.log('Vous commandez l’Axe.', 'hi');
   refresh();
+  // les Alliés ouvrent toujours : si le joueur tient l'Axe, l'IA joue d'abord
+  if (state.turn !== state.playerSide) setTimeout(playAiTurn, 700);
 }
 
 function restart() {
@@ -525,10 +530,13 @@ mapFile.onchange = async () => {
   startGame(`Carte « ${currentMap.name || file.name} ». Les Alliés ouvrent le feu.`);
 };
 
-// Démarrage : la page d'accueil transmet la carte choisie via ?map=<fichier>.
-// Sans paramètre (ou si la carte est illisible), repli sur le scénario par défaut.
+// Démarrage : la page d'accueil transmet la carte choisie via ?map=<fichier>
+// et le camp du joueur via ?side=allies|axis (Alliés par défaut). Sans
+// paramètre (ou si la carte est illisible), repli sur le scénario par défaut.
 async function init() {
-  const file = new URLSearchParams(location.search).get('map');
+  const params = new URLSearchParams(location.search);
+  currentSide = params.get('side') === 'axis' ? 'axis' : 'allies';
+  const file = params.get('map');
   let error = null;
   if (file) {
     try {

@@ -1,6 +1,6 @@
 ---
 name: cartes-tours
-description: Use when travailler sur les cartes de commandement, la pioche, la main, les phases de jeu, les ordres ou la séquence de tour (alliés puis Axe).
+description: Use when travailler sur les cartes de commandement, la pioche, la main, les phases de jeu, les ordres ou la séquence de tour (joueur puis IA).
 auto_invoke: true
 ---
 
@@ -18,8 +18,9 @@ auto_invoke: true
 | Jouer une carte       | `playCard(state, side, cardId)` (`src/game.js`) : retire de la main, `phase = 'orders'`, `ordersLeft = min(n, activables)` (1 pour une carte action), reset `acted` et `moved`, pose `state.lastCard[side]`, émet `cardPlayed`, renvoie la carte **effective** (≠ jouée pour Contre-attaque) |
 | Unités activables     | `orderableUnits(state, side, cardId)` — `inSector` (`src/sectors.js`) ; un hex à cheval est activable par les cartes des DEUX secteurs ; cartes actions : `medicTargets` pour Médecins & mécanos, sinon `[]`                                                                                 |
 | Fin d'activation      | `finishUnit(state, unit)` : `acted = true`, `ordersLeft--`                                                                                                                                                                                                                                   |
-| Fin de tour allié     | `endPlayerTurn(state)` : reset `acted`, pioche alliée, `turn = 'axis'`, `phase = 'card'`                                                                                                                                                                                                     |
-| Fin de tour Axe       | `endAxisTurn(state)` : pioche Axe, retour aux alliés (sauf `winner`)                                                                                                                                                                                                                         |
+| Fin de tour joueur    | `endPlayerTurn(state)` : reset `acted`, pioche du joueur, `turn = state.aiSide`, `phase = 'card'`                                                                                                                                                                                            |
+| Fin de tour IA        | `endAiTurn(state)` : pioche de l'IA, retour au joueur (sauf `winner`)                                                                                                                                                                                                                        |
+| Camp du joueur        | `state.playerSide` / `state.aiSide` (`createGame({ playerSide })`, `?side=` depuis l'accueil) — les Alliés ouvrent toujours : si le joueur tient l'Axe, `startGame` lance `playAiTurn` d'abord                                                                                               |
 | Phases                | `'card'` (jouer une carte) → `'orders'` (activer) — `state.phase`                                                                                                                                                                                                                            |
 
 ## Cartes actions (`src/game.js`)
@@ -35,15 +36,15 @@ Le ciblage joueur vit dans `render/app.js` (`actionClick`) via `ui.action`
 (`{ kind, targets | picks }`, `render/uiState.js`) ; une carte action consomme le tour
 entier (`afterAction` → `endTurn`).
 
-## Séquence d'un tour allié (côté rendu)
+## Séquence d'un tour du joueur (côté rendu)
 
 1. Phase `card` : clic carte → `hand.js` `playFromHand` (animation 460 ms, cartes
-   désactivées) → `app.js` `playAlliedCard` → `playCard` + `ui.orderable`
+   désactivées) → `app.js` `playPlayerCard` → `playCard` + `ui.orderable`
    (carte action : `ui.action` + ciblage par `actionClick`).
 2. Phase `orders` : `input.js` (clic ou glisser-déposer) → `selectUnit` (aides via
    `reachable`/`targetsFor`) → `moveTo` / `attackTarget` → `finish`.
 3. `ordersLeft` à 0 (ou bouton « Fin de tour ») → `endTurn` → `endPlayerTurn` →
-   `setTimeout(playAxisTurn, 700)`.
+   `setTimeout(playAiTurn, 700)`.
 
 ## Ajouter une carte de commandement
 
@@ -58,7 +59,7 @@ entier (`afterAction` → `endTurn`).
    `test/actions.test.js` — suivre le modèle des quatre cartes actions existantes.
 5. L'IA : carte de commandement jouée telle quelle via `aiPickCard` (score = activables
    - cibles) ; carte action → brancher `cardScore` et une heuristique de cible dans
-     `src/ai.js` + son exécution dans `playAxisAction` (`render/app.js`).
+     `src/ai.js` + son exécution dans `playAiAction` (`render/app.js`).
 
 ## Pièges connus
 

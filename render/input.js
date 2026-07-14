@@ -17,12 +17,17 @@ export function attachInput(canvas, { getState, getUi, hud, stage, actions }) {
 
   const playerCanAct = () => {
     const s = getState();
-    return !s.winner && s.turn === 'allies' && s.phase === 'orders' && !getUi().modalOpen;
+    return !s.winner && s.turn === s.playerSide && s.phase === 'orders' && !getUi().modalOpen;
   };
 
   const grabbable = (h) => {
     const u = h && unitAt(getState(), h.c, h.r);
-    return !!(u && u.side === 'allies' && !u.acted && getUi().orderable.some((z) => z.id === u.id));
+    return !!(
+      u &&
+      u.side === getState().playerSide &&
+      !u.acted &&
+      getUi().orderable.some((z) => z.id === u.id)
+    );
   };
 
   function showTip(e, hex) {

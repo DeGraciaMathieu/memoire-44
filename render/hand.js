@@ -49,8 +49,8 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
     fan.innerHTML = '';
     acts.innerHTML = '';
     hoveredIdx = -1;
-    const playable = state.turn === 'allies' && state.phase === 'card' && !state.winner;
-    const hand = state.hands.allies;
+    const playable = state.turn === state.playerSide && state.phase === 'card' && !state.winner;
+    const hand = state.hands[state.playerSide];
     const mid = (hand.length - 1) / 2;
     const gap = window.innerWidth < 900 ? 62 : 78; // écartement horizontal
 
@@ -78,7 +78,7 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
     ui.justDrew = 0;
     hoverBands = { count: hand.length, gap, mid, playable, els: [...fan.children] };
 
-    if (state.phase === 'orders' && state.turn === 'allies' && !state.winner) {
+    if (state.phase === 'orders' && state.turn === state.playerSide && !state.winner) {
       if (ui.cutWire) {
         const w = document.createElement('button');
         w.className = 'act';

@@ -9,6 +9,7 @@ import {
   createGame,
   cutWire,
   drawCards,
+  endAiTurn,
   endPlayerTurn,
   finishUnit,
   moveUnit,
@@ -38,6 +39,31 @@ test('deux parties créées avec la même graine sont identiques', () => {
   const a = createGame({ rng: mulberry32(44) });
   const b = createGame({ rng: mulberry32(44) });
   assert.deepEqual(a.decks, b.decks);
+});
+
+test('choix du camp : le joueur tient l’Axe, l’IA joue les Alliés et ouvre', () => {
+  assert.equal(createGame({ rng: mulberry32(44) }).playerSide, 'allies'); // défaut
+
+  const state = createGame({ rng: mulberry32(44), playerSide: 'axis' });
+  assert.equal(state.playerSide, 'axis');
+  assert.equal(state.aiSide, 'allies');
+  assert.equal(state.turn, 'allies'); // les Alliés ouvrent toujours le feu
+
+  // tour de l'IA (Alliés) : carte jouée, repioche, la main passe au joueur
+  drawCards(state, 'allies');
+  playCard(state, 'allies', state.hands.allies[0]);
+  endAiTurn(state);
+  assert.equal(state.hands.allies.length, HAND_SIZE);
+  assert.equal(state.turn, 'axis');
+  assert.equal(state.phase, 'card');
+
+  // tour du joueur (Axe) : même séquence, retour à l'IA
+  drawCards(state, 'axis');
+  playCard(state, 'axis', state.hands.axis[0]);
+  endPlayerTurn(state);
+  assert.equal(state.hands.axis.length, HAND_SIZE);
+  assert.equal(state.turn, 'allies');
+  assert.equal(state.phase, 'card');
 });
 
 test('un tour allié complet : pioche, carte, mouvement, fin de tour', () => {

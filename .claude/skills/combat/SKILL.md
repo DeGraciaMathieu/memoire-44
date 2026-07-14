@@ -27,7 +27,7 @@ auto_invoke: true
 
 ## Flux complet d'une attaque
 
-1. `render/app.js` `attackTarget` (joueur) ou `playAxisTurn` (IA) appelle
+1. `render/app.js` `attackTarget` (joueur) ou `playAiTurn` (IA) appelle
    `attackUnit(state, attacker, defender)` (`src/game.js`).
 2. `attackUnit` capture l'outcome **avant** résolution (`range`, `baseDice`, `reduction`,
    `dice`, `figsBefore`, `defenderHex`, `terrainKey` — le défenseur peut se replier
@@ -38,7 +38,7 @@ auto_invoke: true
 4. `playCombat` (`app.js`) enveloppe `combatModal.play(state, outcome, { auto })` — le
    résultat est déjà connu, `auto: true` pour l'IA (fermeture après 2100 ms) — puis, à la
    fermeture de la modale, appelle `stage.boom(outcome.defenderHex, { damage, killed,
-   retreatedId, corpse })` si le défenseur a encaissé (touches, pertes de repli ou
+retreatedId, corpse })` si le défenseur a encaissé (touches, pertes de repli ou
    destruction) : une explosion par coin de la tuile par dégât, une explosion centrale
    plus large si l'unité est détruite, le pion replié reste affiché sur son hex
    d'origine tant que le feu brûle, et le pion détruit (`corpse`, avec ses figurines

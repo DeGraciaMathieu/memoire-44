@@ -44,13 +44,23 @@ export function cardHTML(card) {
     }</div>`;
 }
 
+// Choix du camp sur la page d'accueil : le camp coché rejoint les liens des
+// tuiles via ?side= (home.js).
+export function homeSideHTML(side = 'allies') {
+  return `<span class="sidelabel">Jouer :</span>
+    <label class="sideopt"><input type="radio" name="side" value="allies" ${side === 'allies' ? 'checked' : ''} /> ${SIDE_FR.allies}</label>
+    <label class="sideopt"><input type="radio" name="side" value="axis" ${side === 'axis' ? 'checked' : ''} /> ${SIDE_FR.axis}</label>`;
+}
+
 // Liste des cartes proposées par la page d'accueil
-// (maps : [{ file, name, preview }] — preview : dataURL d'aperçu, ou null).
-export function homeMapsHTML(maps) {
+// (maps : [{ file, name, preview }] — preview : dataURL d'aperçu, ou null ;
+// side : camp joué, ajouté au lien de chaque tuile).
+export function homeMapsHTML(maps, side = 'allies') {
   if (!maps.length) return `<p class="empty">Aucune carte dans le dossier maps.</p>`;
   return maps
     .map(
-      (m) => `<a class="maptile" href="game.html?map=${encodeURIComponent(m.file)}">
+      (m) =>
+        `<a class="maptile" href="game.html?map=${encodeURIComponent(m.file)}&side=${side}">
       ${m.preview ? `<img class="mappreview" src="${m.preview}" alt="Aperçu de ${m.name}" />` : ''}
       <span class="mapname">${m.name}</span>
       <span class="mapfile">${m.file}</span>
@@ -181,7 +191,8 @@ export function tipHTML(state, ui, hex) {
     const tgt = ui.targets.find((x) => x.unit.id === u.id);
     if (tgt)
       h += `<div class="row fire">Tir possible<b>${tgt.dice} dé${tgt.dice > 1 ? 's' : ''} à ${tgt.range}</b></div>`;
-    else if (u.acted && u.side === 'allies') h += `<div class="row">État<b>a déjà agi</b></div>`;
+    else if (u.acted && u.side === state.playerSide)
+      h += `<div class="row">État<b>a déjà agi</b></div>`;
     else if (ui.orderable.some((z) => z.id === u.id) && state.phase === 'orders')
       h += `<div class="row go">Activable<b>oui</b></div>`;
     h += `</div>`;

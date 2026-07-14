@@ -27,6 +27,15 @@ test('aiPickCard choisit la carte qui active le plus de monde', () => {
   assert.equal(aiPickCard(state), 'atk-g');
 });
 
+test('l’IA joue les Alliés quand le joueur choisit l’Axe', () => {
+  const state = createGame({ rng: mulberry32(3), playerSide: 'axis' });
+  // toutes les unités alliées à gauche : atk-g doit l'emporter sur atk-d
+  state.units = state.units.map((u) => (u.side === 'allies' ? { ...u, c: 1 } : u));
+  state.hands.allies = ['atk-d', 'atk-g'];
+  assert.equal(aiPickCard(state), 'atk-g');
+  for (const p of aiChooseMoves(state, 'assaut')) assert.equal(p.unit.side, 'allies');
+});
+
 test('aiChooseMoves produit au plus n plans, chacun avec une unité et une destination', () => {
   const state = createGame({ rng: mulberry32(2) });
   const plans = aiChooseMoves(state, 'assaut');

@@ -88,13 +88,22 @@ export function createStage(canvas, getScene) {
     for (const [k, o] of Object.entries(state.obstacles)) {
       const [c, r] = k.split(',').map(Number);
       const p = hexCenter(c, r);
-      drawObstacle(o, p.x, p.y, o === 'pont' ? bridgeSpec(state.terrain, state.obstacles, c, r) : null);
+      drawObstacle(
+        o,
+        p.x,
+        p.y,
+        o === 'pont' ? bridgeSpec(state.terrain, state.obstacles, c, r) : null,
+      );
     }
 
     // secteurs activés par la carte en cours ('flancs' en couvre deux)
     const cd = state.playedCard && cardById(state.playedCard);
     const live =
-      state.phase === 'orders' && state.turn === 'allies' && cd && cd.sector && cd.sector !== '*'
+      state.phase === 'orders' &&
+      state.turn === state.playerSide &&
+      cd &&
+      cd.sector &&
+      cd.sector !== '*'
         ? cardSectors(cd.sector)
         : null;
     if (live) {
@@ -205,10 +214,15 @@ export function createStage(canvas, getScene) {
       const sel = ui.selected && ui.selected.id === u.id;
       const canOrder =
         state.phase === 'orders' &&
-        state.turn === 'allies' &&
+        state.turn === state.playerSide &&
         ui.orderable.some((x) => x.id === u.id) &&
         !u.acted;
-      drawCounter(u, p.x, p.y, { sel, canOrder, obstacle: obstacleAt(state, u.c, u.r) });
+      drawCounter(u, p.x, p.y, {
+        sel,
+        canOrder,
+        obstacle: obstacleAt(state, u.c, u.r),
+        playerSide: state.playerSide,
+      });
     }
     if (ghost) {
       const p = hexCenter(ghost.c, ghost.r);
@@ -375,7 +389,7 @@ export function createStage(canvas, getScene) {
     }
   }
 
-  function drawCounter(u, x, y, { sel, canOrder, lifted, obstacle }) {
+  function drawCounter(u, x, y, { sel, canOrder, lifted, obstacle, playerSide }) {
     ctx.save();
     ctx.translate(x, y);
     if (lifted) {
@@ -415,7 +429,7 @@ export function createStage(canvas, getScene) {
       ctx.font = 'bold 13px "Courier New"';
       ctx.fillText(OBSTACLE_BADGE[obstacle] ?? '•', 21, -13);
     }
-    if (u.acted && u.side === 'allies' && !lifted) {
+    if (u.acted && u.side === playerSide && !lifted) {
       ctx.fillStyle = 'rgba(0,0,0,.40)';
       ctx.beginPath();
       ctx.roundRect(-22, -19, 44, 38, 4);

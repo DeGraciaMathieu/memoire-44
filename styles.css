@@ -864,6 +864,30 @@ a.act:hover {
   letter-spacing: 2px;
   text-transform: uppercase;
 }
+.sidepick {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 22px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.sidelabel {
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.sideopt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.sideopt input {
+  accent-color: var(--brass);
+}
 .maplist {
   display: flex;
   flex-wrap: wrap;

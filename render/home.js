@@ -1,14 +1,27 @@
 // Page d'accueil : liste les cartes du dossier maps/ (manifeste maps/index.json)
-// et mène au jeu via game.html?map=<fichier>. Aucune règle métier ici.
+// et mène au jeu via game.html?map=<fichier>&side=<camp>. Aucune règle métier ici.
 
 import { parseMap, setupFromMap } from '../src/map.js';
-import { homeMapsHTML } from './html.js';
+import { homeMapsHTML, homeSideHTML } from './html.js';
 import { buildBoardLayer } from './board.js';
 import { COL, boardSize, hexCenter } from './gfx.js';
 
 const PREVIEW_W = 576; // 2× la largeur intérieure d'une tuile, net sur écran retina
 
 const list = document.getElementById('maps');
+const sidepick = document.getElementById('sidepick');
+
+// Camp choisi : répercuté sur le lien de chaque tuile.
+let side = 'allies';
+sidepick.innerHTML = homeSideHTML(side);
+sidepick.addEventListener('change', (e) => {
+  side = e.target.value;
+  for (const a of list.querySelectorAll('.maptile')) {
+    const url = new URL(a.href);
+    url.searchParams.set('side', side);
+    a.href = url;
+  }
+});
 
 // Aperçu d'une carte : le raster du plateau (terrain + objectifs) surmonté
 // d'une pastille par unité, réduit en image.
@@ -53,7 +66,7 @@ async function loadMaps() {
 
 loadMaps()
   .then((maps) => {
-    list.innerHTML = homeMapsHTML(maps);
+    list.innerHTML = homeMapsHTML(maps, side);
   })
   .catch((err) => {
     list.innerHTML = `<p class="empty">✖ Impossible de charger la liste des cartes : ${err.message}</p>`;

@@ -36,7 +36,9 @@ export function shuffle(list, rng) {
 }
 
 // `map` : carte validée par parseMap (src/map.js) ; défaut = scénario « bocage ».
-export function createGame({ rng = Math.random, map = null } = {}) {
+// `playerSide` : camp joué par l'humain, l'IA prend l'autre. Les Alliés ouvrent
+// toujours le feu, quel que soit le camp choisi.
+export function createGame({ rng = Math.random, map = null, playerSide = 'allies' } = {}) {
   const { terrain, units, obstacles, objectives } = map ? setupFromMap(map) : scenario();
   const deck = shuffle(buildDeck(), rng);
   return {
@@ -47,6 +49,8 @@ export function createGame({ rng = Math.random, map = null } = {}) {
     decks: { allies: deck.slice(0, 10), axis: deck.slice(10) },
     hands: { allies: [], axis: [] },
     medals: { allies: 0, axis: 0 },
+    playerSide,
+    aiSide: playerSide === 'allies' ? 'axis' : 'allies',
     turn: 'allies',
     phase: 'card', // card | orders | done
     playedCard: null,
@@ -291,15 +295,15 @@ export function endPlayerTurn(state) {
   state.ordersLeft = 0;
   state.moved = {};
   state.attacks = {};
-  drawCards(state, 'allies');
-  state.turn = 'axis';
+  drawCards(state, state.playerSide);
+  state.turn = state.aiSide;
   state.phase = 'card';
 }
 
-export function endAxisTurn(state) {
-  drawCards(state, 'axis');
+export function endAiTurn(state) {
+  drawCards(state, state.aiSide);
   if (!state.winner) {
-    state.turn = 'allies';
+    state.turn = state.playerSide;
     state.phase = 'card';
     state.playedCard = null;
     state.units.forEach((u) => (u.acted = false));

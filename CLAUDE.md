@@ -1,7 +1,8 @@
 # Ordre de Bataille — proto « secteur bocage »
 
 Jeu de plateau hexagonal type Mémoire 44 en JavaScript pur : cartes de commandement
-par secteur, dés spéciaux, terrain, IA gloutonne pour l'Axe.
+par secteur, dés spéciaux, terrain, IA gloutonne pour le camp adverse (le joueur
+choisit son camp sur la page d'accueil).
 
 ## Stack
 
@@ -74,7 +75,7 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
 | `plateau-mouvement` | Hexes, secteurs, terrains, déplacement, scénario, picking              |
 | `combat`            | Dés, portées, réductions de terrain, résolution, repli, médailles      |
 | `cartes-tours`      | Pioche, main, cartes, phases, séquence de tour                         |
-| `ia-axe`            | Heuristiques de l'IA et tempo du tour de l'Axe                         |
+| `ia-axe`            | Heuristiques de l'IA adverse et tempo de son tour automatique          |
 | `feature`           | Workflow d'implémentation d'une feature (invocable : `/feature`)       |
 | `prd`               | Rédaction d'un PRD sans implémentation (invocable : `/prd`)            |
 

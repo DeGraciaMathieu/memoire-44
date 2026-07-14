@@ -1,4 +1,4 @@
-// IA de l'Axe — ne parle qu'aux règles. Gloutonne, évaluation 1 coup.
+// IA du camp adverse (state.aiSide) — ne parle qu'aux règles. Gloutonne, évaluation 1 coup.
 
 import { TERRAIN, UNITS } from './config.js';
 import { hexDistance, key, neighbors } from './hex.js';
@@ -9,14 +9,14 @@ import { defenseReduction, diceFor, targetsFor } from './combat.js';
 
 const P_HIT = { inf: 3 / 6, arm: 2 / 6, art: 3 / 6 }; // proba par dé selon la cible
 
-// Objectifs à prendre : toute tuile objectif que l'Axe ne tient pas encore.
+// Objectifs à prendre : toute tuile objectif que l'IA ne tient pas encore.
 function openObjectives(state) {
   return Object.keys(state.objectives ?? {})
     .map((k) => {
       const [c, r] = k.split(',').map(Number);
       return { c, r };
     })
-    .filter((h) => unitAt(state, h.c, h.r)?.side !== 'axis');
+    .filter((h) => unitAt(state, h.c, h.r)?.side !== state.aiSide);
 }
 
 // Valeur d'une carte en main : unités activables + celles qui ont déjà une
@@ -25,7 +25,7 @@ function cardScore(state, id) {
   const cd = cardById(id);
   if (cd.action === 'barrage') {
     let s = 0;
-    for (const e of barrageTargets(state, 'axis')) {
+    for (const e of barrageTargets(state, state.aiSide)) {
       const exp = cd.dice * P_HIT[e.type];
       s = Math.max(s, exp * 2 + (exp >= e.figs ? 8 : 0));
     }
@@ -40,10 +40,10 @@ function cardScore(state, id) {
     return worst ? (UNITS[worst.type].figs - worst.figs) * 2 : -1;
   }
   if (cd.action === 'contre') {
-    const last = state.lastCard.allies && cardById(state.lastCard.allies);
+    const last = state.lastCard[state.playerSide] && cardById(state.lastCard[state.playerSide]);
     return cardScore(state, last && last.action !== 'contre' ? last.id : 'recon');
   }
-  const us = orderableUnits(state, 'axis', id);
+  const us = orderableUnits(state, state.aiSide, id);
   let s = Math.min(us.length, cd.n) * 2;
   for (const u of us.slice(0, cd.n)) {
     if (targetsFor(state, u, 0).length) s += 3;
@@ -52,7 +52,7 @@ function cardScore(state, id) {
 }
 
 export function aiPickCard(state) {
-  const hand = state.hands.axis;
+  const hand = state.hands[state.aiSide];
   let best = hand[0];
   let bestScore = -Infinity;
   for (const id of hand) {
@@ -70,7 +70,7 @@ export function aiPickCard(state) {
 export function aiBarrageTarget(state) {
   let best = null;
   let bestScore = -Infinity;
-  for (const e of barrageTargets(state, 'axis')) {
+  for (const e of barrageTargets(state, state.aiSide)) {
     const exp = cardById('barrage').dice * P_HIT[e.type];
     const s = exp + (exp >= e.figs ? 2 : 0);
     if (s > bestScore) {
@@ -86,7 +86,7 @@ export function aiBarrageTarget(state) {
 // chaîne qui couvre le plus d'unités. Renvoie { hexes, units } ou null.
 export function aiAirHexes(state) {
   const card = cardById('air');
-  const enemies = state.units.filter((u) => u.side === 'allies');
+  const enemies = state.units.filter((u) => u.side === state.playerSide);
   let best = null;
   for (const seed of enemies) {
     const hexes = [{ c: seed.c, r: seed.r }];
@@ -95,10 +95,10 @@ export function aiAirHexes(state) {
         .flatMap((h) => neighbors(h.c, h.r))
         .filter((h) => validAirTarget(hexes, h));
       if (!options.length) break;
-      const withEnemy = options.find((h) => unitAt(state, h.c, h.r)?.side === 'allies');
+      const withEnemy = options.find((h) => unitAt(state, h.c, h.r)?.side === state.playerSide);
       hexes.push(withEnemy ?? options[0]);
     }
-    const units = hexes.filter((h) => unitAt(state, h.c, h.r)?.side === 'allies').length;
+    const units = hexes.filter((h) => unitAt(state, h.c, h.r)?.side === state.playerSide).length;
     if (!best || units > best.units) best = { hexes, units };
   }
   return best;
@@ -107,7 +107,7 @@ export function aiAirHexes(state) {
 // Soigner l'unité la plus amochée ; à pertes égales, l'infanterie
 // (2 faces sur 6, la meilleure espérance de réparation).
 export function aiMedicsTarget(state) {
-  const hurt = medicTargets(state, 'axis');
+  const hurt = medicTargets(state, state.aiSide);
   if (!hurt.length) return null;
   return hurt.sort(
     (a, b) =>
@@ -118,13 +118,13 @@ export function aiMedicsTarget(state) {
 
 export function aiChooseMoves(state, cardId) {
   const cd = cardById(cardId);
-  const pool = orderableUnits(state, 'axis', cardId);
+  const pool = orderableUnits(state, state.aiSide, cardId);
   const open = openObjectives(state);
   // priorité : unités qui peuvent frapper ou prendre un objectif > unités proches de l'ennemi
   const scored = pool
     .map((u) => {
       const near = Math.min(
-        ...state.units.filter((e) => e.side === 'allies').map((e) => hexDistance(u, e)),
+        ...state.units.filter((e) => e.side === state.playerSide).map((e) => hexDistance(u, e)),
       );
       let s = (targetsFor(state, u, 0).length ? 10 : 0) - near;
       if (open.some((o) => hexDistance(u, o) <= UNITS[u.type].moveNoFire)) s += 5;
@@ -162,7 +162,7 @@ export function aiBreakthroughTarget(state, unit) {
 }
 
 function aiPlanUnit(state, unit) {
-  const enemies = state.units.filter((e) => e.side === 'allies');
+  const enemies = state.units.filter((e) => e.side === state.playerSide);
   const open = openObjectives(state);
   const dests = [
     { c: unit.c, r: unit.r, cost: 0 },

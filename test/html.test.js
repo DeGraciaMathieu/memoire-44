@@ -36,13 +36,18 @@ test('homeMapsHTML : un lien par carte vers game.html, message si dossier vide',
     { file: 'sword beach.json', name: 'Sword Beach', preview: null },
   ]);
   assert.equal(h.match(/<a class="maptile"/g).length, 2);
-  assert.match(h, /href="game\.html\?map=pointe-du-hoc\.json"/);
+  assert.match(h, /href="game\.html\?map=pointe-du-hoc\.json&side=allies"/);
   assert.match(h, /Pointe du Hoc/);
   // le nom de fichier est encodé dans l'URL
-  assert.match(h, /href="game\.html\?map=sword%20beach\.json"/);
+  assert.match(h, /href="game\.html\?map=sword%20beach\.json&side=allies"/);
   // l'aperçu n'apparaît que pour les cartes qui en ont un
   assert.equal(h.match(/<img class="mappreview"/g).length, 1);
   assert.match(h, /src="data:image\/png;base64,xyz" alt="Aperçu de Pointe du Hoc"/);
+  // le camp choisi rejoint les liens
+  assert.match(
+    homeMapsHTML([{ file: 'a.json', name: 'A', preview: null }], 'axis'),
+    /href="game\.html\?map=a\.json&side=axis"/,
+  );
 
   assert.match(homeMapsHTML([]), /Aucune carte/);
 });
