@@ -3,7 +3,9 @@
 import { W, H } from './config.js';
 
 export const key = (c, r) => c + ',' + r;
-export const inBounds = (c, r) => c >= 0 && c < W && r >= 0 && r < H;
+// Rangées paires : W tuiles ; rangées impaires (décalées d'un demi-hex) :
+// W − 1 tuiles — la dernière colonne n'existe pas, comme sur le plateau réel.
+export const inBounds = (c, r) => c >= 0 && r >= 0 && r < H && c < W - (r & 1);
 
 export function toCube(c, r) {
   const x = c - (r - (r & 1)) / 2;

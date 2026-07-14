@@ -41,3 +41,11 @@ test('neighbors : 6 voisins au centre, moins sur les bords, tous dans le plateau
   assert.ok(neighbors(0, 0).length < 6);
   for (const n of neighbors(0, 0)) assert.ok(inBounds(n.c, n.r));
 });
+
+test('inBounds : les rangées impaires perdent la dernière colonne', () => {
+  assert.ok(inBounds(W - 1, 0)); // rangée paire : W tuiles
+  assert.ok(inBounds(W - 1, H - 1)); // dernière rangée (paire) complète
+  assert.ok(!inBounds(W - 1, 1)); // rangée impaire : W − 1 tuiles
+  assert.ok(!inBounds(W - 1, H - 2)); // l'avant-dernière rangée est impaire
+  assert.ok(inBounds(W - 2, 1));
+});

@@ -18,7 +18,7 @@ test('le scénario pose 7 unités par camp, en bon état et dans le plateau', ()
 
 test('le terrain couvre tout le plateau, avec le bocage attendu', () => {
   const { terrain } = scenario();
-  assert.equal(Object.keys(terrain).length, W * H);
+  assert.equal(Object.keys(terrain).length, W * H - (H >> 1)); // rangées impaires : W − 1 tuiles
   assert.equal(terrain[key(1, 2)], 'foret');
   assert.equal(terrain[key(4, 4)], 'colline');
   assert.equal(terrain[key(6, 4)], 'village');

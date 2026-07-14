@@ -4,7 +4,7 @@
 // en cours de partie (sacs de sable abandonnés).
 
 import { W, H } from '../src/config.js';
-import { key } from '../src/hex.js';
+import { inBounds, key } from '../src/hex.js';
 import { sectorsOf } from '../src/sectors.js';
 import { COL, boardSize, hexCenter, hexPath, plaineShade } from './gfx.js';
 
@@ -18,6 +18,7 @@ export function buildBoardLayer(state, dpr) {
 
   for (let r = 0; r < H; r++)
     for (let c = 0; c < W; c++) {
+      if (!inBounds(c, r)) continue;
       const p = hexCenter(c, r);
       const t = state.terrain[key(c, r)];
       hexPath(ctx, p.x, p.y);

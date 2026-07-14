@@ -3,7 +3,7 @@
 // métier ici : la légalité d'un placement et la validation viennent de src/map.js.
 
 import { W, H, TERRAIN, OBSTACLES, UNITS } from '../src/config.js';
-import { key } from '../src/hex.js';
+import { inBounds, key } from '../src/hex.js';
 import { parseMap, serializeMap, unitAllowedOn } from '../src/map.js';
 import { createUiState } from './uiState.js';
 import { buildBoardLayer } from './board.js';
@@ -20,7 +20,8 @@ const fileImport = document.getElementById('fileImport');
 
 function blankMap() {
   const terrain = {};
-  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) terrain[key(c, r)] = 'plaine';
+  for (let r = 0; r < H; r++)
+    for (let c = 0; c < W; c++) if (inBounds(c, r)) terrain[key(c, r)] = 'plaine';
   return { terrain, obstacles: {}, objectives: {}, units: [] };
 }
 

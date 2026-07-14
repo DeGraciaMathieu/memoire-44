@@ -1,11 +1,12 @@
 // Scénario « secteur bocage » : terrain initial et ordre de bataille.
 
 import { W, H, UNITS } from './config.js';
-import { key } from './hex.js';
+import { inBounds, key } from './hex.js';
 
 export function scenario() {
   const terrain = {};
-  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) terrain[key(c, r)] = 'plaine';
+  for (let r = 0; r < H; r++)
+    for (let c = 0; c < W; c++) if (inBounds(c, r)) terrain[key(c, r)] = 'plaine';
   const put = (t, list) => list.forEach(([c, r]) => (terrain[key(c, r)] = t));
   put('foret', [
     [1, 2],

@@ -24,7 +24,7 @@ test('aller-retour sérialisation → parse : la carte est reconstruite à l’i
 
 test('parseMap complète le terrain en plaine et valide les unités', () => {
   const map = parseMap(sampleMap());
-  assert.equal(Object.keys(map.terrain).length, W * H);
+  assert.equal(Object.keys(map.terrain).length, W * H - (H >> 1)); // rangées impaires : W − 1 tuiles
   assert.equal(map.terrain[key(2, 3)], 'foret');
   assert.equal(map.terrain[key(0, 0)], 'plaine');
   assert.equal(map.obstacles[key(6, 0)], 'bunker');

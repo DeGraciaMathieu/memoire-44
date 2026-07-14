@@ -60,7 +60,8 @@ export function parseMap(raw) {
   if (!data || typeof data !== 'object') fail('le fichier ne décrit pas un objet');
 
   const terrain = {};
-  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) terrain[key(c, r)] = 'plaine';
+  for (let r = 0; r < H; r++)
+    for (let c = 0; c < W; c++) if (inBounds(c, r)) terrain[key(c, r)] = 'plaine';
   for (const [k, t] of Object.entries(data.terrain ?? {})) {
     if (!TERRAIN[t]) fail(`terrain inconnu « ${t} »`);
     const [c, r] = parseHexKey(k);

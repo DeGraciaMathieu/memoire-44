@@ -3,7 +3,7 @@
 // (hexPath reçoit le contexte en argument).
 
 import { W, H } from '../src/config.js';
-import { key, neighbors } from '../src/hex.js';
+import { inBounds, key, neighbors } from '../src/hex.js';
 
 export const LAYOUT = { size: 42, mx: 26, my: 26 };
 
@@ -35,8 +35,9 @@ export function plaineShade(c, r) {
 }
 
 export function boardSize(layout = LAYOUT) {
+  // les rangées impaires (12 tuiles, décalées) ne dépassent plus à droite
   return {
-    width: Math.round(layout.size * Math.sqrt(3) * (W + 0.5)) + layout.mx * 2,
+    width: Math.round(layout.size * Math.sqrt(3) * W) + layout.mx * 2,
     height: Math.round(layout.size * 1.5 * (H - 1) + layout.size * 2) + layout.my * 2,
   };
 }
@@ -106,6 +107,7 @@ export function pickHex(x, y, layout = LAYOUT) {
   let bd = Infinity;
   for (let r = 0; r < H; r++)
     for (let c = 0; c < W; c++) {
+      if (!inBounds(c, r)) continue;
       const p = hexCenter(c, r, layout);
       const d = (p.x - x) ** 2 + (p.y - y) ** 2;
       if (d < bd) {
@@ -116,10 +118,11 @@ export function pickHex(x, y, layout = LAYOUT) {
   return bd <= (layout.size * 0.95) ** 2 ? best : null;
 }
 
-// Les lignes de secteur : deux droites verticales passant par le centre des
-// colonnes 4 et 8 (rangées paires).
+// Les lignes de secteur : deux droites verticales entre les colonnes 3|4 et
+// 8|9 des rangées paires — soit le centre des colonnes 3 et 8 des rangées
+// impaires (secteurs 4 / 5 / 4).
 export function sectorLinesX(layout = LAYOUT) {
-  return [hexCenter(4, 0, layout).x, hexCenter(8, 0, layout).x];
+  return [hexCenter(3, 1, layout).x, hexCenter(8, 1, layout).x];
 }
 
 export function sectorLabelsX(layout = LAYOUT) {

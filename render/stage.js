@@ -2,6 +2,7 @@
 // et dessin de la couche dynamique par-dessus le raster du plateau.
 
 import { W, H } from '../src/config.js';
+import { inBounds } from '../src/hex.js';
 import { cardSectors, sectorsOf } from '../src/sectors.js';
 import { cardById } from '../src/cards.js';
 import { obstacleAt } from '../src/movement.js';
@@ -109,6 +110,7 @@ export function createStage(canvas, getScene) {
     if (live) {
       for (let r = 0; r < H; r++)
         for (let c = 0; c < W; c++) {
+          if (!inBounds(c, r)) continue;
           const p = hexCenter(c, r);
           hexPath(ctx, p.x, p.y);
           ctx.fillStyle = sectorsOf(c, r).some((s) => live.includes(s))
