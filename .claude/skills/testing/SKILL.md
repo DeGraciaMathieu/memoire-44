@@ -32,19 +32,19 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 
 ## Mapping fichier de test → périmètre couvert
 
-| Fichier                 | Couvre                                                                                                                    |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `test/events.test.js`   | Bus : livraison, payload, désabonnement                                                                                   |
-| `test/hex.test.js`      | Coordonnées cube, `hexDistance`, `neighbors`, bords                                                                       |
-| `test/sectors.test.js`  | Hexes à cheval (colonnes 4/8), rangées impaires, `inSector`, `cardSectors` (flancs)                                       |
-| `test/cards.test.js`    | Composition de la pioche (26 cartes, copies), `cardById`                                                                  |
-| `test/scenario.test.js` | Mise en place : 14 unités, terrain du bocage                                                                              |
-| `test/map.test.js`      | Cartes de l'éditeur : aller-retour JSON, validation `parseMap`, `setupFromMap`, `unitAllowedOn`                           |
-| `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer, plage                                |
-| `test/combat.test.js`   | `diceFor`, `targetsFor`, `rollDice`, `resolveCombat` (repli, dos au mur, médaille, victoire, événements)                  |
-| `test/ai.test.js`       | `aiPickCard`, `aiChooseMoves` (forme des plans)                                                                           |
-| `test/game.test.js`     | **MACRO** : déterminisme par graine, tour allié complet, `attackUnit`, rebattage de pioche, partie sur carte de l'éditeur |
-| `test/html.test.js`     | Fragments purs : `cardHTML`, `forcePanelHTML`, `calcHTML`, `tipHTML`                                                      |
+| Fichier                 | Couvre                                                                                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test/events.test.js`   | Bus : livraison, payload, désabonnement                                                                                                               |
+| `test/hex.test.js`      | Coordonnées cube, `hexDistance`, `neighbors`, bords                                                                                                   |
+| `test/sectors.test.js`  | Hexes à cheval (colonnes 4/8), rangées impaires, `inSector`, `cardSectors` (flancs)                                                                   |
+| `test/cards.test.js`    | Composition de la pioche (26 cartes, copies), `cardById`                                                                                              |
+| `test/scenario.test.js` | Mise en place : 14 unités, terrain du bocage                                                                                                          |
+| `test/map.test.js`      | Cartes de l'éditeur : aller-retour JSON, validation `parseMap`, `setupFromMap`, `unitAllowedOn`                                                       |
+| `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer, plage                                                            |
+| `test/combat.test.js`   | `diceFor`, `targetsFor`, `rollDice`, `resolveCombat` (repli, dos au mur, médaille, victoire, événements)                                              |
+| `test/ai.test.js`       | `aiPickCard`, `aiChooseMoves` (forme des plans)                                                                                                       |
+| `test/game.test.js`     | **MACRO** : déterminisme par graine, tour allié complet, `attackUnit`, rebattage de pioche, partie sur carte de l'éditeur                             |
+| `test/html.test.js`     | Fragments purs : `cardHTML`, `forcePanelHTML`, `calcHTML`, `tipHTML`                                                                                  |
 | `test/gfx.test.js`      | `boardSize`, aller-retour `hexCenter`/`pickHex`, lignes de secteur, nuances de plaine (`plaineShade`), orientation et raccords du pont (`bridgeSpec`) |
 
 ## Où placer un nouveau test
