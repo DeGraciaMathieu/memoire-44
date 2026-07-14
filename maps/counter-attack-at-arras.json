@@ -1,0 +1,205 @@
+{
+  "name": "counter attack at arras",
+  "terrain": {
+    "0,1": "village",
+    "9,1": "village",
+    "9,2": "village",
+    "11,2": "colline",
+    "12,2": "colline",
+    "1,3": "foret",
+    "5,3": "village",
+    "10,3": "colline",
+    "11,3": "colline",
+    "0,4": "foret",
+    "2,4": "foret",
+    "5,4": "village",
+    "6,4": "village",
+    "10,4": "foret",
+    "11,4": "colline",
+    "0,5": "foret",
+    "2,5": "foret",
+    "7,5": "foret",
+    "9,5": "colline",
+    "10,5": "colline",
+    "1,6": "foret",
+    "3,6": "foret",
+    "1,7": "foret",
+    "3,7": "village",
+    "7,7": "village",
+    "11,7": "village",
+    "0,8": "colline",
+    "1,8": "colline"
+  },
+  "obstacles": {},
+  "objectives": {},
+  "units": [
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 1,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 2,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 5,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 6,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 3,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 4,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 8,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 9,
+      "r": 6
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 12,
+      "r": 6
+    },
+    {
+      "side": "allies",
+      "type": "art",
+      "c": 7,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 10,
+      "r": 6
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 11,
+      "r": 6
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 1,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 5,
+      "r": 2
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 4,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 3,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 8,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 9,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 10,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 8,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 3,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 2,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 2,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 7,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 7,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 6,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 5,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "art",
+      "c": 4,
+      "r": 0
+    }
+  ]
+}
