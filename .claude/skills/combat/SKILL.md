@@ -35,8 +35,10 @@ auto_invoke: true
    (`resolveCombat` → émet `medalAwarded` / `gameWon`), puis émet `combatResolved`
    avec l'outcome complet.
 3. `app.js` (abonné `combatResolved`) : plateau de dés (`hud.showDice`) + journal.
-4. `combatModal.play(state, outcome, { auto })` anime le résultat déjà connu ; `auto: true`
-   pour l'IA (fermeture après 2100 ms).
+4. `playCombat` (`app.js`) enveloppe `combatModal.play(state, outcome, { auto })` — le
+   résultat est déjà connu, `auto: true` pour l'IA (fermeture après 2100 ms) — puis, à la
+   fermeture de la modale, déclenche `stage.boom([outcome.defenderHex])` si le défenseur
+   a encaissé (touches, pertes de repli ou destruction).
 5. Si `takeGroundHex` renvoie un hex : prise de terrain proposée (joueur : `ui.takeGround`,
    clic ; IA : `aiTakesGround`), puis éventuelle percée de blindés (`canBreakthrough` →
    nouvelle attaque, retour au point 2).
