@@ -168,7 +168,11 @@ function wireBus(bus) {
     }
     hud.setMedals(medalTotals());
     if (report.hits + report.extraLoss > 0)
-      stage.boom(defenderHex, { damage: report.hits + report.extraLoss, killed: report.killed });
+      stage.boom(defenderHex, {
+        damage: report.hits + report.extraLoss,
+        killed: report.killed,
+        retreatedId: report.retreated ? defender.id : null,
+      });
     stage.requestDraw();
   });
   bus.on('unitHealed', ({ unit, restored, faces }) => {
@@ -195,9 +199,13 @@ function wireBus(bus) {
 // défenseur a encaissé (touches, pertes de repli ou destruction).
 async function playCombat(outcome, auto) {
   await modal.play(state, outcome, { auto });
-  const { report, defenderHex } = outcome;
+  const { report, defenderHex, defender } = outcome;
   if (report.hits + report.extraLoss > 0)
-    stage.boom(defenderHex, { damage: report.hits + report.extraLoss, killed: report.killed });
+    stage.boom(defenderHex, {
+      damage: report.hits + report.extraLoss,
+      killed: report.killed,
+      retreatedId: report.retreated ? defender.id : null,
+    });
 }
 
 /* --- actions du joueur (appelées par input.js et hand.js) --------------- */

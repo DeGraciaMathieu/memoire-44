@@ -46,10 +46,14 @@ export function createStage(canvas, getScene) {
   const FX_MS = 700;
   const fx = [];
 
+  // pion replié maintenu sur son hex d'origine tant que les explosions jouent :
+  // { id, c, r, until } — l'état a déjà déplacé l'unité, seul l'affichage attend
+  let hold = null;
+
   // Le résultat de l'attaque dicte les explosions : une par coin de la tuile
   // pour chaque dégât encaissé, puis une explosion centrale plus large si
-  // l'unité est détruite.
-  function boom(hex, { damage, killed }) {
+  // l'unité est détruite. Un pion qui recule ne bouge qu'une fois le feu éteint.
+  function boom(hex, { damage, killed, retreatedId }) {
     const now = performance.now();
     const p = hexCenter(hex.c, hex.r);
     const corners = hexCorners(p.x, p.y, LAYOUT.size * 0.72);
@@ -59,10 +63,14 @@ export function createStage(canvas, getScene) {
       fx.push({ x, y, start: now + i * 120, scale: 0.6 });
     }
     if (killed) fx.push({ x: p.x, y: p.y, start: now + n * 120, scale: 1.4 });
+    if (retreatedId != null)
+      hold = { id: retreatedId, c: hex.c, r: hex.r, until: now + (n - 1) * 120 + FX_MS };
     requestDraw();
   }
 
   function draw() {
+    const now = performance.now(); // horloge unique : expiration du maintien et vie des explosions
+    if (hold && now >= hold.until) hold = null;
     const { state, ui, boardLayer } = getScene();
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(boardLayer, 0, 0, width, height);
@@ -183,7 +191,8 @@ export function createStage(canvas, getScene) {
     // unités
     for (const u of state.units) {
       if (ui.drag && ui.drag.unit.id === u.id) continue; // dessinée au curseur
-      const p = hexCenter(u.c, u.r);
+      const held = hold && hold.id === u.id;
+      const p = held ? hexCenter(hold.c, hold.r) : hexCenter(u.c, u.r);
       const sel = ui.selected && ui.selected.id === u.id;
       const canOrder =
         state.phase === 'orders' &&
@@ -203,7 +212,6 @@ export function createStage(canvas, getScene) {
     }
 
     // explosions par-dessus tout, puis prochaine frame tant qu'il en reste
-    const now = performance.now();
     for (let i = fx.length - 1; i >= 0; i--) {
       const t = (now - fx[i].start) / FX_MS;
       if (t >= 1) {
