@@ -6,7 +6,7 @@
 import { W, H } from '../src/config.js';
 import { inBounds, key } from '../src/hex.js';
 import { sectorsOf } from '../src/sectors.js';
-import { COL, boardSize, hexCenter, hexPath, plaineShade } from './gfx.js';
+import { COL, boardSize, hash2d, hexCenter, hexPath, plaineShade } from './gfx.js';
 
 export function buildBoardLayer(state, dpr) {
   const { width, height } = boardSize();
@@ -15,6 +15,20 @@ export function buildBoardLayer(state, dpr) {
   layer.height = height * dpr;
   const ctx = layer.getContext('2d');
   ctx.scale(dpr, dpr);
+
+  // fond : toile kaki grainée derrière les tuiles, encadrée d'un liseré laiton
+  ctx.fillStyle = '#383D2F';
+  ctx.fillRect(0, 0, width, height);
+  for (let y = 3; y < height; y += 6)
+    for (let x = 3; x < width; x += 6) {
+      const h = hash2d(x, y);
+      if (h % 7) continue; // grain épars, déterministe
+      ctx.fillStyle = h % 14 ? 'rgba(232,226,208,.05)' : 'rgba(0,0,0,.16)';
+      ctx.fillRect(x + (h % 5) - 2, y + ((h >> 3) % 5) - 2, 2, 2);
+    }
+  ctx.strokeStyle = 'rgba(201,162,39,.28)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(6.5, 6.5, width - 13, height - 13);
 
   for (let r = 0; r < H; r++)
     for (let c = 0; c < W; c++) {

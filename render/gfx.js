@@ -26,12 +26,16 @@ export const COL = {
 // Nuances de vert autour de COL.plaine pour casser la monotonie du fond.
 export const PLAINE_SHADES = [COL.plaine, '#ADC282', '#BCCF96', '#A8BD7E'];
 
-// Nuance de plaine d'un hex : déterministe (même hex → même teinte), le hash
-// évite les rayures qu'un simple modulo sur c et r dessinerait.
+// Hash 2D déterministe (même point → même valeur) : nuances de plaine et grain
+// du fond — évite les rayures qu'un simple modulo dessinerait.
+export function hash2d(x, y) {
+  const h = Math.imul(x + 1, 2654435761) ^ Math.imul(y + 1, 1597334677);
+  return Math.imul(h ^ (h >>> 13), 1274126177) >>> 16;
+}
+
+// Nuance de plaine d'un hex : déterministe (même hex → même teinte).
 export function plaineShade(c, r) {
-  let h = Math.imul(c + 1, 2654435761) ^ Math.imul(r + 1, 1597334677);
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return PLAINE_SHADES[(h >>> 16) % PLAINE_SHADES.length];
+  return PLAINE_SHADES[hash2d(c, r) % PLAINE_SHADES.length];
 }
 
 export function boardSize(layout = LAYOUT) {
