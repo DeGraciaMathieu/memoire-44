@@ -6,7 +6,16 @@ import { cardSectors, sectorsOf } from '../src/sectors.js';
 import { cardById } from '../src/cards.js';
 import { obstacleAt } from '../src/movement.js';
 import { UNIT_GLYPH } from './html.js';
-import { COL, LAYOUT, boardSize, hexCenter, hexPath, sectorLabelsX, sectorLinesX } from './gfx.js';
+import {
+  COL,
+  LAYOUT,
+  boardSize,
+  hexCenter,
+  hexCorners,
+  hexPath,
+  sectorLabelsX,
+  sectorLinesX,
+} from './gfx.js';
 
 export const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -32,17 +41,24 @@ export function createStage(canvas, getScene) {
     });
   }
 
-  // explosions en cours : { x, y, start } — dessinées tant qu'elles vivent,
+  // explosions en cours : { x, y, start, scale } — dessinées tant qu'elles vivent,
   // le draw() se réarme lui-même jusqu'à extinction
   const FX_MS = 700;
   const fx = [];
 
-  function boom(hexes) {
+  // Le résultat de l'attaque dicte les explosions : une par coin de la tuile
+  // pour chaque dégât encaissé, puis une explosion centrale plus large si
+  // l'unité est détruite.
+  function boom(hex, { damage, killed }) {
     const now = performance.now();
-    hexes.forEach((h, i) => {
-      const p = hexCenter(h.c, h.r);
-      fx.push({ x: p.x, y: p.y, start: now + i * 120 });
-    });
+    const p = hexCenter(hex.c, hex.r);
+    const corners = hexCorners(p.x, p.y, LAYOUT.size * 0.72);
+    const n = Math.min(damage, corners.length);
+    for (let i = 0; i < n; i++) {
+      const [x, y] = corners[i];
+      fx.push({ x, y, start: now + i * 120, scale: 0.6 });
+    }
+    if (killed) fx.push({ x: p.x, y: p.y, start: now + n * 120, scale: 1.4 });
     requestDraw();
   }
 
@@ -194,37 +210,37 @@ export function createStage(canvas, getScene) {
         fx.splice(i, 1);
         continue;
       }
-      if (t >= 0) drawExplosion(fx[i].x, fx[i].y, t);
+      if (t >= 0) drawExplosion(fx[i].x, fx[i].y, t, fx[i].scale);
     }
     if (fx.length) requestDraw();
   }
 
-  function drawExplosion(x, y, t) {
+  function drawExplosion(x, y, t, s) {
     const ease = 1 - (1 - t) * (1 - t); // expansion vive puis amortie
     ctx.save();
     ctx.globalAlpha = 1 - t;
     // boule de feu
     ctx.fillStyle = '#E8B33A';
     ctx.beginPath();
-    ctx.arc(x, y, 4 + ease * 10, 0, Math.PI * 2);
+    ctx.arc(x, y, (4 + ease * 10) * s, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#B03A2E';
     ctx.beginPath();
-    ctx.arc(x, y, 2 + ease * 5, 0, Math.PI * 2);
+    ctx.arc(x, y, (2 + ease * 5) * s, 0, Math.PI * 2);
     ctx.fill();
     // onde de choc
     ctx.strokeStyle = '#E8E2D0';
     ctx.lineWidth = 2 * (1 - t);
     ctx.beginPath();
-    ctx.arc(x, y, 8 + ease * 22, 0, Math.PI * 2);
+    ctx.arc(x, y, (8 + ease * 22) * s, 0, Math.PI * 2);
     ctx.stroke();
     // éclats projetés en étoile
     for (let i = 0; i < 8; i++) {
       const a = (Math.PI * 2 * i) / 8 + 0.4;
-      const d = 10 + ease * 24;
+      const d = (10 + ease * 24) * s;
       ctx.fillStyle = i % 2 ? '#E8B33A' : '#B03A2E';
       ctx.beginPath();
-      ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 2.4 * (1 - t), 0, Math.PI * 2);
+      ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 2.4 * (1 - t) * s, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
