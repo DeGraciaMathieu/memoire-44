@@ -50,10 +50,15 @@ export function createStage(canvas, getScene) {
   // { id, c, r, until } — l'état a déjà déplacé l'unité, seul l'affichage attend
   let hold = null;
 
+  // pion détruit encore affiché le temps du feu : { unit, c, r, until } —
+  // l'état l'a déjà retiré, il ne disparaît qu'après la dernière explosion
+  let ghost = null;
+
   // Le résultat de l'attaque dicte les explosions : une par coin de la tuile
   // pour chaque dégât encaissé, puis une explosion centrale plus large si
   // l'unité est détruite. Un pion qui recule ne bouge qu'une fois le feu éteint.
-  function boom(hex, { damage, killed, retreatedId }) {
+  // Renvoie la durée totale (ms) pour que l'appelant attende la fin du feu.
+  function boom(hex, { damage, killed, retreatedId, corpse }) {
     const now = performance.now();
     const p = hexCenter(hex.c, hex.r);
     const corners = hexCorners(p.x, p.y, LAYOUT.size * 0.72);
@@ -62,15 +67,18 @@ export function createStage(canvas, getScene) {
       const [x, y] = corners[i];
       fx.push({ x, y, start: now + i * 120, scale: 0.6 });
     }
+    const total = (killed ? n : n - 1) * 120 + FX_MS;
     if (killed) fx.push({ x: p.x, y: p.y, start: now + n * 120, scale: 1.4 });
-    if (retreatedId != null)
-      hold = { id: retreatedId, c: hex.c, r: hex.r, until: now + (n - 1) * 120 + FX_MS };
+    if (retreatedId != null) hold = { id: retreatedId, c: hex.c, r: hex.r, until: now + total };
+    if (corpse) ghost = { unit: corpse, c: hex.c, r: hex.r, until: now + total };
     requestDraw();
+    return total;
   }
 
   function draw() {
-    const now = performance.now(); // horloge unique : expiration du maintien et vie des explosions
+    const now = performance.now(); // horloge unique : expiration du maintien, du fantôme et des explosions
     if (hold && now >= hold.until) hold = null;
+    if (ghost && now >= ghost.until) ghost = null;
     const { state, ui, boardLayer } = getScene();
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(boardLayer, 0, 0, width, height);
@@ -200,6 +208,10 @@ export function createStage(canvas, getScene) {
         ui.orderable.some((x) => x.id === u.id) &&
         !u.acted;
       drawCounter(u, p.x, p.y, { sel, canOrder, obstacle: obstacleAt(state, u.c, u.r) });
+    }
+    if (ghost) {
+      const p = hexCenter(ghost.c, ghost.r);
+      drawCounter(ghost.unit, p.x, p.y, {});
     }
     if (ui.drag) {
       const u = ui.drag.unit;

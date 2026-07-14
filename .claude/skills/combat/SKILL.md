@@ -37,8 +37,15 @@ auto_invoke: true
 3. `app.js` (abonné `combatResolved`) : plateau de dés (`hud.showDice`) + journal.
 4. `playCombat` (`app.js`) enveloppe `combatModal.play(state, outcome, { auto })` — le
    résultat est déjà connu, `auto: true` pour l'IA (fermeture après 2100 ms) — puis, à la
-   fermeture de la modale, déclenche `stage.boom([outcome.defenderHex])` si le défenseur
-   a encaissé (touches, pertes de repli ou destruction).
+   fermeture de la modale, appelle `stage.boom(outcome.defenderHex, { damage, killed,
+   retreatedId, corpse })` si le défenseur a encaissé (touches, pertes de repli ou
+   destruction) : une explosion par coin de la tuile par dégât, une explosion centrale
+   plus large si l'unité est détruite, le pion replié reste affiché sur son hex
+   d'origine tant que le feu brûle, et le pion détruit (`corpse`, avec ses figurines
+   d'avant l'attaque) ne disparaît qu'après la dernière explosion. `boom` **renvoie**
+   la durée totale des explosions, et `playCombat` attend `ms + 150 ms` avant de rendre
+   la main, de sorte que le repli du défenseur est affiché à l'écran avant que la prise
+   de terrain ou la percée ne s'enclenche.
 5. Si `takeGroundHex` renvoie un hex : prise de terrain proposée (joueur : `ui.takeGround`,
    clic ; IA : `aiTakesGround`), puis éventuelle percée de blindés (`canBreakthrough` →
    nouvelle attaque, retour au point 2).

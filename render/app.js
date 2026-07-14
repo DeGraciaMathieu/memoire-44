@@ -147,34 +147,38 @@ function wireBus(bus) {
     hud.setMedals(medalTotals());
     stage.requestDraw();
   });
-  bus.on('actionStruck', ({ card, side, defender, defenderHex, obstacleKey, report }) => {
-    hud.showDice(report.faces);
-    hud.log(
-      `  ${card.name} sur ${UNITS[defender.type].label} ${SIDE_FR[defender.side]} — ${report.faces
-        .map((f) => SYM[f])
-        .join(' ')}`,
-    );
-    let txt = `  → ${report.hits} touche(s)`;
-    if (report.flags) txt += `, ${report.flags} drapeau(x)`;
-    if (report.flagsIgnored)
-      txt += ` · 1 drapeau ignoré (${OBSTACLES[obstacleKey].label.toLowerCase()})`;
-    if (report.extraLoss) txt += ` · repli impossible : ${report.extraLoss} perte(s)`;
-    hud.log(txt, report.hits || report.extraLoss ? 'bad' : '');
-    if (report.killed) {
+  bus.on(
+    'actionStruck',
+    ({ card, side, defender, defenderHex, obstacleKey, figsBefore, report }) => {
+      hud.showDice(report.faces);
       hud.log(
-        `  ★ ${UNITS[defender.type].label} détruite — médaille pour l’${SIDE_FR[side]}.`,
-        side === 'allies' ? 'good' : 'bad',
+        `  ${card.name} sur ${UNITS[defender.type].label} ${SIDE_FR[defender.side]} — ${report.faces
+          .map((f) => SYM[f])
+          .join(' ')}`,
       );
-    }
-    hud.setMedals(medalTotals());
-    if (report.hits + report.extraLoss > 0)
-      stage.boom(defenderHex, {
-        damage: report.hits + report.extraLoss,
-        killed: report.killed,
-        retreatedId: report.retreated ? defender.id : null,
-      });
-    stage.requestDraw();
-  });
+      let txt = `  → ${report.hits} touche(s)`;
+      if (report.flags) txt += `, ${report.flags} drapeau(x)`;
+      if (report.flagsIgnored)
+        txt += ` · 1 drapeau ignoré (${OBSTACLES[obstacleKey].label.toLowerCase()})`;
+      if (report.extraLoss) txt += ` · repli impossible : ${report.extraLoss} perte(s)`;
+      hud.log(txt, report.hits || report.extraLoss ? 'bad' : '');
+      if (report.killed) {
+        hud.log(
+          `  ★ ${UNITS[defender.type].label} détruite — médaille pour l’${SIDE_FR[side]}.`,
+          side === 'allies' ? 'good' : 'bad',
+        );
+      }
+      hud.setMedals(medalTotals());
+      if (report.hits + report.extraLoss > 0)
+        stage.boom(defenderHex, {
+          damage: report.hits + report.extraLoss,
+          killed: report.killed,
+          retreatedId: report.retreated ? defender.id : null,
+          corpse: report.killed ? { ...defender, figs: figsBefore } : null,
+        });
+      stage.requestDraw();
+    },
+  );
   bus.on('unitHealed', ({ unit, restored, faces }) => {
     hud.showDice(faces);
     hud.log(
@@ -196,16 +200,21 @@ function wireBus(bus) {
 }
 
 // Joue la modale de combat puis, à sa fermeture, fait exploser l'hex où le
-// défenseur a encaissé (touches, pertes de repli ou destruction).
+// défenseur a encaissé (touches, pertes de repli ou destruction). Ne rend la
+// main qu'une fois le feu éteint et le repli affiché, pour que la prise de
+// terrain ou la percée qui suit ne chevauche pas ces animations.
 async function playCombat(outcome, auto) {
   await modal.play(state, outcome, { auto });
-  const { report, defenderHex, defender } = outcome;
-  if (report.hits + report.extraLoss > 0)
-    stage.boom(defenderHex, {
+  const { report, defenderHex, defender, figsBefore } = outcome;
+  if (report.hits + report.extraLoss > 0) {
+    const ms = stage.boom(defenderHex, {
       damage: report.hits + report.extraLoss,
       killed: report.killed,
       retreatedId: report.retreated ? defender.id : null,
+      corpse: report.killed ? { ...defender, figs: figsBefore } : null,
     });
+    await sleep(ms + 150); // court battement : le repli se lit avant l'avancée adverse
+  }
 }
 
 /* --- actions du joueur (appelées par input.js et hand.js) --------------- */
