@@ -133,6 +133,10 @@ export function attachInput(canvas, { getState, getUi, hud, stage, actions }) {
     const { x, y } = toCanvas(e);
     const hex = pickHex(x, y);
 
+    if (ui.action) {
+      actions.actionClick(hex);
+      return;
+    }
     if (ui.takeGround) {
       const tg = ui.takeGround.hex;
       if (hex && hex.c === tg.c && hex.r === tg.r) actions.confirmTakeGround();

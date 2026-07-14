@@ -29,6 +29,11 @@ const MOVE_LBL = {
 };
 
 export function cardHTML(card) {
+  if (card.action)
+    return `<div class="n">✸<small>action</small></div>
+    <div class="cname">${card.name}</div>
+    <div class="secs">${SECTORS.map(() => '<i></i>').join('')}</div>
+    <div class="ctag">${card.desc}</div>`;
   return `<div class="n">${card.n}<small>unité${card.n > 1 ? 's' : ''}</small></div>
     <div class="cname">${card.name}</div>
     <div class="secs">${SECTORS.map(

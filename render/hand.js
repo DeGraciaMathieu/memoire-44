@@ -62,7 +62,10 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame }) {
       b.style.setProperty('--tx', ((i - mid) * gap).toFixed(1) + 'px');
       b.style.zIndex = i;
       b.disabled = !playable;
-      b.setAttribute('aria-label', `${cd.name}, ${cd.n} unités`);
+      b.setAttribute(
+        'aria-label',
+        cd.action ? `${cd.name}, carte action` : `${cd.name}, ${cd.n} unités`,
+      );
       b.innerHTML = cardHTML(cd);
       // les cartes fraîchement piochées se posent en dernier
       if (ui.justDrew && i >= hand.length - ui.justDrew) {

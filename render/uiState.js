@@ -13,5 +13,6 @@ export function createUiState() {
     modalOpen: false, // la modale de combat bloque les entrées plateau
     takeGround: null, // { unit, hex } : prise de terrain proposée au joueur
     breakthrough: null, // unité blindée dont la percée attend une cible
+    action: null, // { kind, targets | picks } : carte action en attente de cible
   };
 }

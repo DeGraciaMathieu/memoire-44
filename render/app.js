@@ -6,22 +6,37 @@ import { OBSTACLES, TERRAIN, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
 import {
   attackUnit,
+  barrageTargets,
   canBreakthrough,
   createGame,
   drawCards,
   endAxisTurn,
   endPlayerTurn,
   finishUnit,
+  medicTargets,
   moveUnit,
   orderableUnits,
   playCard,
+  resolveAirStrike,
+  resolveBarrage,
+  resolveMedics,
   takeGround,
   takeGroundHex,
+  validAirTarget,
 } from '../src/game.js';
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
+import { cardById } from '../src/cards.js';
 import { diceFor, medalCount, targetsFor } from '../src/combat.js';
-import { aiBreakthroughTarget, aiChooseMoves, aiPickCard, aiTakesGround } from '../src/ai.js';
+import {
+  aiAirHexes,
+  aiBarrageTarget,
+  aiBreakthroughTarget,
+  aiChooseMoves,
+  aiMedicsTarget,
+  aiPickCard,
+  aiTakesGround,
+} from '../src/ai.js';
 import { createUiState } from './uiState.js';
 import { buildBoardLayer } from './board.js';
 import { createStage, DPR } from './stage.js';
@@ -53,6 +68,7 @@ attachInput(canvas, {
     selectUnit,
     moveTo,
     attackTarget,
+    actionClick,
     clearSelection,
     refresh,
     confirmTakeGround,
@@ -73,11 +89,14 @@ function wireBus(bus) {
   bus.on('cardsDrawn', ({ side, count }) => {
     if (side === 'allies') ui.justDrew = count;
   });
-  bus.on('cardPlayed', ({ side, card, ordersLeft }) => {
+  bus.on('cardPlayed', ({ side, card, as, ordersLeft }) => {
+    const name = as ? `${card.name} — rejoue ${as.name}` : card.name;
     hud.log(
       side === 'allies'
-        ? `▸ ${card.name} — ${ordersLeft} unité(s) activable(s).`
-        : `▸ Axe : ${card.name}.`,
+        ? (as ?? card).action
+          ? `▸ ${name}.`
+          : `▸ ${name} — ${ordersLeft} unité(s) activable(s).`
+        : `▸ Axe : ${name}.`,
       'hi',
     );
   });
@@ -121,11 +140,49 @@ function wireBus(bus) {
     hud.setMedals(medalTotals());
     stage.requestDraw();
   });
+  bus.on('actionStruck', ({ card, side, defender, defenderHex, obstacleKey, report }) => {
+    hud.showDice(report.faces);
+    hud.log(
+      `  ${card.name} sur ${UNITS[defender.type].label} ${SIDE_FR[defender.side]} — ${report.faces
+        .map((f) => SYM[f])
+        .join(' ')}`,
+    );
+    let txt = `  → ${report.hits} touche(s)`;
+    if (report.flags) txt += `, ${report.flags} drapeau(x)`;
+    if (report.flagsIgnored)
+      txt += ` · 1 drapeau ignoré (${OBSTACLES[obstacleKey].label.toLowerCase()})`;
+    if (report.extraLoss) txt += ` · repli impossible : ${report.extraLoss} perte(s)`;
+    hud.log(txt, report.hits || report.extraLoss ? 'bad' : '');
+    if (report.killed) {
+      hud.log(
+        `  ★ ${UNITS[defender.type].label} détruite — médaille pour l’${SIDE_FR[side]}.`,
+        side === 'allies' ? 'good' : 'bad',
+      );
+    }
+    hud.setMedals(medalTotals());
+    if (report.hits + report.extraLoss > 0) stage.boom([defenderHex]);
+    stage.requestDraw();
+  });
+  bus.on('unitHealed', ({ unit, restored, faces }) => {
+    hud.showDice(faces);
+    hud.log(
+      `  ${SIDE_FR[unit.side]} · ${UNITS[unit.type].label} récupère ${restored} figurine(s).`,
+      restored && unit.side === 'allies' ? 'good' : '',
+    );
+    stage.requestDraw();
+  });
   bus.on('medalAwarded', () => hud.setMedals(medalTotals()));
   bus.on('obstacleRemoved', ({ obstacle }) => {
     hud.log(`  ${OBSTACLES[obstacle].label} abandonnés — protection perdue.`);
     stage.requestDraw();
   });
+}
+
+// Joue la modale de combat puis, à sa fermeture, fait exploser l'hex où le
+// défenseur a encaissé (touches, pertes de repli ou destruction).
+async function playCombat(outcome, auto) {
+  await modal.play(state, outcome, { auto });
+  if (outcome.report.hits + outcome.report.extraLoss > 0) stage.boom([outcome.defenderHex]);
 }
 
 /* --- actions du joueur (appelées par input.js et hand.js) --------------- */
@@ -140,6 +197,14 @@ function refresh() {
     );
   } else if (state.phase === 'card') {
     hud.setPrompt('Jouez une carte de commandement.');
+  } else if (ui.action?.kind === 'barrage') {
+    hud.setPrompt('Barrage : cliquez une unité ennemie — 4 dés, sans protection du terrain.');
+  } else if (ui.action?.kind === 'air') {
+    hud.setPrompt(
+      `Attaque aérienne : cliquez encore ${cardById('air').hexes - ui.action.picks.length} hex contigus (2 dés par unité ennemie).`,
+    );
+  } else if (ui.action?.kind === 'medics') {
+    hud.setPrompt('Médecins & mécanos : cliquez l’unité amie à soigner (4 dés à son symbole).');
   } else if (ui.takeGround) {
     hud.setPrompt('Prise de terrain : cliquez l’hex libéré pour avancer, ailleurs pour rester.');
   } else if (ui.breakthrough) {
@@ -156,9 +221,54 @@ function refresh() {
 }
 
 function playAlliedCard(id) {
-  playCard(state, 'allies', id);
-  ui.orderable = orderableUnits(state, 'allies', id);
+  const cd = playCard(state, 'allies', id);
+  if (cd.action === 'barrage') {
+    ui.action = { kind: 'barrage', targets: barrageTargets(state, 'allies') };
+  } else if (cd.action === 'air') {
+    ui.action = { kind: 'air', picks: [] };
+  } else if (cd.action === 'medics') {
+    const targets = medicTargets(state, 'allies');
+    if (!targets.length) {
+      hud.log('  Aucune unité à soigner : la carte est perdue.');
+      endTurn();
+      return;
+    }
+    ui.action = { kind: 'medics', targets };
+  } else {
+    ui.orderable = orderableUnits(state, 'allies', cd.id);
+  }
   refresh();
+}
+
+// Clic pendant une carte action : choisit la cible (barrage, médecins) ou
+// empile les hexs de l'attaque aérienne, puis résout et passe le tour.
+function actionClick(hex) {
+  const act = ui.action;
+  if (!act || !hex) return;
+  if (act.kind === 'air') {
+    if (!validAirTarget(act.picks, hex)) return;
+    act.picks.push(hex);
+    if (act.picks.length < cardById('air').hexes) {
+      refresh();
+      return;
+    }
+    ui.action = null;
+    if (!resolveAirStrike(state, 'allies', act.picks).length)
+      hud.log('  Attaque aérienne : aucune unité ennemie sous les bombes.');
+    afterAction();
+    return;
+  }
+  const target = act.targets.find((u) => u.c === hex.c && u.r === hex.r);
+  if (!target) return;
+  ui.action = null;
+  if (act.kind === 'barrage') resolveBarrage(state, 'allies', target);
+  else resolveMedics(state, target);
+  afterAction();
+}
+
+function afterAction() {
+  if (state.winner) refresh();
+  else endTurn();
 }
 
 function selectUnit(u) {
@@ -191,7 +301,7 @@ async function attackTarget(u, target) {
   ui.breakthrough = null;
   ui.targets = [];
   const outcome = attackUnit(state, u, target.unit);
-  await modal.play(state, outcome, { auto: false });
+  await playCombat(outcome, false);
   const hex = state.winner ? null : takeGroundHex(state, u, outcome);
   if (hex) {
     ui.takeGround = { unit: u, hex };
@@ -261,6 +371,7 @@ function endTurn() {
     drag: null,
     takeGround: null,
     breakthrough: null,
+    action: null,
   });
   endPlayerTurn(state);
   refresh();
@@ -273,8 +384,14 @@ async function playAxisTurn() {
   if (state.winner) return;
   drawCards(state, 'axis');
   const id = aiPickCard(state);
-  playCard(state, 'axis', id);
-  const plans = aiChooseMoves(state, id);
+  const cd = playCard(state, 'axis', id);
+  if (cd.action) {
+    await playAxisAction(cd);
+    endAxisTurn(state);
+    refresh();
+    return;
+  }
+  const plans = aiChooseMoves(state, cd.id);
 
   await sleep(450);
   for (const plan of plans) {
@@ -288,7 +405,7 @@ async function playAxisTurn() {
     }
     if (plan.target && state.units.includes(plan.target) && diceFor(state, u, plan.target) > 0) {
       let outcome = attackUnit(state, u, plan.target);
-      await modal.play(state, outcome, { auto: true });
+      await playCombat(outcome, true);
       // prise de terrain, puis éventuelle percée de blindés
       let hex = takeGroundHex(state, u, outcome);
       while (hex && !state.winner && aiTakesGround(state, u, hex)) {
@@ -298,7 +415,7 @@ async function playAxisTurn() {
         const next = canBreakthrough(state, u) ? aiBreakthroughTarget(state, u) : null;
         if (!next) break;
         outcome = attackUnit(state, u, next);
-        await modal.play(state, outcome, { auto: true });
+        await playCombat(outcome, true);
         hex = takeGroundHex(state, u, outcome);
       }
     }
@@ -307,6 +424,23 @@ async function playAxisTurn() {
   }
   endAxisTurn(state);
   refresh();
+}
+
+// Carte action de l'Axe : l'IA choisit la cible, les événements du bus
+// (actionStruck, unitHealed) racontent la frappe.
+async function playAxisAction(cd) {
+  await sleep(600);
+  if (cd.action === 'barrage') {
+    const target = aiBarrageTarget(state);
+    if (target) resolveBarrage(state, 'axis', target);
+  } else if (cd.action === 'air') {
+    const strike = aiAirHexes(state);
+    if (strike) resolveAirStrike(state, 'axis', strike.hexes);
+  } else if (cd.action === 'medics') {
+    const unit = aiMedicsTarget(state);
+    if (unit) resolveMedics(state, unit);
+  }
+  await sleep(900);
 }
 
 /* --- cycle de vie -------------------------------------------------------- */

@@ -28,6 +28,20 @@ export function createStage(canvas, getScene) {
     });
   }
 
+  // explosions en cours : { x, y, start } — dessinées tant qu'elles vivent,
+  // le draw() se réarme lui-même jusqu'à extinction
+  const FX_MS = 700;
+  const fx = [];
+
+  function boom(hexes) {
+    const now = performance.now();
+    hexes.forEach((h, i) => {
+      const p = hexCenter(h.c, h.r);
+      fx.push({ x: p.x, y: p.y, start: now + i * 120 });
+    });
+    requestDraw();
+  }
+
   function draw() {
     const { state, ui, boardLayer } = getScene();
     ctx.clearRect(0, 0, width, height);
@@ -43,7 +57,7 @@ export function createStage(canvas, getScene) {
     // secteurs activés par la carte en cours ('flancs' en couvre deux)
     const cd = state.playedCard && cardById(state.playedCard);
     const live =
-      state.phase === 'orders' && state.turn === 'allies' && cd && cd.sector !== '*'
+      state.phase === 'orders' && state.turn === 'allies' && cd && cd.sector && cd.sector !== '*'
         ? cardSectors(cd.sector)
         : null;
     if (live) {
@@ -108,6 +122,25 @@ export function createStage(canvas, getScene) {
       ctx.textAlign = 'center';
       ctx.fillText(t.dice + 'D', p.x, p.y - LAYOUT.size + 13);
     }
+    // carte action en attente de cible : unités ciblables ou hexs déjà choisis
+    if (ui.action) {
+      for (const u of ui.action.targets ?? []) {
+        const p = hexCenter(u.c, u.r);
+        hexPath(ctx, p.x, p.y);
+        ctx.strokeStyle = ui.action.kind === 'medics' ? '#C9A227' : '#B03A2E';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      for (const h of ui.action.picks ?? []) {
+        const p = hexCenter(h.c, h.r);
+        hexPath(ctx, p.x, p.y);
+        ctx.fillStyle = 'rgba(176,58,46,.35)';
+        ctx.fill();
+        ctx.strokeStyle = '#B03A2E';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
     // hex survolé (inspection)
     if (ui.hover) {
       const p = hexCenter(ui.hover.c, ui.hover.r);
@@ -142,6 +175,49 @@ export function createStage(canvas, getScene) {
     if (ui.drag) {
       drawCounter(ui.drag.unit, ui.drag.x, ui.drag.y, { sel: true, canOrder: true, lifted: true });
     }
+
+    // explosions par-dessus tout, puis prochaine frame tant qu'il en reste
+    const now = performance.now();
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const t = (now - fx[i].start) / FX_MS;
+      if (t >= 1) {
+        fx.splice(i, 1);
+        continue;
+      }
+      if (t >= 0) drawExplosion(fx[i].x, fx[i].y, t);
+    }
+    if (fx.length) requestDraw();
+  }
+
+  function drawExplosion(x, y, t) {
+    const ease = 1 - (1 - t) * (1 - t); // expansion vive puis amortie
+    ctx.save();
+    ctx.globalAlpha = 1 - t;
+    // boule de feu
+    ctx.fillStyle = '#E8B33A';
+    ctx.beginPath();
+    ctx.arc(x, y, 4 + ease * 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#B03A2E';
+    ctx.beginPath();
+    ctx.arc(x, y, 2 + ease * 5, 0, Math.PI * 2);
+    ctx.fill();
+    // onde de choc
+    ctx.strokeStyle = '#E8E2D0';
+    ctx.lineWidth = 2 * (1 - t);
+    ctx.beginPath();
+    ctx.arc(x, y, 8 + ease * 22, 0, Math.PI * 2);
+    ctx.stroke();
+    // éclats projetés en étoile
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI * 2 * i) / 8 + 0.4;
+      const d = 10 + ease * 24;
+      ctx.fillStyle = i % 2 ? '#E8B33A' : '#B03A2E';
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 2.4 * (1 - t), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   function drawObstacle(type, x, y) {
@@ -221,5 +297,5 @@ export function createStage(canvas, getScene) {
     ctx.restore();
   }
 
-  return { width, height, requestDraw, draw };
+  return { width, height, requestDraw, draw, boom };
 }

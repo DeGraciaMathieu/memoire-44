@@ -22,6 +22,12 @@ test('cardHTML : nom, nombre d’unités et secteur', () => {
   assert.match(h3, /Attaque en tenaille/);
   assert.match(h3, /les flancs/);
   assert.equal(h3.match(/<i class="on"/g).length, 2);
+  // carte action : bandeau descriptif, aucune bande de secteur allumée
+  const h4 = cardHTML(cardById('barrage'));
+  assert.match(h4, /Barrage/);
+  assert.match(h4, /action/);
+  assert.match(h4, /4 dés sur 1 unité/);
+  assert.ok(!h4.includes('class="on"'));
 });
 
 test('forcePanelHTML : une pip par figurine, les pertes marquées gone', () => {
