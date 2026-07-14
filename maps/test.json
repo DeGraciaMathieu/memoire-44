@@ -1,0 +1,64 @@
+{
+  "name": "test",
+  "terrain": {
+    "3,4": "mer",
+    "4,4": "mer",
+    "5,4": "mer",
+    "2,5": "mer",
+    "3,5": "mer",
+    "4,5": "mer",
+    "5,5": "mer",
+    "3,6": "mer",
+    "4,6": "mer"
+  },
+  "obstacles": {
+    "3,6": "pont",
+    "3,5": "pont",
+    "4,4": "pont"
+  },
+  "objectives": {},
+  "units": [
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 4,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 10,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "arm",
+      "c": 7,
+      "r": 1
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 7,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 9,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 10,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 11,
+      "r": 8
+    }
+  ]
+}
