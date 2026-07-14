@@ -893,14 +893,14 @@ a.act:hover {
   flex-wrap: wrap;
   justify-content: center;
   gap: 16px;
-  max-width: 760px;
+  max-width: 1160px;
 }
 .maptile {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 320px;
-  padding: 18px 16px;
+  width: 260px;
+  padding: 14px 14px;
   background: var(--panel);
   border: 1px solid var(--rule);
   border-radius: 6px;
@@ -922,6 +922,13 @@ a.act:hover {
   color: var(--ink-dim);
 }
 .maplist .empty {
+  color: var(--ink-dim);
+}
+.foot {
+  padding: 14px 24px 20px;
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
   color: var(--ink-dim);
 }
 .mappreview {
