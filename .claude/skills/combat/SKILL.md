@@ -56,7 +56,7 @@ auto_invoke: true
 4. Affichage : `calcHTML` (`render/html.js`) pour le détail du calcul,
    `render/combatModal.js` pour la chorégraphie.
 5. Doc vivante si la règle est visible du joueur : `RANGE_LBL` / `MOVE_LBL`
-   (`render/html.js`), `#mGoal` (`index.html`) et message de démarrage (`render/app.js`)
+   (`render/html.js`), `#mGoal` (`game.html`) et message de démarrage (`render/app.js`)
    si l'objectif de médailles change.
 
 ## Ajouter un type d'unité

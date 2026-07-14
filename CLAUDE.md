@@ -63,7 +63,7 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
 - Après édition, nettoyer imports/constantes/CSS inutilisés et lignes vides superflues.
 - Quand une règle visible du joueur change, synchroniser la **doc vivante** : tables des
   skills, libellés `MOVE_LBL` / `RANGE_LBL` (`render/html.js`), objectif de médailles
-  `#mGoal` (`index.html`) et message de démarrage (`render/app.js`).
+  `#mGoal` (`game.html`) et message de démarrage (`render/app.js`).
 
 ## Skills disponibles
 

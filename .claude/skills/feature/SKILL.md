@@ -44,7 +44,7 @@ Si le périmètre change, mettre à jour dans le même lot :
   domaine : concepts, totaux — ex. les 24 cartes) ;
 - `CLAUDE.md` si une convention ou le vocabulaire évolue ;
 - les libellés en dur visibles du joueur : `MOVE_LBL` / `RANGE_LBL` (`render/html.js`),
-  `#mGoal` (`index.html`), message de démarrage (`render/app.js`).
+  `#mGoal` (`game.html`), message de démarrage (`render/app.js`).
 
 ## 5. Résumer
 
