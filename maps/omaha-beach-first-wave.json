@@ -1,0 +1,252 @@
+{
+  "name": "omaha-beach-first-wave",
+  "terrain": {
+    "0,0": "village",
+    "5,0": "village",
+    "10,1": "village",
+    "11,1": "village",
+    "0,2": "colline",
+    "3,2": "colline",
+    "7,2": "village",
+    "8,2": "colline",
+    "1,3": "colline",
+    "2,3": "colline",
+    "4,3": "colline",
+    "5,3": "colline",
+    "6,3": "colline",
+    "8,3": "colline",
+    "9,3": "colline",
+    "10,3": "colline",
+    "0,4": "colline",
+    "1,4": "plage",
+    "2,4": "plage",
+    "3,4": "plage",
+    "4,4": "plage",
+    "5,4": "plage",
+    "6,4": "plage",
+    "7,4": "plage",
+    "8,4": "plage",
+    "9,4": "plage",
+    "10,4": "plage",
+    "11,4": "plage",
+    "12,4": "colline",
+    "0,5": "plage",
+    "1,5": "plage",
+    "2,5": "plage",
+    "3,5": "plage",
+    "4,5": "plage",
+    "5,5": "plage",
+    "6,5": "plage",
+    "7,5": "plage",
+    "8,5": "plage",
+    "9,5": "plage",
+    "10,5": "plage",
+    "11,5": "plage",
+    "0,6": "plage",
+    "1,6": "plage",
+    "2,6": "plage",
+    "3,6": "plage",
+    "4,6": "plage",
+    "5,6": "plage",
+    "6,6": "plage",
+    "7,6": "plage",
+    "8,6": "plage",
+    "9,6": "plage",
+    "10,6": "plage",
+    "11,6": "plage",
+    "12,6": "plage",
+    "0,7": "mer",
+    "1,7": "mer",
+    "2,7": "mer",
+    "3,7": "mer",
+    "4,7": "mer",
+    "5,7": "mer",
+    "6,7": "mer",
+    "7,7": "mer",
+    "8,7": "mer",
+    "9,7": "mer",
+    "10,7": "mer",
+    "11,7": "mer",
+    "0,8": "mer",
+    "1,8": "mer",
+    "2,8": "mer",
+    "3,8": "mer",
+    "4,8": "mer",
+    "5,8": "mer",
+    "6,8": "mer",
+    "7,8": "mer",
+    "8,8": "mer",
+    "9,8": "mer",
+    "10,8": "mer",
+    "11,8": "mer",
+    "12,8": "mer"
+  },
+  "obstacles": {
+    "1,3": "bunker",
+    "12,4": "bunker",
+    "0,4": "sacs",
+    "10,5": "sacs",
+    "9,5": "sacs",
+    "8,3": "bunker",
+    "4,3": "bunker",
+    "1,4": "barbeles",
+    "3,3": "barbeles",
+    "2,5": "barbeles",
+    "3,5": "barbeles",
+    "4,5": "barbeles",
+    "7,4": "barbeles",
+    "8,4": "barbeles",
+    "11,4": "barbeles",
+    "11,5": "barbeles",
+    "1,5": "antichar",
+    "3,6": "antichar",
+    "4,6": "antichar",
+    "5,5": "antichar",
+    "6,5": "antichar",
+    "8,6": "antichar",
+    "9,6": "antichar",
+    "11,6": "antichar",
+    "10,3": "sacs"
+  },
+  "objectives": {
+    "0,0": true,
+    "5,0": true,
+    "7,2": true,
+    "10,1": true,
+    "11,1": true
+  },
+  "units": [
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 0,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 0,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 1,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 2,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 2,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 12,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 11,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 11,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 5,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "inf",
+      "c": 6,
+      "r": 8
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 4,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 7,
+      "r": 7
+    },
+    {
+      "side": "allies",
+      "type": "arm",
+      "c": 10,
+      "r": 7
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 5,
+      "r": 0
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 10,
+      "r": 1
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 7,
+      "r": 2
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 8,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 10,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 4,
+      "r": 3
+    },
+    {
+      "side": "axis",
+      "type": "inf",
+      "c": 0,
+      "r": 4
+    },
+    {
+      "side": "axis",
+      "type": "art",
+      "c": 12,
+      "r": 4
+    },
+    {
+      "side": "axis",
+      "type": "art",
+      "c": 1,
+      "r": 3
+    }
+  ]
+}
