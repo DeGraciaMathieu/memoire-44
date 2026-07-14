@@ -4,7 +4,7 @@
 
 import { HAND_SIZE, OBSTACLES, TERRAIN, UNITS } from './config.js';
 import { createBus } from './events.js';
-import { hexDistance, key } from './hex.js';
+import { hexDistance, inBounds, key } from './hex.js';
 import { inSector } from './sectors.js';
 import { buildDeck, cardById } from './cards.js';
 import { scenario } from './scenario.js';
@@ -36,6 +36,7 @@ export function createGame({ rng = Math.random, map = null } = {}) {
     turn: 'allies',
     phase: 'card', // card | orders | done
     playedCard: null,
+    lastCard: { allies: null, axis: null }, // dernière carte jouée par chaque camp (Contre-attaque)
     ordersLeft: 0,
     moved: {}, // id d'unité -> coût du déplacement pendant l'activation en cours
     attacks: {}, // id d'unité -> nombre d'attaques pendant l'activation en cours
@@ -47,6 +48,8 @@ export function createGame({ rng = Math.random, map = null } = {}) {
 
 export function orderableUnits(state, side, cardId) {
   const cd = cardById(cardId);
+  if (cd.action === 'medics') return medicTargets(state, side);
+  if (cd.action) return []; // barrage, attaque aérienne : aucune unité ordonnée
   return state.units.filter((u) => u.side === side && inSector(u, cd.sector));
 }
 
@@ -61,17 +64,110 @@ export function drawCards(state, side) {
   return count;
 }
 
+// Joue une carte et renvoie la carte EFFECTIVE : les cartes de commandement
+// ouvrent des ordres de secteur, les cartes actions attendent leur cible
+// (resolveBarrage, resolveAirStrike, resolveMedics). Contre-attaque rejoue la
+// dernière carte adverse — ou vaut une Reconnaissance si elle manque ou était
+// elle-même une Contre-attaque.
 export function playCard(state, side, cardId) {
-  const cd = cardById(cardId);
+  const played = cardById(cardId);
+  let cd = played;
+  if (cd.action === 'contre') {
+    const lastId = state.lastCard[side === 'allies' ? 'axis' : 'allies'];
+    const last = lastId && cardById(lastId);
+    cd = last && last.action !== 'contre' ? last : cardById('recon');
+  }
   state.hands[side].splice(state.hands[side].indexOf(cardId), 1);
-  state.playedCard = cardId;
+  state.lastCard[side] = cardId;
+  state.playedCard = cd.id;
   state.phase = 'orders';
   state.moved = {};
   state.attacks = {};
-  state.ordersLeft = Math.min(cd.n, orderableUnits(state, side, cardId).length);
   state.units.forEach((u) => (u.acted = false));
-  state.bus.emit('cardPlayed', { side, card: cd, ordersLeft: state.ordersLeft });
+  state.ordersLeft = cd.action
+    ? cd.action === 'medics'
+      ? Math.min(1, medicTargets(state, side).length)
+      : 1
+    : Math.min(cd.n, orderableUnits(state, side, cd.id).length);
+  state.bus.emit('cardPlayed', {
+    side,
+    card: played,
+    as: cd === played ? null : cd,
+    ordersLeft: state.ordersLeft,
+  });
   return cd;
+}
+
+/* --- cartes actions ------------------------------------------------------ */
+
+// Frappe d'une carte action (barrage, attaque aérienne) : dés fixes de la
+// carte, sans réduction de terrain ni ligne de mire — l'attaque tombe du ciel.
+// Le pseudo-attaquant posé sur l'hex du défenseur oriente le repli.
+function strike(state, cardId, side, defender, dice) {
+  const outcome = {
+    card: cardById(cardId),
+    side,
+    defender,
+    dice,
+    figsBefore: defender.figs,
+    defenderHex: { c: defender.c, r: defender.r },
+    obstacleKey: obstacleAt(state, defender.c, defender.r) ?? null,
+  };
+  const faces = rollDice(dice, state.rng);
+  outcome.report = resolveCombat(state, { side, c: defender.c, r: defender.r }, defender, faces);
+  state.bus.emit('actionStruck', outcome);
+  return outcome;
+}
+
+export function barrageTargets(state, side) {
+  return state.units.filter((u) => u.side !== side);
+}
+
+export function resolveBarrage(state, side, defender) {
+  state.ordersLeft = 0;
+  return strike(state, 'barrage', side, defender, cardById('barrage').dice);
+}
+
+// Hex ciblable par l'attaque aérienne : dans le plateau, pas déjà choisi,
+// adjacent à un hex déjà choisi (le premier est libre).
+export function validAirTarget(chosen, hex) {
+  if (!inBounds(hex.c, hex.r)) return false;
+  if (chosen.some((h) => h.c === hex.c && h.r === hex.r)) return false;
+  return !chosen.length || chosen.some((h) => hexDistance(h, hex) === 1);
+}
+
+export function resolveAirStrike(state, side, hexes) {
+  const dice = cardById('air').dice[side];
+  state.ordersLeft = 0;
+  const outcomes = [];
+  for (const h of hexes) {
+    if (state.winner) break;
+    const u = unitAt(state, h.c, h.r);
+    if (u && u.side !== side) outcomes.push(strike(state, 'air', side, u, dice));
+  }
+  return outcomes;
+}
+
+// L'artillerie n'a pas de face de dé : elle se répare sur l'étoile.
+const HEAL_FACE = { inf: 'inf', arm: 'arm', art: 'star' };
+
+export function medicTargets(state, side) {
+  return state.units.filter((u) => u.side === side && u.figs < UNITS[u.type].figs);
+}
+
+// Médecins & mécanos : 4 dés, chaque face au symbole de l'unité rend une
+// figurine perdue ; l'unité soignée ne bouge ni ne tire ce tour.
+export function resolveMedics(state, unit) {
+  const faces = rollDice(cardById('medics').dice, state.rng);
+  const max = UNITS[unit.type].figs;
+  let restored = 0;
+  for (const f of faces) if (f === HEAL_FACE[unit.type] && unit.figs + restored < max) restored++;
+  unit.figs += restored;
+  unit.acted = true;
+  state.ordersLeft = 0;
+  const outcome = { unit, restored, faces };
+  state.bus.emit('unitHealed', outcome);
+  return outcome;
 }
 
 // Déplace l'unité si l'hex est réellement atteignable ; renvoie le coût, ou
