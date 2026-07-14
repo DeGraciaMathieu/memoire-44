@@ -10,12 +10,16 @@ import { inBounds, key } from './hex.js';
 const SIDES = ['allies', 'axis'];
 
 // Une unité ne peut être posée ni sur un terrain infranchissable sans pont
-// (rivière), ni sur un obstacle réservé à l'infanterie si elle n'en est pas.
+// (rivière), ni sur un obstacle réservé à l'infanterie si elle n'en est pas —
+// à une exception près : l'artillerie peut débuter retranchée dans un bunker
+// (fixesArtillery, comme le scénario), même si elle ne peut plus y entrer
+// ni en sortir en cours de partie.
 export function unitAllowedOn(terrain, obstacles, type, c, r) {
   const t = TERRAIN[terrain[key(c, r)]];
   const o = OBSTACLES[obstacles[key(c, r)]];
   if (t?.impassable && !o?.makesPassable) return false;
-  return !o || !o.infantryOnly || type === 'inf';
+  if (!o || !o.infantryOnly) return true;
+  return type === 'inf' || (type === 'art' && !!o.fixesArtillery);
 }
 
 // Carte → objet JSON compact : seuls les hexes non plaine sont conservés.
