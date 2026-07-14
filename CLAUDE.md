@@ -1,4 +1,4 @@
-# Ordre de Bataille — proto « secteur bocage »
+# Ordre de Bataille — prototype
 
 Jeu de plateau hexagonal type Mémoire 44 en JavaScript pur : cartes de commandement
 par secteur, dés spéciaux, terrain, IA gloutonne pour le camp adverse (le joueur
