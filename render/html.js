@@ -44,6 +44,21 @@ export function cardHTML(card) {
     }</div>`;
 }
 
+// Liste des cartes proposées par la page d'accueil
+// (maps : [{ file, name, preview }] — preview : dataURL d'aperçu, ou null).
+export function homeMapsHTML(maps) {
+  if (!maps.length) return `<p class="empty">Aucune carte dans le dossier maps.</p>`;
+  return maps
+    .map(
+      (m) => `<a class="maptile" href="game.html?map=${encodeURIComponent(m.file)}">
+      ${m.preview ? `<img class="mappreview" src="${m.preview}" alt="Aperçu de ${m.name}" />` : ''}
+      <span class="mapname">${m.name}</span>
+      <span class="mapfile">${m.file}</span>
+    </a>`,
+    )
+    .join('');
+}
+
 export function forcePanelHTML(unit, terrainKey, role, figsShown, lost) {
   const t = TERRAIN[terrainKey];
   const pips = Array.from(

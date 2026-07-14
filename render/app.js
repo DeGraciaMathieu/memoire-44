@@ -505,4 +505,24 @@ mapFile.onchange = async () => {
   startGame(`Carte « ${currentMap.name || file.name} ». Les Alliés ouvrent le feu.`);
 };
 
-startGame('Secteur bocage. 6 médailles pour l’emporter — tenez les villages objectifs.');
+// Démarrage : la page d'accueil transmet la carte choisie via ?map=<fichier>.
+// Sans paramètre (ou si la carte est illisible), repli sur le scénario par défaut.
+async function init() {
+  const file = new URLSearchParams(location.search).get('map');
+  let error = null;
+  if (file) {
+    try {
+      const res = await fetch(`maps/${file}`);
+      if (!res.ok) throw new Error(`carte introuvable (${res.status})`);
+      currentMap = parseMap(await res.text());
+      startGame(`Carte « ${currentMap.name || file} ». Les Alliés ouvrent le feu.`);
+      return;
+    } catch (err) {
+      error = err;
+    }
+  }
+  startGame('Secteur bocage. 6 médailles pour l’emporter — tenez les villages objectifs.');
+  if (error) hud.log(`✖ ${error.message}`, 'bad');
+}
+
+init();

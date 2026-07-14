@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ordre de Bataille — proto</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bar">
+      <div class="title">Ordre de Bataille<small>proto — secteur bocage</small></div>
+      <div class="barlinks">
+        <a class="act" href="index.html">← Accueil</a>
+        <a class="act" href="editor.html">Éditeur de cartes</a>
+        <button class="act" id="btnLoadMap">Charger une carte</button>
+        <input type="file" id="mapFile" accept=".json,application/json" hidden />
+      </div>
+      <div class="medals">
+        <div class="medal"><b id="mAllies">0</b><span>Alliés</span></div>
+        <div class="medal"><b id="mAxis">0</b><span>Axe</span></div>
+        <div class="medal"><b id="mGoal">6</b><span>victoire</span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="boardwrap"><canvas id="cv"></canvas></div>
+      <div class="side">
+        <h2>Jets de dés</h2>
+        <div id="tray"></div>
+        <h2>Rapport de terrain</h2>
+        <div id="log"></div>
+      </div>
+    </div>
+
+    <div class="prompt" id="prompt">Jouez une carte de commandement.</div>
+    <div class="hand" id="hand">
+      <div class="fan" id="fan"></div>
+      <div class="actions" id="acts"></div>
+    </div>
+
+    <div id="tip"></div>
+
+    <div class="scrim" id="scrim">
+      <div class="duel" role="dialog" aria-modal="true" aria-labelledby="dHead">
+        <header id="dHead">Engagement</header>
+        <div class="forces">
+          <div class="force atk" id="dAtk"></div>
+          <div class="vs">▸</div>
+          <div class="force def" id="dDef"></div>
+        </div>
+        <div class="calc" id="dCalc"></div>
+        <div id="dDice"></div>
+        <div id="dOut"></div>
+        <footer><button class="act" id="dBtn">Continuer</button></footer>
+      </div>
+    </div>
+
+    <script type="module" src="render/app.js"></script>
+  </body>
+</html>

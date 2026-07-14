@@ -2,7 +2,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcHTML, cardHTML, forcePanelHTML, tipHTML } from '../render/html.js';
+import { calcHTML, cardHTML, forcePanelHTML, homeMapsHTML, tipHTML } from '../render/html.js';
 import { cardById } from '../src/cards.js';
 import { createGame } from '../src/game.js';
 import { key } from '../src/hex.js';
@@ -28,6 +28,23 @@ test('cardHTML : nom, nombre d’unités et secteur', () => {
   assert.match(h4, /action/);
   assert.match(h4, /4 dés sur 1 unité/);
   assert.ok(!h4.includes('class="on"'));
+});
+
+test('homeMapsHTML : un lien par carte vers game.html, message si dossier vide', () => {
+  const h = homeMapsHTML([
+    { file: 'pointe-du-hoc.json', name: 'Pointe du Hoc', preview: 'data:image/png;base64,xyz' },
+    { file: 'sword beach.json', name: 'Sword Beach', preview: null },
+  ]);
+  assert.equal(h.match(/<a class="maptile"/g).length, 2);
+  assert.match(h, /href="game\.html\?map=pointe-du-hoc\.json"/);
+  assert.match(h, /Pointe du Hoc/);
+  // le nom de fichier est encodé dans l'URL
+  assert.match(h, /href="game\.html\?map=sword%20beach\.json"/);
+  // l'aperçu n'apparaît que pour les cartes qui en ont un
+  assert.equal(h.match(/<img class="mappreview"/g).length, 1);
+  assert.match(h, /src="data:image\/png;base64,xyz" alt="Aperçu de Pointe du Hoc"/);
+
+  assert.match(homeMapsHTML([]), /Aucune carte/);
 });
 
 test('forcePanelHTML : une pip par figurine, les pertes marquées gone', () => {
