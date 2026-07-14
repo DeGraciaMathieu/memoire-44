@@ -62,79 +62,82 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   const empty = tipHTML(state, emptyUi, { c: 0, r: 0 });
   assert.match(empty, /Plaine/);
   assert.match(empty, /gauche/);
-  assert.match(empty, /Ligne de mire<b>libre/);
+  assert.match(empty, /<b>libre<\/b><small>ligne de mire/);
   assert.ok(!empty.includes('Figurines'));
 
   const forest = tipHTML(state, emptyUi, { c: 1, r: 2 }); // forêt du scénario
   assert.match(forest, /Forêt/);
-  assert.match(forest, /Ligne de mire<b>bloquée</);
-  assert.match(forest, /−2 blindé, artillerie sans malus/);
+  assert.match(forest, /<b>−1<\/b><small>protection/);
+  assert.match(forest, /<b>stop<\/b><small>mouvement/);
+  assert.match(forest, /<b>bloquée<\/b><small>ligne de mire/);
+  assert.match(forest, /blindés −2/);
+  assert.match(forest, /artillerie sans malus/);
 
   const hill = tipHTML(state, emptyUi, { c: 4, r: 4 }); // colline du scénario
   assert.match(hill, /Colline/);
-  assert.match(hill, /Ligne de mire<b>bloquée en contrebas/);
+  assert.match(hill, /<b>contrebas<\/b><small>ligne de mire/);
 
   const bunker = tipHTML(state, emptyUi, { c: 4, r: 6 }); // bunker vide du scénario
   assert.match(bunker, /Bunker/);
   assert.match(bunker, /non cumulée/);
   assert.match(bunker, /infanterie seulement/);
-  assert.match(bunker, /le premier du jet est ignoré/);
+  assert.match(bunker, /1er drapeau ignoré/);
+  assert.match(bunker, /vue bloquée/);
 
   const hedgehog = tipHTML(state, emptyUi, { c: 10, r: 2 }); // antichar du scénario
   assert.match(hedgehog, /Obstacle antichar/);
   assert.match(hedgehog, /infanterie seulement/);
-  assert.match(hedgehog, /le premier du jet est ignoré/);
-  assert.ok(!hedgehog.includes('Protection')); // aucun couvert
-  assert.ok(!/uname">Obstacle antichar[\s\S]*?Ligne de mire<b>bloquée/.test(hedgehog));
+  assert.match(hedgehog, /1er drapeau ignoré/);
+  assert.ok(!hedgehog.includes('non cumulée')); // aucun couvert
+  assert.ok(!hedgehog.includes('vue bloquée'));
 
   const sandbags = tipHTML(state, emptyUi, { c: 8, r: 7 }); // sacs de sable du scénario
   assert.match(sandbags, /Sacs de sable/);
-  assert.match(sandbags, /Protection<b>−1 \(artillerie sans malus\), non cumulée/);
-  assert.match(sandbags, /le premier du jet est ignoré/);
-  assert.match(sandbags, /Abandon<b>retirés dès que l'unité sort/);
+  assert.match(sandbags, /protection −1 \(artillerie sans malus\), non cumulée/);
+  assert.match(sandbags, /1er drapeau ignoré/);
+  assert.match(sandbags, /retirés en sortant/);
   assert.ok(!sandbags.includes('infanterie seulement'));
 
   const wire = tipHTML(state, emptyUi, { c: 3, r: 2 }); // barbelés du scénario
   assert.match(wire, /Barbelés/);
-  assert.match(wire, /Mouvement<b>stoppe net/);
-  assert.match(wire, /empêtrée : 1 dé de moins/);
-  assert.match(wire, /couper au lieu de combattre/);
-  assert.match(wire, /Blindés<b>les écrasent et combattent/);
-  assert.ok(!wire.includes('Protection')); // aucun couvert
+  assert.match(wire, /stoppe net/);
+  assert.match(wire, /infanterie : −1 dé/);
+  assert.match(wire, /coupe possible au lieu de combattre/);
+  assert.match(wire, /écrasés par les blindés/);
+  assert.ok(!wire.includes('non cumulée')); // aucun couvert
 
   const hedge = tipHTML(state, emptyUi, { c: 3, r: 3 }); // bocage du scénario
   assert.match(hedge, /Bocage/);
-  assert.match(hedge, /entrée adjacente/);
-  assert.match(hedge, /Sortie<b>1 hex puis arrêt/);
+  assert.match(hedge, /entrée en 1er pas/);
+  assert.match(hedge, /sortie : 1 hex/);
   assert.match(hedge, /pas de tir le tour d'entrée/);
-  assert.match(hedge, /Ligne de mire<b>bloquée</);
+  assert.match(hedge, /<b>bloquée<\/b><small>ligne de mire/);
 
   // rivière puis pont, posés à la main (absents du scénario par défaut)
   state.terrain[key(0, 4)] = 'riviere';
   const river = tipHTML(state, emptyUi, { c: 0, r: 4 });
   assert.match(river, /Rivière/);
-  assert.match(river, /Mouvement<b>infranchissable sans pont/);
-  assert.match(river, /Ligne de mire<b>libre/);
+  assert.match(river, /<b>pont requis<\/b><small>mouvement/);
+  assert.match(river, /<b>libre<\/b><small>ligne de mire/);
 
   state.obstacles[key(0, 4)] = 'pont';
   const bridge = tipHTML(state, emptyUi, { c: 0, r: 4 });
   assert.match(bridge, /Pont/);
-  assert.match(bridge, /Franchissement<b>rend l'hex franchissable/);
-  assert.ok(!bridge.includes('Protection')); // aucun couvert sur un pont
+  assert.match(bridge, /rend l'hex franchissable/);
+  assert.ok(!bridge.includes('non cumulée')); // aucun couvert sur un pont
 
   state.terrain[key(0, 6)] = 'mer';
   const sea = tipHTML(state, emptyUi, { c: 0, r: 6 });
   assert.match(sea, /Mer/);
-  assert.match(sea, /Combat<b>aucun tir depuis la mer/);
-  assert.match(sea, /Sortie<b>1 hex puis arrêt/);
-  assert.match(sea, /Ligne de mire<b>libre/);
+  assert.match(sea, /aucun tir/);
+  assert.match(sea, /sortie : 1 hex/);
+  assert.match(sea, /pas de retraite/);
 
   state.terrain[key(0, 5)] = 'plage';
   const beach = tipHTML(state, emptyUi, { c: 0, r: 5 });
   assert.match(beach, /Plage/);
-  assert.match(beach, /Mouvement<b>2 hex maximum/);
-  assert.match(beach, /Ligne de mire<b>libre/);
-  assert.ok(!beach.includes('Combat')); // aucune restriction de combat
+  assert.match(beach, /<b>2 hex max<\/b><small>mouvement/);
+  assert.ok(!beach.includes('aucun tir')); // aucune restriction de combat
 
   const withUnit = tipHTML(state, emptyUi, { c: 1, r: 7 }); // infanterie alliée
   assert.match(withUnit, /Infanterie/);

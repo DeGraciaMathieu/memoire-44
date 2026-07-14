@@ -535,6 +535,45 @@ a.act:hover {
   font-weight: normal;
   text-align: right;
 }
+#tip .stats {
+  display: flex;
+  gap: 5px;
+}
+#tip .stat {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 5px 3px 4px;
+}
+#tip .stat b {
+  display: block;
+  color: var(--ink);
+  font-weight: normal;
+}
+#tip .stat small {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+#tip .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
+}
+#tip .tag {
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
 #tip .unit {
   border-top: 1px solid var(--rule);
   padding: 8px 10px;

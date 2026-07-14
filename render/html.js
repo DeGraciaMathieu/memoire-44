@@ -80,6 +80,44 @@ export function calcHTML(outcome) {
   );
 }
 
+// Pastilles courtes pour les règles spéciales d'un terrain.
+function terrainTags(t) {
+  const out = [];
+  if (t.dice.defArmor != null && t.dice.defArmor !== t.dice.def)
+    out.push(`blindés −${t.dice.defArmor}`);
+  if (t.dice.defArt != null && t.dice.defArt !== t.dice.def)
+    out.push(t.dice.defArt ? `artillerie −${t.dice.defArt}` : 'artillerie sans malus');
+  if (t.enterAdjacentOnly) out.push('entrée en 1er pas');
+  if (t.exitAdjacentOnly) out.push('sortie : 1 hex');
+  if (t.noFight) out.push('aucun tir');
+  if (t.noFightOnEnter) out.push("pas de tir le tour d'entrée");
+  if (t.noRetreatInto) out.push('pas de retraite');
+  return out;
+}
+
+// Pastilles courtes pour les capacités d'un obstacle, dérivées de sa config.
+function obstacleTags(o) {
+  const out = [];
+  if (o.dice.def || o.dice.defArmor || o.dice.defArt)
+    out.push(`protection ${reductionLabel(o.dice)}, non cumulée`);
+  if (o.makesPassable) out.push("rend l'hex franchissable");
+  if (o.infantryOnly) out.push('infanterie seulement');
+  if (o.stops) out.push('stoppe net');
+  if (o.entanglesInfantry) out.push('infanterie : −1 dé');
+  if (o.cutInsteadOfFight) out.push('coupe possible au lieu de combattre');
+  if (o.crushedByArmor) out.push('écrasés par les blindés');
+  if (o.fixesArtillery) out.push('artillerie retranchée fixe');
+  if (o.ignoreFirstFlag) out.push('1er drapeau ignoré');
+  if (o.removedOnExit) out.push('retirés en sortant');
+  if (o.blocksSight) out.push('vue bloquée');
+  return out;
+}
+
+const tagsHTML = (list) =>
+  list.length
+    ? `<div class="tags">${list.map((x) => `<span class="tag">${x}</span>`).join('')}</div>`
+    : '';
+
 // Infobulle de plateau : terrain + unité sous le curseur.
 export function tipHTML(state, ui, hex) {
   const tkey = state.terrain[key(hex.c, hex.r)];
@@ -87,51 +125,30 @@ export function tipHTML(state, ui, hex) {
   const secs = sectorsOf(hex.c, hex.r);
   const u = unitAt(state, hex.c, hex.r);
 
+  // trois cellules fixes : protection, mouvement, ligne de mire
+  const move = t.impassable
+    ? 'pont requis'
+    : t.stops
+      ? 'stop'
+      : t.moveCap
+        ? `${t.moveCap} hex max`
+        : 'libre';
+  const sight = t.blocksSight ? 'bloquée' : t.elevated ? 'contrebas' : 'libre';
   let h = `<div class="thead ${tkey}">${t.label}<em>${secs.join(' + ')}</em></div>
     <div class="tbody">
-      <div class="row">Dés retirés à l'assaillant<b>${reductionLabel(t.dice)}</b></div>
-      <div class="row">Mouvement<b>${
-        t.impassable
-          ? 'infranchissable sans pont'
-          : t.enterAdjacentOnly
-            ? 'entrée adjacente, stoppe net'
-            : t.stops
-              ? 'stoppe net'
-              : t.moveCap
-                ? `${t.moveCap} hex maximum`
-                : 'libre'
-      }</b></div>${
-        t.exitAdjacentOnly ? `<div class="row">Sortie<b>1 hex puis arrêt</b></div>` : ''
-      }${t.noFight ? `<div class="row">Combat<b>aucun tir depuis la mer</b></div>` : ''}${
-        t.noFightOnEnter ? `<div class="row">Combat<b>pas de tir le tour d'entrée</b></div>` : ''
-      }
-      <div class="row">Ligne de mire<b>${
-        t.blocksSight ? 'bloquée' : t.elevated ? 'bloquée en contrebas' : 'libre'
-      }</b></div>
+      <div class="stats">
+        <div class="stat"><b>${t.dice.def ? '−' + t.dice.def : '—'}</b><small>protection</small></div>
+        <div class="stat"><b>${move}</b><small>mouvement</small></div>
+        <div class="stat"><b>${sight}</b><small>ligne de mire</small></div>
+      </div>${tagsHTML(terrainTags(t))}
     </div>`;
 
   const oKey = obstacleAt(state, hex.c, hex.r);
   if (oKey) {
     const o = OBSTACLES[oKey];
     h += `<div class="unit">
-      <div class="uname">${o.label}</div>`;
-    if (o.dice.def || o.dice.defArmor || o.dice.defArt)
-      h += `<div class="row">Protection<b>${reductionLabel(o.dice)}, non cumulée</b></div>`;
-    if (o.makesPassable)
-      h += `<div class="row">Franchissement<b>rend l'hex franchissable</b></div>`;
-    if (o.infantryOnly) h += `<div class="row">Accès<b>infanterie seulement</b></div>`;
-    if (o.stops) h += `<div class="row">Mouvement<b>stoppe net</b></div>`;
-    if (o.entanglesInfantry)
-      h += `<div class="row">Infanterie<b>empêtrée : 1 dé de moins</b></div>`;
-    if (o.cutInsteadOfFight)
-      h += `<div class="row">Retrait<b>l'infanterie peut couper au lieu de combattre</b></div>`;
-    if (o.crushedByArmor) h += `<div class="row">Blindés<b>les écrasent et combattent</b></div>`;
-    if (o.fixesArtillery) h += `<div class="row">Artillerie<b>retranchée, ne sort plus</b></div>`;
-    if (o.ignoreFirstFlag)
-      h += `<div class="row">Drapeaux<b>le premier du jet est ignoré</b></div>`;
-    if (o.removedOnExit) h += `<div class="row">Abandon<b>retirés dès que l'unité sort</b></div>`;
-    if (o.blocksSight) h += `<div class="row">Ligne de mire<b>bloquée</b></div>`;
-    h += `</div>`;
+      <div class="uname">${o.label}</div>${tagsHTML(obstacleTags(o))}
+    </div>`;
   }
 
   if (u) {
