@@ -260,15 +260,20 @@ canvas {
   letter-spacing: 0.4px;
   flex: 1;
 }
+/* mini-plateau : trois colonnes (gauche / centre / droite), la zone
+   d'effet de la carte s'allume en laiton */
 .secs {
   display: flex;
-  gap: 3px;
+  gap: 2px;
   margin-bottom: 5px;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 2px;
 }
 .secs i {
   flex: 1;
-  height: 5px;
-  background: rgba(0, 0, 0, 0.35);
+  height: 16px;
+  background: rgba(232, 226, 208, 0.12);
   border-radius: 1px;
 }
 .secs i.on {
