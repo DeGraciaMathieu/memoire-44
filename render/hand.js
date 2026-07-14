@@ -5,7 +5,7 @@ import { cardHTML } from './html.js';
 
 const SPREAD = 8; // degrés entre deux cartes
 
-export function createHand({ onPlayCard, onEndTurn, onNewGame }) {
+export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
   const handEl = document.getElementById('hand');
   const fan = document.getElementById('fan');
   const acts = document.getElementById('acts');
@@ -79,6 +79,13 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame }) {
     hoverBands = { count: hand.length, gap, mid, playable, els: [...fan.children] };
 
     if (state.phase === 'orders' && state.turn === 'allies' && !state.winner) {
+      if (ui.cutWire) {
+        const w = document.createElement('button');
+        w.className = 'act';
+        w.textContent = 'Couper les barbelés';
+        w.onclick = onCutWire;
+        acts.appendChild(w);
+      }
       const e = document.createElement('button');
       e.className = 'act';
       e.textContent = 'Fin de tour';

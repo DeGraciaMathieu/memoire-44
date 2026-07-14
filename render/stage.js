@@ -242,6 +242,25 @@ export function createStage(canvas, getScene) {
         ctx.fill();
       }
     }
+    if (type === 'barbeles') {
+      ctx.strokeStyle = 'rgba(0,0,0,.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 15, y - 6);
+      ctx.lineTo(x - 15, y + 6); // piquets
+      ctx.moveTo(x + 15, y - 6);
+      ctx.lineTo(x + 15, y + 6);
+      ctx.stroke();
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x - 15, y);
+      ctx.lineTo(x + 15, y); // fil tendu
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,.5)';
+      ctx.font = 'bold 9px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('× × ×', x, y + 3); // ardillons
+    }
     if (type === 'pont') {
       ctx.strokeStyle = 'rgba(0,0,0,.55)';
       ctx.lineWidth = 3;

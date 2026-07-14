@@ -8,7 +8,9 @@ import {
   attackUnit,
   barrageTargets,
   canBreakthrough,
+  canCutWire,
   createGame,
+  cutWire,
   drawCards,
   endAxisTurn,
   endPlayerTurn,
@@ -57,7 +59,12 @@ let currentMap = null; // carte de l'éditeur chargée, null = scénario par dé
 const hud = createHud();
 const stage = createStage(canvas, () => ({ state, ui, boardLayer }));
 const modal = createCombatModal({ requestDraw: stage.requestDraw, getUi: () => ui });
-const hand = createHand({ onPlayCard: playAlliedCard, onEndTurn: endTurn, onNewGame: restart });
+const hand = createHand({
+  onPlayCard: playAlliedCard,
+  onEndTurn: endTurn,
+  onNewGame: restart,
+  onCutWire: cutSelectedWire,
+});
 
 attachInput(canvas, {
   getState: () => state,
@@ -173,7 +180,12 @@ function wireBus(bus) {
   });
   bus.on('medalAwarded', () => hud.setMedals(medalTotals()));
   bus.on('obstacleRemoved', ({ obstacle }) => {
-    hud.log(`  ${OBSTACLES[obstacle].label} abandonnés — protection perdue.`);
+    const o = OBSTACLES[obstacle];
+    hud.log(
+      o.removedOnExit
+        ? `  ${o.label} abandonnés — protection perdue.`
+        : `  ${o.label} retirés du plateau.`,
+    );
     stage.requestDraw();
   });
 }
@@ -214,7 +226,8 @@ function refresh() {
   } else {
     hud.setPrompt(
       ui.selected
-        ? `${UNITS[ui.selected.type].label} — glissez le pion sur un hex clair pour avancer, sur un contour rouge pour tirer.`
+        ? `${UNITS[ui.selected.type].label} — glissez le pion sur un hex clair pour avancer, sur un contour rouge pour tirer.` +
+            (ui.cutWire ? ' Ou coupez les barbelés (bouton sous les cartes).' : '')
         : `Ordres restants : ${state.ordersLeft}. Attrapez une unité encadrée de blanc et faites-la glisser.`,
     );
   }
@@ -275,6 +288,7 @@ function selectUnit(u) {
   ui.selected = u;
   ui.moves = reachable(state, u, UNITS[u.type].moveNoFire);
   ui.targets = targetsFor(state, u, state.moved[u.id] || 0);
+  ui.cutWire = canCutWire(state, u);
   refresh();
 }
 
@@ -282,6 +296,7 @@ function clearSelection() {
   ui.selected = null;
   ui.moves = [];
   ui.targets = [];
+  ui.cutWire = false;
   refresh();
 }
 
@@ -293,13 +308,22 @@ function moveTo(u, hex) {
   }
   ui.moves = [];
   ui.targets = targetsFor(state, u, cost);
-  if (!ui.targets.length) finish(u);
+  ui.cutWire = canCutWire(state, u);
+  if (!ui.targets.length && !ui.cutWire) finish(u);
   else refresh();
+}
+
+// Le joueur coupe les barbelés de l'unité sélectionnée au lieu de combattre.
+function cutSelectedWire() {
+  const u = ui.selected;
+  cutWire(state, u);
+  finish(u);
 }
 
 async function attackTarget(u, target) {
   ui.breakthrough = null;
   ui.targets = [];
+  ui.cutWire = false; // le combat remplace la coupe des barbelés
   const outcome = attackUnit(state, u, target.unit);
   await playCombat(outcome, false);
   const hex = state.winner ? null : takeGroundHex(state, u, outcome);
@@ -353,6 +377,7 @@ function finish(u) {
   ui.targets = [];
   ui.takeGround = null;
   ui.breakthrough = null;
+  ui.cutWire = false;
   if (state.winner) {
     refresh();
     return;
@@ -372,6 +397,7 @@ function endTurn() {
     takeGround: null,
     breakthrough: null,
     action: null,
+    cutWire: false,
   });
   endPlayerTurn(state);
   refresh();

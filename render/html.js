@@ -62,7 +62,8 @@ export function forcePanelHTML(unit, terrainKey, role, figsShown, lost) {
 // Le couvert affiché est celui qui fournit la réduction retenue (non cumulée) :
 // l'obstacle s'il protège au moins autant que le terrain.
 export function calcHTML(outcome) {
-  const { attacker, baseDice, range, reduction, dice, defender, terrainKey, obstacleKey } = outcome;
+  const { attacker, baseDice, range, reduction, snare, dice, defender, terrainKey, obstacleKey } =
+    outcome;
   const t = TERRAIN[terrainKey];
   const o = obstacleKey ? OBSTACLES[obstacleKey] : null;
   const coverLabel =
@@ -72,6 +73,7 @@ export function calcHTML(outcome) {
   return (
     `<b>${baseDice}</b> dés à portée ${range}` +
     (reduction ? ` − <b>${reduction}</b> (${coverLabel.toLowerCase()})` : '') +
+    (snare ? ` − <b>${snare}</b> (empêtrée dans les barbelés)` : '') +
     ` = <b>${dice} dé${dice > 1 ? 's' : ''}</b> · touche sur ${UNITS[defender.type].hitOn
       .map((f) => SYM[f])
       .join(' ')}`
@@ -118,6 +120,12 @@ export function tipHTML(state, ui, hex) {
     if (o.makesPassable)
       h += `<div class="row">Franchissement<b>rend l'hex franchissable</b></div>`;
     if (o.infantryOnly) h += `<div class="row">Accès<b>infanterie seulement</b></div>`;
+    if (o.stops) h += `<div class="row">Mouvement<b>stoppe net</b></div>`;
+    if (o.entanglesInfantry)
+      h += `<div class="row">Infanterie<b>empêtrée : 1 dé de moins</b></div>`;
+    if (o.cutInsteadOfFight)
+      h += `<div class="row">Retrait<b>l'infanterie peut couper au lieu de combattre</b></div>`;
+    if (o.crushedByArmor) h += `<div class="row">Blindés<b>les écrasent et combattent</b></div>`;
     if (o.fixesArtillery) h += `<div class="row">Artillerie<b>retranchée, ne sort plus</b></div>`;
     if (o.ignoreFirstFlag)
       h += `<div class="row">Drapeaux<b>le premier du jet est ignoré</b></div>`;

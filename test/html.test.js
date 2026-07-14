@@ -52,6 +52,9 @@ test('calcHTML : détaille le calcul avec la réduction de terrain', () => {
   assert.match(h, /<b>3<\/b> dés à portée 1/);
   assert.match(h, /forêt/);
   assert.match(h, /<b>2 dés<\/b>/);
+  // l'assaillant empêtré dans les barbelés perd un dé, affiché à part
+  const snared = calcHTML({ ...outcome, reduction: 0, snare: 1, terrainKey: 'plaine' });
+  assert.match(snared, /− <b>1<\/b> \(empêtrée dans les barbelés\)/);
 });
 
 test('tipHTML : terrain seul, puis terrain + unité', () => {
@@ -90,6 +93,14 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   assert.match(sandbags, /le premier du jet est ignoré/);
   assert.match(sandbags, /Abandon<b>retirés dès que l'unité sort/);
   assert.ok(!sandbags.includes('infanterie seulement'));
+
+  const wire = tipHTML(state, emptyUi, { c: 3, r: 2 }); // barbelés du scénario
+  assert.match(wire, /Barbelés/);
+  assert.match(wire, /Mouvement<b>stoppe net/);
+  assert.match(wire, /empêtrée : 1 dé de moins/);
+  assert.match(wire, /couper au lieu de combattre/);
+  assert.match(wire, /Blindés<b>les écrasent et combattent/);
+  assert.ok(!wire.includes('Protection')); // aucun couvert
 
   const hedge = tipHTML(state, emptyUi, { c: 3, r: 3 }); // bocage du scénario
   assert.match(hedge, /Bocage/);
