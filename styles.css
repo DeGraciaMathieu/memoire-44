@@ -459,7 +459,7 @@ a.act:hover {
   transition:
     opacity 0.12s,
     transform 0.12s;
-  width: 212px;
+  width: 280px;
   background: var(--panel);
   border: 1px solid var(--rule);
   border-radius: 4px;

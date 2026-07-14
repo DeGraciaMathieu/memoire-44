@@ -54,7 +54,7 @@ export function createHud() {
 
   function moveTip(cx, cy) {
     const pad = 16;
-    const w = 212;
+    const w = els.tip.offsetWidth || 280;
     const h = els.tip.offsetHeight || 150;
     let x = cx + pad;
     let y = cy + pad;
