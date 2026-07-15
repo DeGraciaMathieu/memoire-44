@@ -15,7 +15,7 @@ export default [
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: globals.browser },
   },
   {
-    files: ['test/**/*.js', 'eslint.config.js'],
+    files: ['test/**/*.js', 'eslint.config.js', 'server.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: globals.node },
   },
 ];

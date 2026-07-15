@@ -39,7 +39,10 @@ import {
   aiPickCard,
   aiTakesGround,
 } from '../src/ai.js';
+import { applyRemote } from '../src/online.js';
+import { mulberry32 } from '../src/rng.js';
 import { createUiState } from './uiState.js';
+import { connectRoom, createRoom, joinRoom } from './net.js';
 import { buildBoardLayer } from './board.js';
 import { createStage, DPR } from './stage.js';
 import { createHud } from './hud.js';
@@ -56,6 +59,7 @@ let ui;
 let boardLayer;
 let currentMap = null; // carte de l'éditeur chargée, null = scénario par défaut
 let currentSide = 'allies'; // camp du joueur, choisi sur la page d'accueil (?side=)
+let online = null; // partie en ligne : { role: 'host'|'guest', code, seed, net } — null contre l'IA
 
 const hud = createHud();
 const stage = createStage(canvas, () => ({ state, ui, boardLayer }));
@@ -67,29 +71,40 @@ const hand = createHand({
   onCutWire: cutSelectedWire,
 });
 
-attachInput(canvas, {
-  getState: () => state,
-  getUi: () => ui,
-  hud,
-  stage,
-  actions: {
-    selectUnit,
-    moveTo,
-    attackTarget,
-    actionClick,
-    clearSelection,
-    refresh,
-    confirmTakeGround,
-    declineTakeGround,
-    finishBreakthrough,
-  },
-});
+// Attaché à la première partie : en ligne, l'hôte attend l'adversaire avant
+// que `state` existe, et input.js suppose un état présent.
+let inputAttached = false;
+function attachGameInput() {
+  if (inputAttached) return;
+  inputAttached = true;
+  attachInput(canvas, {
+    getState: () => state,
+    getUi: () => ui,
+    hud,
+    stage,
+    actions: {
+      selectUnit,
+      moveTo,
+      attackTarget,
+      actionClick,
+      clearSelection,
+      refresh,
+      confirmTakeGround,
+      declineTakeGround,
+      finishBreakthrough,
+    },
+  });
+}
 
 // Totaux affichés : médailles de destruction + objectifs occupés.
 const medalTotals = () => ({
   allies: medalCount(state, 'allies'),
   axis: medalCount(state, 'axis'),
 });
+
+// Réplique une action locale chez le joueur distant (no-op contre l'IA).
+const send = (msg) =>
+  online?.net.send(msg).catch((err) => hud.log(`✖ réseau : ${err.message}`, 'bad'));
 
 /* --- bus → rendu ------------------------------------------------------- */
 
@@ -229,6 +244,8 @@ function refresh() {
       (state.winner === state.playerSide ? '★ ' : '✖ ') +
         (state.winner === 'allies' ? 'Victoire alliée.' : 'Les forces de l’Axe l’emportent.'),
     );
+  } else if (state.turn !== state.playerSide) {
+    hud.setPrompt(online ? 'Tour adverse — en attente du joueur distant…' : 'Tour adverse.');
   } else if (state.phase === 'card') {
     hud.setPrompt('Jouez une carte de commandement.');
   } else if (ui.action?.kind === 'barrage') {
@@ -257,6 +274,7 @@ function refresh() {
 
 function playPlayerCard(id) {
   const cd = playCard(state, state.playerSide, id);
+  send({ t: 'play', side: state.playerSide, card: id });
   if (cd.action === 'barrage') {
     ui.action = { kind: 'barrage', targets: barrageTargets(state, state.playerSide) };
   } else if (cd.action === 'air') {
@@ -288,6 +306,7 @@ function actionClick(hex) {
       return;
     }
     ui.action = null;
+    send({ t: 'air', side: state.playerSide, hexes: act.picks });
     if (!resolveAirStrike(state, state.playerSide, act.picks).length)
       hud.log('  Attaque aérienne : aucune unité ennemie sous les bombes.');
     afterAction();
@@ -296,8 +315,13 @@ function actionClick(hex) {
   const target = act.targets.find((u) => u.c === hex.c && u.r === hex.r);
   if (!target) return;
   ui.action = null;
-  if (act.kind === 'barrage') resolveBarrage(state, state.playerSide, target);
-  else resolveMedics(state, target);
+  if (act.kind === 'barrage') {
+    send({ t: 'barrage', side: state.playerSide, target: target.id });
+    resolveBarrage(state, state.playerSide, target);
+  } else {
+    send({ t: 'medics', unit: target.id });
+    resolveMedics(state, target);
+  }
   afterAction();
 }
 
@@ -328,6 +352,7 @@ function moveTo(u, hex) {
     refresh();
     return;
   }
+  send({ t: 'move', unit: u.id, c: hex.c, r: hex.r });
   ui.moves = [];
   ui.targets = targetsFor(state, u, cost);
   ui.cutWire = canCutWire(state, u);
@@ -339,6 +364,7 @@ function moveTo(u, hex) {
 function cutSelectedWire() {
   const u = ui.selected;
   cutWire(state, u);
+  send({ t: 'wire', unit: u.id });
   finish(u);
 }
 
@@ -347,6 +373,7 @@ async function attackTarget(u, target) {
   ui.targets = [];
   ui.cutWire = false; // le combat remplace la coupe des barbelés
   const outcome = attackUnit(state, u, target.unit);
+  send({ t: 'attack', unit: u.id, target: target.unit.id });
   await playCombat(outcome, false);
   const hex = state.winner ? null : takeGroundHex(state, u, outcome);
   if (hex) {
@@ -366,6 +393,7 @@ function confirmTakeGround() {
   ui.takeGround = null;
   ui.moves = [];
   takeGround(state, unit, hex);
+  send({ t: 'ground', unit: unit.id, c: hex.c, r: hex.r });
   if (canBreakthrough(state, unit)) {
     const targets = targetsFor(state, unit, state.moved[unit.id]);
     if (targets.length) {
@@ -394,6 +422,7 @@ function finishBreakthrough() {
 
 function finish(u) {
   finishUnit(state, u);
+  send({ t: 'finish', unit: u.id });
   ui.selected = null;
   ui.moves = [];
   ui.targets = [];
@@ -422,8 +451,66 @@ function endTurn() {
     cutWire: false,
   });
   endPlayerTurn(state);
+  send({ t: 'end', side: state.playerSide });
   refresh();
-  setTimeout(playAiTurn, 700);
+  if (!online) setTimeout(playAiTurn, 700);
+}
+
+/* --- tour du joueur distant (mode en ligne) ------------------------------ */
+
+// Les actions du pair arrivent dans l'ordre où il les a jouées ; on les
+// applique une à une avec le même tempo que le tour de l'IA — les événements
+// du bus racontent le reste (journal, dés, explosions).
+const remoteQueue = [];
+let remoteBusy = false;
+
+function onRemoteMessage(msg) {
+  if (msg.t === 'joined') {
+    startGame(`Partie en ligne — salon ${online.code}. Les Alliés ouvrent le feu.`);
+    return;
+  }
+  if (msg.t === 'restart') {
+    online.seed = msg.seed;
+    startGame('Nouvelle partie relancée par l’hôte. Les Alliés ouvrent le feu.');
+    return;
+  }
+  remoteQueue.push(msg);
+  if (!remoteBusy) drainRemote();
+}
+
+async function drainRemote() {
+  remoteBusy = true;
+  while (remoteQueue.length) {
+    try {
+      await playRemoteMsg(remoteQueue.shift());
+    } catch (err) {
+      hud.log(`✖ partie désynchronisée : ${err.message}`, 'bad');
+      remoteQueue.length = 0;
+    }
+  }
+  remoteBusy = false;
+}
+
+async function playRemoteMsg(msg) {
+  const res = applyRemote(state, msg);
+  switch (msg.t) {
+    case 'attack':
+      await playCombat(res.outcome, true);
+      break;
+    case 'play':
+      await sleep(450);
+      break;
+    case 'move':
+    case 'ground':
+      await sleep(500);
+      break;
+    case 'barrage':
+    case 'air':
+    case 'medics':
+      await sleep(900);
+      break;
+  }
+  refresh();
 }
 
 /* --- tour de l'IA : elle décide, app.js donne le tempo ------------------- */
@@ -494,10 +581,17 @@ async function playAiAction(cd) {
 /* --- cycle de vie -------------------------------------------------------- */
 
 function startGame(message) {
-  state = createGame({ map: currentMap, playerSide: currentSide });
+  remoteQueue.length = 0;
+  state = createGame({
+    // en ligne, la seed partagée rend les deux clients strictement identiques
+    rng: online ? mulberry32(online.seed) : undefined,
+    map: currentMap,
+    playerSide: currentSide,
+  });
   ui = createUiState();
   boardLayer = buildBoardLayer(state, DPR);
   wireBus(state.bus);
+  attachGameInput();
   hud.clearLog();
   hud.clearDice();
   drawCards(state, 'allies');
@@ -506,10 +600,18 @@ function startGame(message) {
   if (currentSide === 'axis') hud.log('Vous commandez l’Axe.', 'hi');
   refresh();
   // les Alliés ouvrent toujours : si le joueur tient l'Axe, l'IA joue d'abord
-  if (state.turn !== state.playerSide) setTimeout(playAiTurn, 700);
+  if (state.turn !== state.playerSide && !online) setTimeout(playAiTurn, 700);
 }
 
 function restart() {
+  if (online) {
+    if (online.role !== 'host') {
+      hud.log('Partie en ligne : seul l’hôte peut relancer.', 'bad');
+      return;
+    }
+    online.seed = crypto.getRandomValues(new Uint32Array(1))[0];
+    send({ t: 'restart', seed: online.seed });
+  }
   startGame('Nouvelle partie. Les Alliés ouvrent le feu.');
 }
 
@@ -530,19 +632,56 @@ mapFile.onchange = async () => {
   startGame(`Carte « ${currentMap.name || file.name} ». Les Alliés ouvrent le feu.`);
 };
 
+async function fetchMap(file) {
+  const res = await fetch(`maps/${file}`);
+  if (!res.ok) throw new Error(`carte introuvable (${res.status})`);
+  return parseMap(await res.text());
+}
+
+// Mode en ligne : l'hôte crée le salon (carte + camp + seed) puis attend que
+// l'invité rejoigne avec le code — l'invité reçoit la même configuration et
+// le camp laissé libre. La partie démarre des deux côtés à l'arrivée de
+// l'invité ; le relais (server.js) ne fait que transporter les messages.
+async function initOnline(params) {
+  document.getElementById('btnLoadMap').hidden = true;
+  try {
+    const joinCode = (params.get('join') || '').toUpperCase();
+    if (joinCode) {
+      const { seed, map, side } = await joinRoom(joinCode);
+      currentSide = side;
+      if (map) currentMap = await fetchMap(map);
+      online = { role: 'guest', code: joinCode, seed };
+      online.net = connectRoom(joinCode, 'guest', onRemoteMessage);
+      startGame(`Partie en ligne — salon ${joinCode}. Les Alliés ouvrent le feu.`);
+    } else {
+      const file = params.get('map');
+      if (file) currentMap = await fetchMap(file);
+      const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+      const { code } = await createRoom({ seed, map: file, hostSide: currentSide });
+      online = { role: 'host', code, seed };
+      online.net = connectRoom(code, 'host', onRemoteMessage);
+      hud.log(`Partie en ligne créée — communiquez le code du salon : ${code}.`, 'hi');
+      hud.setPrompt(`Salon ${code} — en attente de l’adversaire…`);
+    }
+  } catch (err) {
+    hud.setPrompt('Partie en ligne impossible.');
+    hud.log(`✖ ${err.message}`, 'bad');
+  }
+}
+
 // Démarrage : la page d'accueil transmet la carte choisie via ?map=<fichier>
-// et le camp du joueur via ?side=allies|axis (Alliés par défaut). Sans
-// paramètre (ou si la carte est illisible), repli sur le scénario par défaut.
+// et le camp du joueur via ?side=allies|axis (Alliés par défaut) — plus
+// ?online=1 (créer un salon) ou ?join=<code> (le rejoindre). Sans paramètre
+// (ou si la carte est illisible), repli sur le scénario par défaut contre l'IA.
 async function init() {
   const params = new URLSearchParams(location.search);
   currentSide = params.get('side') === 'axis' ? 'axis' : 'allies';
+  if (params.get('online') === '1' || params.get('join')) return initOnline(params);
   const file = params.get('map');
   let error = null;
   if (file) {
     try {
-      const res = await fetch(`maps/${file}`);
-      if (!res.ok) throw new Error(`carte introuvable (${res.status})`);
-      currentMap = parseMap(await res.text());
+      currentMap = await fetchMap(file);
       startGame(`Carte « ${currentMap.name || file} ». Les Alliés ouvrent le feu.`);
       return;
     } catch (err) {

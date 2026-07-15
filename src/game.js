@@ -289,23 +289,26 @@ export function canBreakthrough(state, unit) {
   return unit.type === 'arm' && (state.attacks[unit.id] || 0) === 1;
 }
 
-export function endPlayerTurn(state) {
+// Fin de tour du camp `side` : nettoie l'activation, fait piocher le camp qui
+// termine et rend la main à l'autre. Neutre vis-à-vis de playerSide : le mode
+// en ligne l'applique symétriquement sur les deux clients.
+export function endTurn(state, side) {
   state.units.forEach((u) => (u.acted = false));
   state.playedCard = null;
   state.ordersLeft = 0;
   state.moved = {};
   state.attacks = {};
-  drawCards(state, state.playerSide);
-  state.turn = state.aiSide;
-  state.phase = 'card';
+  drawCards(state, side);
+  if (!state.winner) {
+    state.turn = side === 'allies' ? 'axis' : 'allies';
+    state.phase = 'card';
+  }
+}
+
+export function endPlayerTurn(state) {
+  endTurn(state, state.playerSide);
 }
 
 export function endAiTurn(state) {
-  drawCards(state, state.aiSide);
-  if (!state.winner) {
-    state.turn = state.playerSide;
-    state.phase = 'card';
-    state.playedCard = null;
-    state.units.forEach((u) => (u.acted = false));
-  }
+  endTurn(state, state.aiSide);
 }

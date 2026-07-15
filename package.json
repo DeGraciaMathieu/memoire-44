@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx serve .",
+    "online": "node server.js",
     "test": "node --test test/*.test.js",
     "lint": "eslint .",
     "format": "prettier --write ."

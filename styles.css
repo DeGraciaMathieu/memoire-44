@@ -888,6 +888,21 @@ a.act:hover {
 .sideopt input {
   accent-color: var(--brass);
 }
+.joinsep {
+  color: var(--ink-dim);
+}
+.joincode {
+  width: 7ch;
+  padding: 6px 8px;
+  font: inherit;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
 .maplist {
   display: flex;
   flex-wrap: wrap;

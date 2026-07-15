@@ -2,7 +2,7 @@
 
 Jeu de plateau hexagonal type Mémoire 44 en JavaScript pur : cartes de commandement
 par secteur, dés spéciaux, terrain, IA gloutonne pour le camp adverse (le joueur
-choisit son camp sur la page d'accueil).
+choisit son camp sur la page d'accueil) — ou mode en ligne à deux joueurs humains.
 
 ## Stack
 
@@ -11,6 +11,7 @@ choisit son camp sur la page d'accueil).
 | Langage | JavaScript ES2022, ES modules, **aucun bundler** (chargé tel quel)               |
 | Rendu   | Canvas 2D natif + DOM — zéro dépendance runtime                                  |
 | Dev     | `npm run dev` (`npx serve .`) — HTTP requis, `file://` ne charge pas les modules |
+| Ligne   | `npm run online` (`node server.js`) — statique + relais SSE des salons, requis pour jouer à deux |
 | Tests   | `npm test` → `node --test test/*.test.js`                                        |
 | Lint    | `npm run lint` (ESLint 9, flat config `eslint.config.js`)                        |
 | Format  | `npm run format` (Prettier)                                                      |
@@ -47,6 +48,9 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
   (`card.action` : barrage, attaque aérienne, médecins & mécanos, contre-attaque),
   drapeaux (repli), combat rapproché / tir, prise de terrain (`takeGround`), percée de
   blindés (`canBreakthrough`), phases `card` / `orders`.
+- Mode en ligne : deux humains en **lockstep** — même seed (`mulberry32`, `src/rng.js`),
+  mêmes appels `src/game.js` rejoués chez le pair (`applyRemote`, `src/online.js`) via le
+  relais sans règles `server.js` (salons hôte / invité identifiés par un code).
 - Visuel : palette CSS dans `styles.css` (`:root`), doublée côté canvas par `COL`
   (`render/gfx.js`) ; symboles `SYM` / `UNIT_GLYPH` (`render/html.js`) ; typographies
   Courier New (texte) et Impact (titres).

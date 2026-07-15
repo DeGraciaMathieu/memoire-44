@@ -2,7 +2,7 @@
 // et mène au jeu via game.html?map=<fichier>&side=<camp>. Aucune règle métier ici.
 
 import { parseMap, setupFromMap } from '../src/map.js';
-import { homeMapsHTML, homeSideHTML } from './html.js';
+import { homeMapsHTML, homeOnlineHTML, homeSideHTML } from './html.js';
 import { buildBoardLayer } from './board.js';
 import { COL, boardSize, hexCenter } from './gfx.js';
 
@@ -10,17 +10,42 @@ const PREVIEW_W = 576; // 2× la largeur intérieure d'une tuile, net sur écran
 
 const list = document.getElementById('maps');
 const sidepick = document.getElementById('sidepick');
+const onlinebar = document.getElementById('online');
 
-// Camp choisi : répercuté sur le lien de chaque tuile.
+// Camp et mode choisis : répercutés sur le lien de chaque tuile.
 let side = 'allies';
+let online = false;
 sidepick.innerHTML = homeSideHTML(side);
-sidepick.addEventListener('change', (e) => {
-  side = e.target.value;
+onlinebar.innerHTML = homeOnlineHTML();
+
+function updateLinks() {
   for (const a of list.querySelectorAll('.maptile')) {
     const url = new URL(a.href);
     url.searchParams.set('side', side);
+    if (online) url.searchParams.set('online', '1');
+    else url.searchParams.delete('online');
     a.href = url;
   }
+}
+
+sidepick.addEventListener('change', (e) => {
+  side = e.target.value;
+  updateLinks();
+});
+onlinebar.querySelector('#onlineMode').addEventListener('change', (e) => {
+  online = e.target.checked;
+  updateLinks();
+});
+
+// Rejoindre un salon existant : le code suffit, l'hôte a fixé carte et camp.
+const joinCode = onlinebar.querySelector('#joinCode');
+const join = () => {
+  const code = joinCode.value.trim().toUpperCase();
+  if (code) location.href = `game.html?join=${encodeURIComponent(code)}`;
+};
+onlinebar.querySelector('#btnJoin').addEventListener('click', join);
+joinCode.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') join();
 });
 
 // Aperçu d'une carte : le raster du plateau (terrain + objectifs) surmonté
@@ -67,6 +92,7 @@ async function loadMaps() {
 loadMaps()
   .then((maps) => {
     list.innerHTML = homeMapsHTML(maps, side);
+    updateLinks();
   })
   .catch((err) => {
     list.innerHTML = `<p class="empty">✖ Impossible de charger la liste des cartes : ${err.message}</p>`;

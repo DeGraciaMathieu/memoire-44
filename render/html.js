@@ -52,6 +52,15 @@ export function homeSideHTML(side = 'allies') {
     <label class="sideopt"><input type="radio" name="side" value="axis" ${side === 'axis' ? 'checked' : ''} /> ${SIDE_FR.axis}</label>`;
 }
 
+// Barre du mode en ligne de la page d'accueil : créer un salon (les tuiles de
+// carte mènent alors à game.html?online=1) ou rejoindre un salon par son code.
+export function homeOnlineHTML() {
+  return `<label class="sideopt"><input type="checkbox" id="onlineMode" /> Jouer en ligne (créer un salon)</label>
+    <span class="joinsep">ou</span>
+    <input class="joincode" id="joinCode" maxlength="4" placeholder="CODE" aria-label="Code du salon" />
+    <button class="act" id="btnJoin">Rejoindre un salon</button>`;
+}
+
 // Liste des cartes proposées par la page d'accueil
 // (maps : [{ file, name, preview }] — preview : dataURL d'aperçu, ou null ;
 // side : camp joué, ajouté au lien de chaque tuile).
