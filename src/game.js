@@ -5,7 +5,7 @@
 import { HAND_SIZE, OBSTACLES, TERRAIN, UNITS } from './config.js';
 import { createBus } from './events.js';
 import { hexDistance, inBounds, key } from './hex.js';
-import { inSector } from './sectors.js';
+import { cardSectors, inSector, sectorsOf } from './sectors.js';
 import { buildDeck, cardById } from './cards.js';
 import { scenario } from './scenario.js';
 import { setupFromMap } from './map.js';
@@ -56,6 +56,9 @@ export function createGame({ rng = Math.random, map = null, playerSide = 'allies
     playedCard: null,
     lastCard: { allies: null, axis: null }, // dernière carte jouée par chaque camp (Contre-attaque)
     ordersLeft: 0,
+    orders: {}, // secteur -> ordres restants pour la carte en cours
+    reconDraw: null, // camp qui doit piocher 2 cartes et n'en garder qu'une (Reconnaissance)
+    reconChoice: null, // { side, ids } : les 2 cartes piochées en attente de choix
     moved: {}, // id d'unité -> coût du déplacement pendant l'activation en cours
     attacks: {}, // id d'unité -> nombre d'attaques pendant l'activation en cours
     winner: null,
@@ -71,15 +74,61 @@ export function orderableUnits(state, side, cardId) {
   return state.units.filter((u) => u.side === side && inSector(u, cd.sector));
 }
 
+// Quota d'ordres par secteur couvert par la carte : `n` unités par secteur,
+// 'all' = toutes les unités du secteur, plafonné par les effectifs présents.
+export function sectorQuota(state, side, cd) {
+  const quota = {};
+  for (const s of cardSectors(cd.sector)) {
+    const present = state.units.filter(
+      (u) => u.side === side && sectorsOf(u.c, u.r).includes(s),
+    ).length;
+    quota[s] = cd.n === 'all' ? present : Math.min(cd.n, present);
+  }
+  return quota;
+}
+
+// Unités encore activables pendant la phase d'ordres : non jouées et dans un
+// secteur dont le quota d'ordres n'est pas épuisé.
+export function activableUnits(state, side) {
+  return orderableUnits(state, side, state.playedCard).filter(
+    (u) => !u.acted && sectorsOf(u.c, u.r).some((s) => (state.orders[s] || 0) > 0),
+  );
+}
+
+function drawOne(state, side) {
+  if (!state.decks[side].length) state.decks[side] = shuffle(buildDeck(), state.rng);
+  return state.decks[side].pop();
+}
+
 export function drawCards(state, side) {
   let count = 0;
   while (state.hands[side].length < HAND_SIZE) {
-    if (!state.decks[side].length) state.decks[side] = shuffle(buildDeck(), state.rng);
-    state.hands[side].push(state.decks[side].pop());
+    state.hands[side].push(drawOne(state, side));
     count++;
   }
   if (count) state.bus.emit('cardsDrawn', { side, count });
   return count;
+}
+
+// Bonus de pioche d'une Reconnaissance : le camp pioche 2 cartes et n'en garde
+// qu'une — le choix revient à l'appelant (le joueur via le rendu, l'IA via
+// aiReconKeep), qui conclut par keepReconCard.
+export function beginReconChoice(state, side) {
+  state.reconDraw = null;
+  state.reconChoice = { side, ids: [drawOne(state, side), drawOne(state, side)] };
+  state.bus.emit('reconChoice', state.reconChoice);
+  return state.reconChoice;
+}
+
+export function keepReconCard(state, keptId) {
+  const { side, ids } = state.reconChoice;
+  state.reconChoice = null;
+  state.hands[side].push(keptId);
+  state.bus.emit('cardsDrawn', { side, count: 1 });
+  drawCards(state, side); // filet : complète la main si elle restait incomplète
+  const rest = ids.slice();
+  rest.splice(rest.indexOf(keptId), 1);
+  return rest[0]; // la carte défaussée
 }
 
 // Joue une carte et renvoie la carte EFFECTIVE : les cartes de commandement
@@ -93,7 +142,7 @@ export function playCard(state, side, cardId) {
   if (cd.action === 'contre') {
     const lastId = state.lastCard[side === 'allies' ? 'axis' : 'allies'];
     const last = lastId && cardById(lastId);
-    cd = last && last.action !== 'contre' ? last : cardById('recon');
+    cd = last && last.action !== 'contre' ? last : cardById('recon-force');
   }
   state.hands[side].splice(state.hands[side].indexOf(cardId), 1);
   state.lastCard[side] = cardId;
@@ -102,11 +151,17 @@ export function playCard(state, side, cardId) {
   state.moved = {};
   state.attacks = {};
   state.units.forEach((u) => (u.acted = false));
-  state.ordersLeft = cd.action
-    ? cd.action === 'medics'
-      ? Math.min(1, medicTargets(state, side).length)
-      : 1
-    : Math.min(cd.n, orderableUnits(state, side, cd.id).length);
+  state.reconDraw = cd.recon ? side : null;
+  if (cd.action) {
+    state.orders = {};
+    state.ordersLeft = cd.action === 'medics' ? Math.min(1, medicTargets(state, side).length) : 1;
+  } else {
+    state.orders = sectorQuota(state, side, cd);
+    const total = Object.values(state.orders).reduce((a, b) => a + b, 0);
+    // un hex à cheval compte dans les deux secteurs : le total réel est borné
+    // par le nombre d'unités effectivement activables
+    state.ordersLeft = Math.min(total, orderableUnits(state, side, cd.id).length);
+  }
   state.bus.emit('cardPlayed', {
     side,
     card: played,
@@ -189,8 +244,9 @@ export function resolveMedics(state, unit) {
 }
 
 // Déplace l'unité si l'hex est réellement atteignable ; renvoie le coût, ou
-// null si le déplacement est illégal.
+// null si le déplacement est illégal. Un seul déplacement par activation.
 export function moveUnit(state, unit, hex) {
+  if (state.moved[unit.id] != null) return null;
   const step = reachable(state, unit, UNITS[unit.type].moveNoFire).find(
     (m) => m.c === hex.c && m.r === hex.r,
   );
@@ -249,6 +305,13 @@ export function attackUnit(state, attacker, defender) {
 export function finishUnit(state, unit) {
   unit.acted = true;
   state.ordersLeft--;
+  // L'ordre consomme le quota du secteur de l'unité ; hex à cheval, ou unité
+  // sortie de son secteur en cours d'activation : le secteur couvert le mieux
+  // pourvu paie l'ordre, pour garder quotas et ordersLeft cohérents.
+  const here = sectorsOf(unit.c, unit.r).filter((s) => (state.orders[s] || 0) > 0);
+  const pool = here.length ? here : Object.keys(state.orders).filter((s) => state.orders[s] > 0);
+  const s = pool.sort((a, b) => state.orders[b] - state.orders[a])[0];
+  if (s) state.orders[s]--;
 }
 
 // Prise de terrain : après un combat rapproché gagné (défenseur détruit ou en
@@ -293,19 +356,23 @@ export function endPlayerTurn(state) {
   state.units.forEach((u) => (u.acted = false));
   state.playedCard = null;
   state.ordersLeft = 0;
+  state.orders = {};
   state.moved = {};
   state.attacks = {};
-  drawCards(state, state.playerSide);
+  if (state.reconDraw === state.playerSide) beginReconChoice(state, state.playerSide);
+  else drawCards(state, state.playerSide);
   state.turn = state.aiSide;
   state.phase = 'card';
 }
 
 export function endAiTurn(state) {
-  drawCards(state, state.aiSide);
+  if (state.reconDraw === state.aiSide) beginReconChoice(state, state.aiSide);
+  else drawCards(state, state.aiSide);
   if (!state.winner) {
     state.turn = state.playerSide;
     state.phase = 'card';
     state.playedCard = null;
+    state.orders = {};
     state.units.forEach((u) => (u.acted = false));
   }
 }

@@ -6,10 +6,12 @@ import {
   aiChooseMoves,
   aiMedicsTarget,
   aiPickCard,
+  aiReconKeep,
   aiTakesGround,
 } from '../src/ai.js';
 import { createGame } from '../src/game.js';
 import { parseMap } from '../src/map.js';
+import { sectorsOf } from '../src/sectors.js';
 import { hexDistance, key } from '../src/hex.js';
 import { mulberry32 } from './helpers.js';
 
@@ -33,19 +35,34 @@ test('l’IA joue les Alliés quand le joueur choisit l’Axe', () => {
   state.units = state.units.map((u) => (u.side === 'allies' ? { ...u, c: 1 } : u));
   state.hands.allies = ['atk-d', 'atk-g'];
   assert.equal(aiPickCard(state), 'atk-g');
-  for (const p of aiChooseMoves(state, 'assaut')) assert.equal(p.unit.side, 'allies');
+  for (const p of aiChooseMoves(state, 'avance')) assert.equal(p.unit.side, 'allies');
 });
 
-test('aiChooseMoves produit au plus n plans, chacun avec une unité et une destination', () => {
+test('aiChooseMoves respecte le quota par secteur, chaque plan a une unité et une destination', () => {
   const state = createGame({ rng: mulberry32(2) });
-  const plans = aiChooseMoves(state, 'assaut');
-  assert.ok(plans.length <= 4);
+  const plans = aiChooseMoves(state, 'avance'); // 2 unités par secteur au plus
+  assert.ok(plans.length <= 6);
   assert.ok(plans.length > 0);
   for (const p of plans) {
     assert.equal(p.unit.side, 'axis');
     assert.ok(p.dest);
     assert.ok(p.dest.cost >= 0);
   }
+
+  // plateau sans hex à cheval : 3 unités au centre, 1 à gauche → 2 + 1 plans
+  const crafted = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 5, r: 2 },
+      { side: 'axis', type: 'inf', c: 6, r: 2 },
+      { side: 'axis', type: 'inf', c: 7, r: 2 },
+      { side: 'axis', type: 'inf', c: 1, r: 2 },
+      { side: 'allies', type: 'inf', c: 5, r: 8 },
+    ],
+  });
+  const quotas = aiChooseMoves(crafted, 'avance');
+  assert.equal(quotas.length, 3);
+  const inCentre = quotas.filter((p) => sectorsOf(p.unit.c, p.unit.r).includes('centre')).length;
+  assert.equal(inCentre, 2);
 });
 
 test("prise d'objectif : sans cible, l'IA avance sur la tuile à portée", () => {
@@ -56,7 +73,7 @@ test("prise d'objectif : sans cible, l'IA avance sur la tuile à portée", () =>
       { side: 'allies', type: 'inf', c: 5, r: 8 },
     ],
   });
-  const [plan] = aiChooseMoves(state, 'recon');
+  const [plan] = aiChooseMoves(state, 'rec-c');
   assert.deepEqual({ c: plan.dest.c, r: plan.dest.r }, { c: 5, r: 4 });
 });
 
@@ -68,9 +85,23 @@ test("maintien d'objectif : l'unité qui tient la tuile ne la quitte pas", () =>
       { side: 'allies', type: 'inf', c: 5, r: 8 },
     ],
   });
-  const [plan] = aiChooseMoves(state, 'recon');
+  const [plan] = aiChooseMoves(state, 'rec-c');
   assert.deepEqual({ c: plan.dest.c, r: plan.dest.r }, { c: 5, r: 4 });
   assert.equal(plan.dest.cost, 0);
+});
+
+test('aiReconKeep garde la carte qui active le plus de monde', () => {
+  const state = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 1, r: 2 },
+      { side: 'axis', type: 'inf', c: 2, r: 2 }, // tout le monde à gauche
+      { side: 'allies', type: 'inf', c: 5, r: 8 },
+    ],
+  });
+  state.reconChoice = { side: 'axis', ids: ['atk-d', 'atk-g'] };
+  assert.equal(aiReconKeep(state), 'atk-g');
+  state.reconChoice = { side: 'axis', ids: ['atk-g', 'atk-d'] };
+  assert.equal(aiReconKeep(state), 'atk-g');
 });
 
 test('aiPickCard préfère le barrage quand une médaille est à portée de dés', () => {

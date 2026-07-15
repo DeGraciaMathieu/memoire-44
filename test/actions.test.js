@@ -140,14 +140,15 @@ test('contre-attaque : rejoue la dernière carte adverse, sinon vaut une reconna
   const events = [];
   state.bus.on('cardPlayed', (p) => events.push(p));
 
-  // sans carte adverse jouée : reconnaissance
+  // sans carte adverse jouée : reconnaissance en force
   state.hands.allies = ['contre'];
   let cd = playCard(state, 'allies', 'contre');
-  assert.equal(cd.id, 'recon');
-  assert.equal(state.playedCard, 'recon');
-  assert.equal(state.ordersLeft, 1);
+  assert.equal(cd.id, 'recon-force');
+  assert.equal(state.playedCard, 'recon-force');
+  assert.equal(state.ordersLeft, 1); // une seule unité alliée sur le plateau
+  assert.equal(state.reconDraw, null); // pas de bonus de pioche sur ce repli
   assert.equal(events[0].card.id, 'contre');
-  assert.equal(events[0].as.id, 'recon');
+  assert.equal(events[0].as.id, 'recon-force');
 
   // l'Axe joue une attaque à gauche : la contre-attaque suivante la rejoue
   state.hands.axis = ['atk-g'];
@@ -157,10 +158,19 @@ test('contre-attaque : rejoue la dernière carte adverse, sinon vaut une reconna
   assert.equal(cd.id, 'atk-g');
   assert.equal(state.playedCard, 'atk-g');
 
-  // une contre-attaque adverse ne se rejoue pas : reconnaissance
+  // une contre-attaque adverse ne se rejoue pas : reconnaissance en force
   state.hands.axis = ['contre'];
   playCard(state, 'axis', 'contre');
   state.hands.allies = ['contre'];
   cd = playCard(state, 'allies', 'contre');
-  assert.equal(cd.id, 'recon');
+  assert.equal(cd.id, 'recon-force');
+
+  // rejouer une Reconnaissance adverse donne aussi son bonus de pioche
+  state.hands.axis = ['rec-c'];
+  playCard(state, 'axis', 'rec-c');
+  assert.equal(state.reconDraw, 'axis');
+  state.hands.allies = ['contre'];
+  cd = playCard(state, 'allies', 'contre');
+  assert.equal(cd.id, 'rec-c');
+  assert.equal(state.reconDraw, 'allies');
 });

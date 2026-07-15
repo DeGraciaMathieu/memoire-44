@@ -3,7 +3,8 @@
 import { TERRAIN, UNITS } from './config.js';
 import { hexDistance, key, neighbors } from './hex.js';
 import { cardById } from './cards.js';
-import { barrageTargets, medicTargets, orderableUnits, validAirTarget } from './game.js';
+import { sectorsOf } from './sectors.js';
+import { barrageTargets, medicTargets, orderableUnits, sectorQuota, validAirTarget } from './game.js';
 import { reachable, unitAt } from './movement.js';
 import { defenseReduction, diceFor, targetsFor } from './combat.js';
 
@@ -41,14 +42,21 @@ function cardScore(state, id) {
   }
   if (cd.action === 'contre') {
     const last = state.lastCard[state.playerSide] && cardById(state.lastCard[state.playerSide]);
-    return cardScore(state, last && last.action !== 'contre' ? last.id : 'recon');
+    return cardScore(state, last && last.action !== 'contre' ? last.id : 'recon-force');
   }
   const us = orderableUnits(state, state.aiSide, id);
-  let s = Math.min(us.length, cd.n) * 2;
-  for (const u of us.slice(0, cd.n)) {
+  const cap = Object.values(sectorQuota(state, state.aiSide, cd)).reduce((a, b) => a + b, 0);
+  let s = Math.min(us.length, cap) * 2;
+  for (const u of us.slice(0, cap)) {
     if (targetsFor(state, u, 0).length) s += 3;
   }
   return s;
+}
+
+// Bonus de pioche d'une Reconnaissance : garder la carte au meilleur score.
+export function aiReconKeep(state) {
+  const { ids } = state.reconChoice;
+  return cardScore(state, ids[1]) > cardScore(state, ids[0]) ? ids[1] : ids[0];
 }
 
 export function aiPickCard(state) {
@@ -132,7 +140,17 @@ export function aiChooseMoves(state, cardId) {
     })
     .sort((a, b) => b.s - a.s);
 
-  return scored.slice(0, cd.n).map((x) => aiPlanUnit(state, x.u));
+  // les meilleures unités d'abord, dans la limite du quota de leur secteur
+  const quota = sectorQuota(state, state.aiSide, cd);
+  const picked = [];
+  for (const x of scored) {
+    const secs = sectorsOf(x.u.c, x.u.r).filter((s) => (quota[s] || 0) > 0);
+    const s = secs.sort((a, b) => quota[b] - quota[a])[0];
+    if (!s) continue;
+    quota[s]--;
+    picked.push(x);
+  }
+  return picked.map((x) => aiPlanUnit(state, x.u));
 }
 
 // Prise de terrain : ne jamais lâcher un objectif tenu, toujours avancer sur

@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  activableUnits,
   attackUnit,
   canBreakthrough,
   canCutWire,
@@ -12,6 +13,7 @@ import {
   endAiTurn,
   endPlayerTurn,
   finishUnit,
+  keepReconCard,
   moveUnit,
   orderableUnits,
   playCard,
@@ -50,8 +52,10 @@ test('choix du camp : le joueur tient l’Axe, l’IA joue les Alliés et ouvre'
   assert.equal(state.turn, 'allies'); // les Alliés ouvrent toujours le feu
 
   // tour de l'IA (Alliés) : carte jouée, repioche, la main passe au joueur
+  // (carte sans bonus de pioche, pour une repioche immédiate)
   drawCards(state, 'allies');
-  playCard(state, 'allies', state.hands.allies[0]);
+  state.hands.allies[0] = 'snd-c';
+  playCard(state, 'allies', 'snd-c');
   endAiTurn(state);
   assert.equal(state.hands.allies.length, HAND_SIZE);
   assert.equal(state.turn, 'axis');
@@ -59,7 +63,8 @@ test('choix du camp : le joueur tient l’Axe, l’IA joue les Alliés et ouvre'
 
   // tour du joueur (Axe) : même séquence, retour à l'IA
   drawCards(state, 'axis');
-  playCard(state, 'axis', state.hands.axis[0]);
+  state.hands.axis[0] = 'snd-c';
+  playCard(state, 'axis', 'snd-c');
   endPlayerTurn(state);
   assert.equal(state.hands.axis.length, HAND_SIZE);
   assert.equal(state.turn, 'allies');
@@ -74,14 +79,15 @@ test('un tour allié complet : pioche, carte, mouvement, fin de tour', () => {
   }
 
   assert.equal(state.units.length, 14);
-  assert.equal(state.decks.allies.length + state.decks.axis.length, 34);
+  assert.equal(state.decks.allies.length + state.decks.axis.length, 40);
 
   drawCards(state, 'allies');
   assert.equal(state.hands.allies.length, HAND_SIZE);
   assert.deepEqual(events[0], ['cardsDrawn', { side: 'allies', count: 5 }]);
 
-  const id = state.hands.allies[0];
+  const id = 'snd-c'; // carte connue pour des assertions déterministes
   const cd = cardById(id);
+  state.hands.allies[0] = id;
   playCard(state, 'allies', id);
   assert.equal(state.phase, 'orders');
   assert.equal(state.playedCard, id);
@@ -109,6 +115,22 @@ test('un tour allié complet : pioche, carte, mouvement, fin de tour', () => {
   assert.equal(state.phase, 'card');
   assert.equal(state.hands.allies.length, HAND_SIZE);
   assert.ok(state.units.every((u) => !u.acted));
+});
+
+test("déplacement unique : une unité déjà déplacée ne rebouge pas dans l'activation", () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 5 },
+      { side: 'axis', type: 'inf', c: 0, r: 0 },
+    ],
+  });
+  const [inf] = state.units;
+  assert.equal(moveUnit(state, inf, { c: 5, r: 6 }), 1);
+  // second déplacement refusé, même vers un hex atteignable
+  assert.equal(moveUnit(state, inf, { c: 5, r: 7 }), null);
+  // activation suivante (moved réinitialisé) : le déplacement redevient possible
+  state.moved = {};
+  assert.equal(moveUnit(state, inf, { c: 5, r: 7 }), 1);
 });
 
 test("attackUnit produit un rapport cohérent avec les dés tirés et l'émet sur le bus", () => {
@@ -331,6 +353,7 @@ test("objectif : possédé tant qu'une unité l'occupe, rendu dès qu'elle le qu
   assert.equal(medalCount(state, 'axis'), 0);
   assert.equal(state.medals.allies, 0); // pas une médaille de destruction
 
+  state.moved = {}; // activation suivante : l'unité quitte la tuile
   moveUnit(state, inf, { c: 5, r: 6 });
   assert.equal(medalCount(state, 'allies'), 0); // possession perdue en quittant la tuile
 });
@@ -410,5 +433,98 @@ test('la pioche épuisée est rebattue automatiquement', () => {
   state.hands.allies = [];
   drawCards(state, 'allies');
   assert.equal(state.hands.allies.length, HAND_SIZE);
-  assert.equal(state.decks.allies.length, 34 - HAND_SIZE);
+  assert.equal(state.decks.allies.length, 40 - HAND_SIZE);
+});
+
+test('avance générale : 2 ordres par secteur, le quota du secteur épuisé ferme ses unités', () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 6 },
+      { side: 'allies', type: 'inf', c: 6, r: 6 },
+      { side: 'allies', type: 'inf', c: 7, r: 6 }, // trois au centre
+      { side: 'allies', type: 'inf', c: 1, r: 6 }, // une à gauche
+      { side: 'axis', type: 'inf', c: 5, r: 0 },
+    ],
+  });
+  const [c1, c2, c3, g1] = state.units;
+  state.hands.allies = ['avance'];
+  playCard(state, 'allies', 'avance');
+
+  // 2 par secteur, plafonné par les effectifs présents : 1 gauche + 2 centre
+  assert.deepEqual(state.orders, { gauche: 1, centre: 2, droite: 0 });
+  assert.equal(state.ordersLeft, 3);
+  assert.deepEqual(activableUnits(state, 'allies'), [c1, c2, c3, g1]);
+
+  // les deux ordres du centre consommés : la troisième unité du centre se ferme
+  finishUnit(state, c1);
+  finishUnit(state, c2);
+  assert.equal(state.orders.centre, 0);
+  assert.deepEqual(activableUnits(state, 'allies'), [g1]);
+  assert.equal(state.ordersLeft, 1);
+
+  finishUnit(state, g1);
+  assert.equal(state.ordersLeft, 0);
+  assert.deepEqual(activableUnits(state, 'allies'), []);
+});
+
+test("assaut : toutes les unités du secteur sont activables, pas celles d'ailleurs", () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 0, r: 6 },
+      { side: 'allies', type: 'arm', c: 1, r: 6 },
+      { side: 'allies', type: 'art', c: 2, r: 6 }, // trois à gauche
+      { side: 'allies', type: 'inf', c: 6, r: 6 }, // une au centre
+      { side: 'axis', type: 'inf', c: 5, r: 0 },
+    ],
+  });
+  state.hands.allies = ['ast-g'];
+  playCard(state, 'allies', 'ast-g');
+  assert.equal(state.ordersLeft, 3);
+  assert.deepEqual(state.orders, { gauche: 3 });
+  assert.deepEqual(
+    activableUnits(state, 'allies'),
+    state.units.filter((u) => u.side === 'allies' && u.c <= 2),
+  );
+});
+
+test('reconnaissance : en fin de tour, piocher 2 cartes, en garder 1, défausser l’autre', () => {
+  const state = createGame({ rng: mulberry32(44) });
+  drawCards(state, 'allies');
+  state.hands.allies[0] = 'rec-c';
+  const events = [];
+  state.bus.on('reconChoice', (p) => events.push(p));
+
+  playCard(state, 'allies', 'rec-c');
+  assert.equal(state.reconDraw, 'allies');
+  const unit = orderableUnits(state, 'allies', 'rec-c')[0];
+  finishUnit(state, unit);
+
+  const deckBefore = state.decks.allies.length;
+  endPlayerTurn(state);
+  // pas de pioche normale : deux cartes en attente de choix
+  assert.equal(state.hands.allies.length, HAND_SIZE - 1);
+  assert.equal(state.reconChoice.side, 'allies');
+  assert.equal(state.reconChoice.ids.length, 2);
+  assert.equal(state.decks.allies.length, deckBefore - 2);
+  assert.deepEqual(events, [state.reconChoice]);
+  assert.equal(state.turn, 'axis');
+
+  const [kept, other] = state.reconChoice.ids;
+  const discarded = keepReconCard(state, kept);
+  assert.equal(discarded, other);
+  assert.equal(state.reconChoice, null);
+  assert.equal(state.hands.allies.length, HAND_SIZE);
+  assert.equal(state.hands.allies.at(-1), kept);
+  // la carte défaussée n'est ni en main ni remise sur la pioche
+  assert.equal(state.decks.allies.length, deckBefore - 2);
+});
+
+test('sans carte Reconnaissance, la fin de tour pioche normalement', () => {
+  const state = createGame({ rng: mulberry32(44) });
+  drawCards(state, 'allies');
+  state.hands.allies[0] = 'snd-c';
+  playCard(state, 'allies', 'snd-c');
+  endPlayerTurn(state);
+  assert.equal(state.reconChoice, null);
+  assert.equal(state.hands.allies.length, HAND_SIZE);
 });
