@@ -10,16 +10,18 @@ auto_invoke: true
 
 | Concept               | Implémentation                                                                                                                                                                                                                                                                               |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Carte de commandement | `{ id, name, sector, n }` dans `CARDS` (`src/cards.js`) — `sector` ∈ `gauche`/`centre`/`droite`/`flancs` (gauche + droite)/`'*'` (tout le front) — expansion via `cardSectors` (`src/sectors.js`), `n` = unités activables                                                                   |
+| Carte de commandement | `{ id, name, sector, n, recon? }` dans `CARDS` (`src/cards.js`) — `sector` ∈ `gauche`/`centre`/`droite`/`flancs` (gauche + droite)/`'*'` (tout le front) — expansion via `cardSectors` (`src/sectors.js`), `n` = unités activables **par secteur couvert** (`'all'` = toutes celles du secteur), `recon: true` = bonus de pioche (piocher 2, garder 1) |
 | Carte action          | `{ id, name, action, desc, … }` dans `CARDS` — pas de secteur ; `desc` = bandeau affiché ; paramètres portés par la carte (`dice`, `hexes`) ; résolution dans `src/game.js` (voir « Cartes actions »)                                                                                        |
-| Pioche                | `buildDeck()` : 34 cartes (copies dans `COPIES`, ex. `recon` ×4, `assaut` ×2, `tenaille` ×2, cartes actions ×2 chacune)                                                                                                                                                                      |
-| Répartition initiale  | `createGame` : `decks.allies` = 10 premières cartes mélangées, `decks.axis` = les 24 restantes — **asymétrie héritée du proto, question ouverte**                                                                                                                                            |
+| Pioche                | `buildDeck()` : 40 cartes (copies dans `COPIES` — par secteur : `rec-*` ×2, `snd-*` ×3, `atk-*` ×3, `ast-*` ×1 ; `avance` ×1, `tenaille` ×2, `recon-force` ×2, cartes actions ×2 chacune)                                                                                                    |
+| Répartition initiale  | `createGame` : `decks.allies` = 10 premières cartes mélangées, `decks.axis` = les 30 restantes — **asymétrie héritée du proto, question ouverte**                                                                                                                                            |
 | Main                  | `HAND_SIZE` = 5 ; `drawCards(state, side)` complète la main et **rebâtit/remélange** la pioche épuisée (via `state.rng`) ; émet `cardsDrawn`                                                                                                                                                 |
-| Jouer une carte       | `playCard(state, side, cardId)` (`src/game.js`) : retire de la main, `phase = 'orders'`, `ordersLeft = min(n, activables)` (1 pour une carte action), reset `acted` et `moved`, pose `state.lastCard[side]`, émet `cardPlayed`, renvoie la carte **effective** (≠ jouée pour Contre-attaque) |
-| Unités activables     | `orderableUnits(state, side, cardId)` — `inSector` (`src/sectors.js`) ; un hex à cheval est activable par les cartes des DEUX secteurs ; cartes actions : `medicTargets` pour Médecins & mécanos, sinon `[]`                                                                                 |
-| Fin d'activation      | `finishUnit(state, unit)` : `acted = true`, `ordersLeft--`                                                                                                                                                                                                                                   |
-| Fin de tour joueur    | `endPlayerTurn(state)` : reset `acted`, pioche du joueur, `turn = state.aiSide`, `phase = 'card'`                                                                                                                                                                                            |
-| Fin de tour IA        | `endAiTurn(state)` : pioche de l'IA, retour au joueur (sauf `winner`)                                                                                                                                                                                                                        |
+| Jouer une carte       | `playCard(state, side, cardId)` (`src/game.js`) : retire de la main, `phase = 'orders'`, quotas `state.orders = sectorQuota(...)` et `ordersLeft = min(somme, activables)` (1 pour une carte action), pose `reconDraw` si la carte a le bonus, reset `acted` et `moved`, pose `state.lastCard[side]`, émet `cardPlayed`, renvoie la carte **effective** (≠ jouée pour Contre-attaque) |
+| Quota par secteur     | `sectorQuota(state, side, cd)` : `n` unités par secteur couvert (`'all'` = effectif du secteur), plafonné par les présents ; `state.orders` = restant, décrémenté par `finishUnit` (hex à cheval ou unité sortie du secteur : le secteur couvert le mieux pourvu paie)                       |
+| Unités activables     | potentiel de la carte : `orderableUnits(state, side, cardId)` — `inSector` (`src/sectors.js`) ; un hex à cheval est activable par les cartes des DEUX secteurs ; **pendant** la phase d'ordres : `activableUnits(state, side)` filtre en plus `acted` et le quota du secteur ; cartes actions : `medicTargets` pour Médecins & mécanos, sinon `[]` |
+| Fin d'activation      | `finishUnit(state, unit)` : `acted = true`, `ordersLeft--`, quota du secteur de l'unité décrémenté                                                                                                                                                                                           |
+| Bonus Reconnaissance  | carte `recon: true` → en fin de tour, `beginReconChoice` pioche 2 cartes (`state.reconChoice`, émet `reconChoice`) au lieu de la pioche normale ; `keepReconCard(state, keptId)` met la gardée en main (l'autre est défaussée) — choix du joueur : picker `hand.showReconChoice` ; choix de l'IA : `aiReconKeep`                                   |
+| Fin de tour joueur    | `endPlayerTurn(state)` : reset `acted`, pioche du joueur (ou `beginReconChoice`), `turn = state.aiSide`, `phase = 'card'`                                                                                                                                                                    |
+| Fin de tour IA        | `endAiTurn(state)` : pioche de l'IA (ou `beginReconChoice`, résolu par `app.js` + `aiReconKeep`), retour au joueur (sauf `winner`)                                                                                                                                                           |
 | Camp du joueur        | `state.playerSide` / `state.aiSide` (`createGame({ playerSide })`, `?side=` depuis l'accueil) — les Alliés ouvrent toujours : si le joueur tient l'Axe, `startGame` lance `playAiTurn` d'abord                                                                                               |
 | Phases                | `'card'` (jouer une carte) → `'orders'` (activer) — `state.phase`                                                                                                                                                                                                                            |
 
@@ -30,7 +32,7 @@ auto_invoke: true
 | Barrage            | 4 dés sur 1 unité ennemie au choix (`barrageTargets`), **sans** réduction de terrain ni ligne de mire ; drapeaux et médaille normaux                    | `resolveBarrage` → `actionStruck`      |
 | Attaque aérienne   | 4 hexs contigus (`validAirTarget` : premier libre, les suivants adjacents à la chaîne) ; 2 dés par unité ennemie (Alliés) / 1 (Axe), sans réduction     | `resolveAirStrike` → `actionStruck` ×N |
 | Médecins & mécanos | ordonne 1 unité amie éprouvée (`medicTargets`) : 4 dés, chaque face au symbole de l'unité (étoile pour l'artillerie) rend une figurine ; `acted = true` | `resolveMedics` → `unitHealed`         |
-| Contre-attaque     | rejoue la dernière carte adverse (`state.lastCard`) ; si absente ou elle-même une Contre-attaque → vaut Reconnaissance — résolu **dans** `playCard`     | `playCard` renvoie la carte effective  |
+| Contre-attaque     | rejoue la dernière carte adverse (`state.lastCard`), bonus de pioche inclus si c'était une Reconnaissance ; si absente ou elle-même une Contre-attaque → vaut Reconnaissance en force — résolu **dans** `playCard` | `playCard` renvoie la carte effective  |
 
 Le ciblage joueur vit dans `render/app.js` (`actionClick`) via `ui.action`
 (`{ kind, targets | picks }`, `render/uiState.js`) ; une carte action consomme le tour
@@ -39,18 +41,23 @@ entier (`afterAction` → `endTurn`).
 ## Séquence d'un tour du joueur (côté rendu)
 
 1. Phase `card` : clic carte → `hand.js` `playFromHand` (animation 460 ms, cartes
-   désactivées) → `app.js` `playPlayerCard` → `playCard` + `ui.orderable`
-   (carte action : `ui.action` + ciblage par `actionClick`).
+   désactivées) → `app.js` `playPlayerCard` → `playCard` + `ui.orderable =
+   activableUnits(...)` (carte action : `ui.action` + ciblage par `actionClick`).
 2. Phase `orders` : `input.js` (clic ou glisser-déposer) → `selectUnit` (aides via
-   `reachable`/`targetsFor`) → `moveTo` / `attackTarget` → `finish`.
-3. `ordersLeft` à 0 (ou bouton « Fin de tour ») → `endTurn` → `endPlayerTurn` →
-   `setTimeout(playAiTurn, 700)`.
+   `reachable`/`targetsFor`) → `moveTo` / `attackTarget` → `finish` — qui recalcule
+   `ui.orderable` (le quota du secteur vient d'être consommé). Désélectionner une
+   unité qui a déjà bougé la `finish` aussi (`commitMovedSelection`, `app.js`) :
+   l'ordre est consommé même sans tir, et `moveUnit` refuse de toute façon un
+   second déplacement dans la même activation.
+3. `ordersLeft` à 0, plus d'unité activable, ou bouton « Fin de tour » → `endTurn` →
+   `endPlayerTurn` → `setTimeout(playAiTurn, 700)` — sauf bonus Reconnaissance : le
+   picker (`reconChoice` dans `wireBus`) relance l'IA après le choix.
 
 ## Ajouter une carte de commandement
 
-1. `src/cards.js` → entrée dans `CARDS` (`id`, `name` en français, `sector`, `n`) +
-   nombre de copies dans `COPIES`.
-2. `test/cards.test.js` → ajuster le total (actuellement 34) et la répartition.
+1. `src/cards.js` → entrée dans `CARDS` (`id`, `name` en français, `sector`, `n` par
+   secteur ou `'all'`, éventuel `recon: true`) + nombre de copies dans `COPIES`.
+2. `test/cards.test.js` → ajuster le total (actuellement 40) et la répartition.
 3. Carte standard (secteur + n) : **rien d'autre** — `cardHTML` (`render/html.js`) et
    `playCard` sont génériques.
 4. Carte à effet spécial (au-delà de secteur + n) : `action` + `desc` sur la carte, la
