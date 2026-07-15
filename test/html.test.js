@@ -89,14 +89,15 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
 
   const forest = tipHTML(state, emptyUi, { c: 1, r: 2 }); // forêt du scénario
   assert.match(forest, /Forêt/);
-  assert.match(forest, /<b>−1<\/b><small>protection/);
+  // protection schématique : valeur par type d'attaquant quand elles diffèrent
+  assert.match(forest, /<b>✦−1 ▮−2 ✜·<\/b><small>protection/);
   assert.match(forest, /<b>stop<\/b><small>mouvement/);
   assert.match(forest, /<b>bloquée<\/b><small>ligne de mire/);
-  assert.match(forest, /blindés −2/);
-  assert.match(forest, /artillerie sans malus/);
 
   const hill = tipHTML(state, emptyUi, { c: 4, r: 4 }); // colline du scénario
   assert.match(hill, /Colline/);
+  // protection uniforme : une seule valeur, sans glyphes
+  assert.match(hill, /<b>−1<\/b><small>protection/);
   assert.match(hill, /<b>contrebas<\/b><small>ligne de mire/);
 
   const bunker = tipHTML(state, emptyUi, { c: 4, r: 6 }); // bunker vide du scénario

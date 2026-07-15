@@ -21,6 +21,15 @@ function reductionLabel(dice) {
   return `${red ? '−' + red : '—'}${extras.length ? ' (' + extras.join(', ') + ')' : ''}`;
 }
 
+// Protection d'un terrain : une seule valeur quand elle est uniforme, sinon
+// schématique — un glyphe par type d'attaquant (✦ infanterie, ▮ blindé, ✜ artillerie).
+function protectionLabel(dice) {
+  const types = Object.keys(UNIT_GLYPH);
+  const reds = types.map((ty) => reductionOf(dice, ty));
+  if (new Set(reds).size === 1) return reds[0] ? '−' + reds[0] : '—';
+  return types.map((ty, i) => `${UNIT_GLYPH[ty]}${reds[i] ? '−' + reds[i] : '·'}`).join(' ');
+}
+
 const RANGE_LBL = { inf: '1 / 2 / 3', arm: '1 à 3', art: '1 à 6' };
 const MOVE_LBL = {
   inf: '1 hex + tir, ou 2 sans tir',
@@ -108,10 +117,6 @@ export function calcHTML(outcome) {
 // Pastilles courtes pour les règles spéciales d'un terrain.
 function terrainTags(t) {
   const out = [];
-  if (t.dice.defArmor != null && t.dice.defArmor !== t.dice.def)
-    out.push(`blindés −${t.dice.defArmor}`);
-  if (t.dice.defArt != null && t.dice.defArt !== t.dice.def)
-    out.push(t.dice.defArt ? `artillerie −${t.dice.defArt}` : 'artillerie sans malus');
   if (t.enterAdjacentOnly) out.push('entrée en 1er pas');
   if (t.exitAdjacentOnly) out.push('sortie : 1 hex');
   if (t.noFight) out.push('aucun tir');
@@ -162,7 +167,7 @@ export function tipHTML(state, ui, hex) {
   let h = `<div class="thead ${tkey}">${t.label}<em>${secs.join(' + ')}</em></div>
     <div class="tbody">
       <div class="stats">
-        <div class="stat"><b>${t.dice.def ? '−' + t.dice.def : '—'}</b><small>protection</small></div>
+        <div class="stat"><b>${protectionLabel(t.dice)}</b><small>protection</small></div>
         <div class="stat"><b>${move}</b><small>mouvement</small></div>
         <div class="stat"><b>${sight}</b><small>ligne de mire</small></div>
       </div>${tagsHTML(terrainTags(t))}
