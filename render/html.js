@@ -10,6 +10,18 @@ export const SYM = { inf: '✦', arm: '▮', grenade: '✸', star: '★', flag: 
 export const UNIT_GLYPH = { inf: '✦', arm: '▮', art: '✜' };
 export const SIDE_FR = { allies: 'Alliés', axis: 'Axe' };
 
+// Icônes schématiques des types d'unités (soldat, tank, canon) — SVG inline
+// hérités de la couleur du texte, dimensionnés par la classe .icon.
+export const UNIT_ICON = {
+  inf: `<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="3.8"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0z"/></svg>`,
+  arm: `<svg class="icon" viewBox="0 0 24 24"><rect x="1.5" y="13" width="21" height="7" rx="3.5"/><path d="M7 13v-3.5A1.5 1.5 0 0 1 8.5 8H14a1.5 1.5 0 0 1 1.5 1.5V13z"/><rect x="15" y="9.6" width="7.5" height="1.8" rx="0.9"/></svg>`,
+  art: `<svg class="icon" viewBox="0 0 24 24"><circle cx="8" cy="16.5" r="5"/><rect x="6.3" y="1.5" width="3.4" height="16" rx="1.7" transform="rotate(40 8 9.5)"/></svg>`,
+};
+
+// Face de dé : icône schématique pour les unités (infanterie, blindé),
+// symbole texte pour les autres faces (grenade, étoile, drapeau).
+export const faceHTML = (face) => UNIT_ICON[face] ?? SYM[face];
+
 // Libellé des dés retirés à l'assaillant pour un couvert (terrain ou obstacle).
 function reductionLabel(dice) {
   const red = dice.def;
@@ -22,12 +34,12 @@ function reductionLabel(dice) {
 }
 
 // Protection d'un terrain : une seule valeur quand elle est uniforme, sinon
-// schématique — un glyphe par type d'attaquant (✦ infanterie, ▮ blindé, ✜ artillerie).
+// schématique — une icône par type d'attaquant (soldat, tank, canon).
 function protectionLabel(dice) {
-  const types = Object.keys(UNIT_GLYPH);
+  const types = Object.keys(UNIT_ICON);
   const reds = types.map((ty) => reductionOf(dice, ty));
   if (new Set(reds).size === 1) return reds[0] ? '−' + reds[0] : '—';
-  return types.map((ty, i) => `${UNIT_GLYPH[ty]}${reds[i] ? '−' + reds[i] : '·'}`).join(' ');
+  return types.map((ty, i) => `${UNIT_ICON[ty]}${reds[i] ? '−' + reds[i] : '·'}`).join(' ');
 }
 
 const RANGE_LBL = { inf: '1 / 2 / 3', arm: '1 à 3', art: '1 à 6' };
@@ -86,7 +98,7 @@ export function forcePanelHTML(unit, terrainKey, role, figsShown, lost) {
   ).join('');
   return `
     <div class="who">${role}</div>
-    <div class="name"><span class="chip ${unit.side}">${UNIT_GLYPH[unit.type]}</span>
+    <div class="name"><span class="chip ${unit.side}">${UNIT_ICON[unit.type]}</span>
       ${SIDE_FR[unit.side]} · ${UNITS[unit.type].label}</div>
     <div class="terr">${t.label} · ${figsShown} figurine${figsShown > 1 ? 's' : ''}</div>
     <div class="pips">${pips}</div>`;
@@ -109,7 +121,7 @@ export function calcHTML(outcome) {
     (reduction ? ` − <b>${reduction}</b> (${coverLabel.toLowerCase()})` : '') +
     (snare ? ` − <b>${snare}</b> (empêtrée dans les barbelés)` : '') +
     ` = <b>${dice} dé${dice > 1 ? 's' : ''}</b> · touche sur ${UNITS[defender.type].hitOn
-      .map((f) => SYM[f])
+      .map(faceHTML)
       .join(' ')}`
   );
 }
@@ -184,13 +196,13 @@ export function tipHTML(state, ui, hex) {
   if (u) {
     const U = UNITS[u.type];
     h += `<div class="unit">
-      <div class="uname"><span class="chip ${u.side}">${UNIT_GLYPH[u.type]}</span>
+      <div class="uname"><span class="chip ${u.side}">${UNIT_ICON[u.type]}</span>
         ${SIDE_FR[u.side]} · ${U.label}</div>
       <div class="row">Figurines<b>${u.figs} / ${U.figs}</b></div>
       <div class="row">Déplacement<b>${MOVE_LBL[u.type]}</b></div>
       <div class="row">Portée<b>${RANGE_LBL[u.type]}</b></div>
       <div class="row">Dés<b>${U.dice.join(' / ')}</b></div>
-      <div class="row">Touchée sur<b>${U.hitOn.map((f) => SYM[f]).join(' ')}</b></div>`;
+      <div class="row">Touchée sur<b>${U.hitOn.map(faceHTML).join(' ')}</b></div>`;
 
     // contexte : que se passe-t-il si je vise / si je vais là ?
     const tgt = ui.targets.find((x) => x.unit.id === u.id);

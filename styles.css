@@ -140,6 +140,18 @@ canvas {
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22);
   animation: tumble 0.28s ease-out;
 }
+/* icônes schématiques d'unités (UNIT_ICON, render/html.js) : taille du texte
+   courant, couleur héritée — verdict des dés et camp des pastilles compris */
+svg.icon {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  vertical-align: -0.12em;
+}
+.die svg.icon {
+  width: 1.15em;
+  height: 1.15em;
+}
 .die.flag {
   background: var(--flag);
   color: var(--ink);

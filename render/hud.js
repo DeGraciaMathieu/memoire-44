@@ -1,6 +1,6 @@
 // HUD DOM : journal, plateau de dés, médailles, invite, infobulle.
 
-import { SYM } from './html.js';
+import { faceHTML } from './html.js';
 
 export function createHud() {
   const els = {
@@ -29,7 +29,7 @@ export function createHud() {
       const d = document.createElement('div');
       d.className = 'die' + (f === 'flag' ? ' flag' : '') + (f === 'star' ? ' miss' : '');
       d.style.animationDelay = i * 45 + 'ms';
-      d.textContent = SYM[f];
+      d.innerHTML = faceHTML(f);
       els.tray.appendChild(d);
     });
   }

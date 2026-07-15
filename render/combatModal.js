@@ -4,7 +4,7 @@
 
 import { FACES, OBSTACLES, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
-import { SYM, SIDE_FR, calcHTML, forcePanelHTML } from './html.js';
+import { SIDE_FR, calcHTML, faceHTML, forcePanelHTML } from './html.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -53,7 +53,7 @@ export function createCombatModal({ requestDraw, getUi }) {
     const spin = setInterval(() => {
       tick++;
       dice.forEach((d, i) => {
-        if (!d.classList.contains('settled')) d.textContent = SYM[FACES[(tick + i) % 6]];
+        if (!d.classList.contains('settled')) d.innerHTML = faceHTML(FACES[(tick + i) % 6]);
       });
     }, 60);
 
@@ -67,7 +67,7 @@ export function createCombatModal({ requestDraw, getUi }) {
       d.style.animationDelay = '0ms';
       d.classList.remove('rolling');
       d.classList.add('settled', hitOn.includes(f) ? 'isHit' : f === 'flag' ? 'isFlag' : 'isMiss');
-      d.textContent = SYM[f];
+      d.innerHTML = faceHTML(f);
       await sleep(190);
     }
     clearInterval(spin);

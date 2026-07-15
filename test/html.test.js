@@ -59,6 +59,8 @@ test('forcePanelHTML : une pip par figurine, les pertes marquées gone', () => {
   assert.equal(h.match(/gone/g).length, 2);
   assert.match(h, /Infanterie/);
   assert.match(h, /Plaine/);
+  // la pastille porte l'icône schématique du type d'unité
+  assert.match(h, /<span class="chip axis"><svg class="icon"/);
 });
 
 test('calcHTML : détaille le calcul avec la réduction de terrain', () => {
@@ -89,8 +91,11 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
 
   const forest = tipHTML(state, emptyUi, { c: 1, r: 2 }); // forêt du scénario
   assert.match(forest, /Forêt/);
-  // protection schématique : valeur par type d'attaquant quand elles diffèrent
-  assert.match(forest, /<b>✦−1 ▮−2 ✜·<\/b><small>protection/);
+  // protection schématique : une icône et une valeur par type d'attaquant
+  assert.match(
+    forest,
+    /<b><svg class="icon".*?<\/svg>−1 <svg class="icon".*?<\/svg>−2 <svg class="icon".*?<\/svg>·<\/b><small>protection/,
+  );
   assert.match(forest, /<b>stop<\/b><small>mouvement/);
   assert.match(forest, /<b>bloquée<\/b><small>ligne de mire/);
 
@@ -166,4 +171,7 @@ test('tipHTML : terrain seul, puis terrain + unité', () => {
   assert.match(withUnit, /Infanterie/);
   assert.match(withUnit, /Figurines/);
   assert.match(withUnit, /4 \/ 4/);
+  // pastille et faces « touchée sur » : icônes schématiques d'unités
+  assert.match(withUnit, /<span class="chip allies"><svg class="icon"/);
+  assert.match(withUnit, /Touchée sur<b>(<svg class="icon"[^]*?<\/svg>|[✸★⚑]| )+<\/b>/);
 });
