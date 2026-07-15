@@ -44,7 +44,10 @@ et `aiMedicsTarget`.
 4. Après un combat rapproché gagné : boucle prise de terrain (`takeGroundHex` +
    `aiTakesGround` → `takeGround`), puis percée de blindés (`canBreakthrough` +
    `aiBreakthroughTarget` → seconde attaque, une seule fois).
-5. Tempo : sleeps 450/500/350 ms, modale de combat en `auto: true` (fermeture 2100 ms).
+5. Tempo et lisibilité : l'unité activée s'illumine (`ui.aiFocus`, 500 ms), les
+   déplacements glissent (`stage.slideUnit`), la cible est désignée avant l'engagement
+   (`ui.aiTargets` + traceur, 650 ms — hexes du barrage/attaque aérienne compris) ;
+   modale de combat en `auto: true` (fermeture 2100 ms), invite HUD « … joue son tour ».
 6. `endAiTurn(state)` → retour au joueur.
 
 ## Modifier l'heuristique
