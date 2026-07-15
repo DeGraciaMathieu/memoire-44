@@ -65,6 +65,9 @@ export function attachInput(canvas, { getState, getUi, hud, stage, actions }) {
     if (ui.breakthrough && ui.breakthrough.id !== u.id) return; // percée : seul le blindé agit
 
     if (!ui.selected || ui.selected.id !== u.id) actions.selectUnit(u);
+    // la sélection peut être refusée (clore l'unité précédente a pu terminer
+    // le tour ou épuiser le quota du secteur) : pas de glisser dans ce cas
+    if (!ui.selected || ui.selected.id !== u.id) return;
     canvas.setPointerCapture(e.pointerId);
     dragMoved = false;
     const p = hexCenter(u.c, u.r);

@@ -5,6 +5,7 @@
 import { OBSTACLES, TERRAIN, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
 import {
+  activableUnits,
   attackUnit,
   barrageTargets,
   canBreakthrough,
@@ -15,9 +16,9 @@ import {
   endAiTurn,
   endPlayerTurn,
   finishUnit,
+  keepReconCard,
   medicTargets,
   moveUnit,
-  orderableUnits,
   playCard,
   resolveAirStrike,
   resolveBarrage,
@@ -37,8 +38,10 @@ import {
   aiChooseMoves,
   aiMedicsTarget,
   aiPickCard,
+  aiReconKeep,
   aiTakesGround,
 } from '../src/ai.js';
+import { cardSectors } from '../src/sectors.js';
 import { createUiState } from './uiState.js';
 import { buildBoardLayer } from './board.js';
 import { createStage, DPR } from './stage.js';
@@ -96,6 +99,15 @@ const medalTotals = () => ({
 function wireBus(bus) {
   bus.on('cardsDrawn', ({ side, count }) => {
     if (side === state.playerSide) ui.justDrew = count;
+  });
+  bus.on('reconChoice', ({ side, ids }) => {
+    if (side !== state.playerSide) return; // le choix de l'IA passe par aiReconKeep
+    hud.log('▸ Reconnaissance : deux cartes piochées, gardez-en une.', 'hi');
+    hand.showReconChoice(ids, (kept) => {
+      keepReconCard(state, kept);
+      refresh();
+      setTimeout(playAiTurn, 700);
+    });
   });
   bus.on('cardPlayed', ({ side, card, as, ordersLeft }) => {
     const name = as ? `${card.name} — rejoue ${as.name}` : card.name;
@@ -254,9 +266,18 @@ function refresh() {
       ui.selected
         ? `${UNITS[ui.selected.type].label} — glissez le pion sur un hex clair pour avancer, sur un contour rouge pour tirer.` +
             (ui.cutWire ? ' Ou coupez les barbelés (bouton sous les cartes).' : '')
-        : `Ordres restants : ${state.ordersLeft}. Attrapez une unité encadrée de blanc et faites-la glisser.`,
+        : `Ordres restants : ${ordersPrompt()}. Attrapez une unité encadrée de blanc et faites-la glisser.`,
     );
   }
+}
+
+// Détail par secteur quand la carte en couvre plusieurs (Avance générale,
+// Attaque en tenaille, Reconnaissance en force).
+function ordersPrompt() {
+  const cd = state.playedCard && cardById(state.playedCard);
+  const secs = cd && !cd.action ? cardSectors(cd.sector) : [];
+  if (secs.length < 2) return `${state.ordersLeft}`;
+  return `${state.ordersLeft} (${secs.map((s) => `${state.orders[s]} ${s === 'centre' ? 'au centre' : 'à ' + s}`).join(', ')})`;
 }
 
 function playPlayerCard(id) {
@@ -274,7 +295,7 @@ function playPlayerCard(id) {
     }
     ui.action = { kind: 'medics', targets };
   } else {
-    ui.orderable = orderableUnits(state, state.playerSide, cd.id);
+    ui.orderable = activableUnits(state, state.playerSide);
   }
   refresh();
 }
@@ -310,15 +331,30 @@ function afterAction() {
   else endTurn();
 }
 
+// Une unité déplacée a consommé son ordre : la désélectionner sans tirer clôt
+// son activation, sinon le joueur pourrait activer plus d'unités que la carte
+// n'en autorise.
+function commitMovedSelection() {
+  const u = ui.selected;
+  if (u && !u.acted && state.moved[u.id] != null) finish(u);
+}
+
 function selectUnit(u) {
+  if (ui.selected && ui.selected.id !== u.id) commitMovedSelection();
+  if (state.phase !== 'orders' || state.turn !== state.playerSide) return; // le tour s'est clos
+  if (!ui.orderable.some((z) => z.id === u.id)) {
+    refresh(); // le quota du secteur vient de s'épuiser
+    return;
+  }
   ui.selected = u;
-  ui.moves = reachable(state, u, UNITS[u.type].moveNoFire);
+  ui.moves = state.moved[u.id] == null ? reachable(state, u, UNITS[u.type].moveNoFire) : [];
   ui.targets = targetsFor(state, u, state.moved[u.id] || 0);
   ui.cutWire = canCutWire(state, u);
   refresh();
 }
 
 function clearSelection() {
+  commitMovedSelection();
   ui.selected = null;
   ui.moves = [];
   ui.targets = [];
@@ -408,7 +444,9 @@ function finish(u) {
     refresh();
     return;
   }
-  if (state.ordersLeft <= 0) endTurn();
+  // le quota du secteur de l'unité vient d'être consommé : recalcul des activables
+  ui.orderable = activableUnits(state, state.playerSide);
+  if (state.ordersLeft <= 0 || !ui.orderable.length) endTurn();
   else refresh();
 }
 
@@ -427,6 +465,8 @@ function endTurn() {
   });
   endPlayerTurn(state);
   refresh();
+  // bonus Reconnaissance : le picker (abonnement reconChoice) relancera l'IA
+  if (state.reconChoice) return;
   setTimeout(playAiTurn, 700);
 }
 
@@ -440,6 +480,7 @@ async function playAiTurn() {
   if (cd.action) {
     await playAiAction(cd);
     endAiTurn(state);
+    if (state.reconChoice) keepReconCard(state, aiReconKeep(state));
     refresh();
     return;
   }
@@ -497,6 +538,7 @@ async function playAiTurn() {
   ui.aiFocus = null;
   ui.aiTargets = [];
   endAiTurn(state);
+  if (state.reconChoice) keepReconCard(state, aiReconKeep(state));
   refresh();
 }
 

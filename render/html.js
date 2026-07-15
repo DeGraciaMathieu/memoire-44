@@ -49,20 +49,31 @@ const MOVE_LBL = {
   art: '1 hex sans tir, ou tir sur place',
 };
 
+// Libellé du nombre d'ordres d'une carte de commandement : `n` unités par
+// secteur couvert, 'all' = toutes les unités du secteur.
+export function ordersLabel(card) {
+  const per = cardSectors(card.sector).length > 1 ? ' par secteur' : '';
+  if (card.n === 'all') return 'toutes les unités du secteur';
+  return `${card.n} unité${card.n > 1 ? 's' : ''}${per}`;
+}
+
 export function cardHTML(card) {
   if (card.action)
     return `<div class="n">✸<small>action</small></div>
     <div class="cname">${card.name}</div>
     <div class="secs">${SECTORS.map(() => '<i></i>').join('')}</div>
     <div class="ctag">${card.desc}</div>`;
-  return `<div class="n">${card.n}<small>unité${card.n > 1 ? 's' : ''}</small></div>
+  const multi = cardSectors(card.sector).length > 1;
+  return `<div class="n">${card.n === 'all' ? '∞' : card.n}<small>${
+    multi ? 'par secteur' : `unité${card.n === 'all' || card.n > 1 ? 's' : ''}`
+  }</small></div>
     <div class="cname">${card.name}</div>
     <div class="secs">${SECTORS.map(
       (s) => `<i class="${cardSectors(card.sector).includes(s) ? 'on' : ''}"></i>`,
     ).join('')}</div>
     <div class="ctag">${
       card.sector === '*' ? 'tout le front' : card.sector === 'flancs' ? 'les flancs' : card.sector
-    }</div>`;
+    }${card.recon ? ' · pioche 2, garde 1' : ''}</div>`;
 }
 
 // Choix du camp sur la page d'accueil : le camp coché rejoint les liens des

@@ -1,7 +1,7 @@
 // Éventail de cartes + boutons d'action.
 
 import { cardById } from '../src/cards.js';
-import { cardHTML } from './html.js';
+import { cardHTML, ordersLabel } from './html.js';
 
 const SPREAD = 8; // degrés entre deux cartes
 
@@ -9,6 +9,29 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
   const handEl = document.getElementById('hand');
   const fan = document.getElementById('fan');
   const acts = document.getElementById('acts');
+  const reconScrim = document.getElementById('reconScrim');
+  const reconCards = document.getElementById('reconCards');
+
+  // Bonus de pioche d'une Reconnaissance : le joueur clique la carte à garder.
+  function showReconChoice(ids, onPick) {
+    reconCards.innerHTML = '';
+    for (const id of ids) {
+      const cd = cardById(id);
+      const b = document.createElement('button');
+      b.className = 'card';
+      b.setAttribute(
+        'aria-label',
+        cd.action ? `${cd.name}, carte action` : `${cd.name}, ${ordersLabel(cd)}`,
+      );
+      b.innerHTML = cardHTML(cd);
+      b.onclick = () => {
+        reconScrim.classList.remove('on');
+        onPick(id);
+      };
+      reconCards.appendChild(b);
+    }
+    reconScrim.classList.add('on');
+  }
 
   /* --- survol de la main -----------------------------------------------
      Le :hover CSS est instable ici : la carte se soulève sous le curseur,
@@ -64,7 +87,7 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
       b.disabled = !playable;
       b.setAttribute(
         'aria-label',
-        cd.action ? `${cd.name}, carte action` : `${cd.name}, ${cd.n} unités`,
+        cd.action ? `${cd.name}, carte action` : `${cd.name}, ${ordersLabel(cd)}`,
       );
       b.innerHTML = cardHTML(cd);
       // les cartes fraîchement piochées se posent en dernier
@@ -99,5 +122,5 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
     acts.appendChild(rs);
   }
 
-  return { render };
+  return { render, showReconChoice };
 }
