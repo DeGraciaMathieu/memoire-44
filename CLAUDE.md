@@ -48,7 +48,8 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
   drapeaux (repli), combat rapproché / tir, prise de terrain (`takeGround`), percée de
   blindés (`canBreakthrough`), phases `card` / `orders`.
 - Visuel : palette CSS dans `styles.css` (`:root`), doublée côté canvas par `COL`
-  (`render/gfx.js`) ; symboles `SYM` / `UNIT_GLYPH` (`render/html.js`) ; typographies
+  (`render/gfx.js`) ; symboles `SYM` / `UNIT_GLYPH` et icônes SVG `UNIT_ICON` /
+  `faceHTML` (`render/html.js`) ; typographies
   Courier New (texte) et Impact (titres).
 
 ## Comportement

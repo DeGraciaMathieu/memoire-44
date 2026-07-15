@@ -69,7 +69,8 @@ retreatedId, corpse })` si le défenseur a encaissé (touches, pertes de repli o
 ## Ajouter un type d'unité
 
 1. `src/config.js` → `UNITS` : `{ label, figs, move, moveNoFire, dice, hitOn }`.
-2. `render/html.js` → `UNIT_GLYPH`, `MOVE_LBL`, `RANGE_LBL`.
+2. `render/html.js` → `UNIT_GLYPH`, `UNIT_ICON` (icône SVG des pastilles chip de
+   `forcePanelHTML` / `tipHTML`), `MOVE_LBL`, `RANGE_LBL`.
 3. `src/ai.js` → `P_HIT` (probabilité de touche par dé contre ce type).
 4. `src/scenario.js` → le poser sur le plateau (`add(side, type, c, r)`).
 5. Tests : `test/combat.test.js` (hitOn, dés) + `test/scenario.test.js` (placement).
