@@ -229,6 +229,10 @@ function refresh() {
       (state.winner === state.playerSide ? '★ ' : '✖ ') +
         (state.winner === 'allies' ? 'Victoire alliée.' : 'Les forces de l’Axe l’emportent.'),
     );
+  } else if (state.turn !== state.playerSide) {
+    hud.setPrompt(
+      state.aiSide === 'axis' ? 'L’Axe joue son tour…' : 'Les Alliés jouent leur tour…',
+    );
   } else if (state.phase === 'card') {
     hud.setPrompt('Jouez une carte de commandement.');
   } else if (ui.action?.kind === 'barrage') {
@@ -447,29 +451,51 @@ async function playAiTurn() {
     if (!plan || !plan.dest) continue;
     const u = plan.unit;
     if (!state.units.includes(u)) continue;
+    // l'unité activée s'illumine un instant avant d'agir
+    ui.aiFocus = u;
+    stage.requestDraw();
+    await sleep(500);
     if (plan.dest.cost > 0) {
-      if (moveUnit(state, u, plan.dest) == null) continue;
-      await sleep(500);
+      const from = { c: u.c, r: u.r };
+      if (moveUnit(state, u, plan.dest) == null) {
+        ui.aiFocus = null;
+        stage.requestDraw();
+        continue;
+      }
+      await sleep(stage.slideUnit(u, from) + 150);
     }
     if (plan.target && state.units.includes(plan.target) && diceFor(state, u, plan.target) > 0) {
+      // la cible est désignée (contour rouge + traceur) avant l'engagement
+      ui.aiTargets = [{ c: plan.target.c, r: plan.target.r }];
+      stage.requestDraw();
+      await sleep(650);
       let outcome = attackUnit(state, u, plan.target);
       await playCombat(outcome, true);
+      ui.aiTargets = [];
       // prise de terrain, puis éventuelle percée de blindés
       let hex = takeGroundHex(state, u, outcome);
       while (hex && !state.winner && aiTakesGround(state, u, hex)) {
+        const from = { c: u.c, r: u.r };
         takeGround(state, u, hex);
-        stage.requestDraw();
-        await sleep(350);
+        await sleep(stage.slideUnit(u, from) + 150);
         const next = canBreakthrough(state, u) ? aiBreakthroughTarget(state, u) : null;
         if (!next) break;
+        ui.aiTargets = [{ c: next.c, r: next.r }];
+        stage.requestDraw();
+        await sleep(650);
         outcome = attackUnit(state, u, next);
         await playCombat(outcome, true);
+        ui.aiTargets = [];
         hex = takeGroundHex(state, u, outcome);
       }
     }
+    ui.aiFocus = null;
+    ui.aiTargets = [];
     stage.requestDraw();
     await sleep(350);
   }
+  ui.aiFocus = null;
+  ui.aiTargets = [];
   endAiTurn(state);
   refresh();
 }
@@ -480,15 +506,26 @@ async function playAiAction(cd) {
   await sleep(600);
   if (cd.action === 'barrage') {
     const target = aiBarrageTarget(state);
-    if (target) resolveBarrage(state, state.aiSide, target);
+    if (target) {
+      ui.aiTargets = [{ c: target.c, r: target.r }];
+      stage.requestDraw();
+      await sleep(650);
+      resolveBarrage(state, state.aiSide, target);
+    }
   } else if (cd.action === 'air') {
     const strike = aiAirHexes(state);
-    if (strike) resolveAirStrike(state, state.aiSide, strike.hexes);
+    if (strike) {
+      ui.aiTargets = strike.hexes.map((h) => ({ c: h.c, r: h.r }));
+      stage.requestDraw();
+      await sleep(800);
+      resolveAirStrike(state, state.aiSide, strike.hexes);
+    }
   } else if (cd.action === 'medics') {
     const unit = aiMedicsTarget(state);
     if (unit) resolveMedics(state, unit);
   }
   await sleep(900);
+  ui.aiTargets = [];
 }
 
 /* --- cycle de vie -------------------------------------------------------- */

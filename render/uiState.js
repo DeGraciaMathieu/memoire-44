@@ -15,5 +15,7 @@ export function createUiState() {
     breakthrough: null, // unité blindée dont la percée attend une cible
     action: null, // { kind, targets | picks } : carte action en attente de cible
     cutWire: false, // l'unité sélectionnée peut couper les barbelés de son hex
+    aiFocus: null, // unité que l'IA active (contour doré, comme la sélection)
+    aiTargets: [], // hexes visés par l'IA (contour rouge, traceur si unique)
   };
 }

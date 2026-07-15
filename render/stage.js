@@ -48,6 +48,21 @@ export function createStage(canvas, getScene) {
   const FX_MS = 700;
   const fx = [];
 
+  // glissements en cours : { id, x, y, start, ms } — le pion est dessiné en
+  // interpolation depuis (x, y) vers son hex courant, l'entrée expire ensuite
+  const slides = [];
+
+  // Fait glisser un pion depuis son hex d'origine (l'état l'a déjà déplacé)
+  // vers sa position courante. Renvoie la durée (ms) pour caler le tempo.
+  function slideUnit(u, from) {
+    const a = hexCenter(from.c, from.r);
+    const b = hexCenter(u.c, u.r);
+    const ms = Math.min(900, 240 + Math.hypot(b.x - a.x, b.y - a.y));
+    slides.push({ id: u.id, x: a.x, y: a.y, start: performance.now(), ms });
+    requestDraw();
+    return ms;
+  }
+
   // pion replié maintenu sur son hex d'origine tant que les explosions jouent :
   // { id, c, r, until } — l'état a déjà déplacé l'unité, seul l'affichage attend
   let hold = null;
@@ -78,10 +93,17 @@ export function createStage(canvas, getScene) {
   }
 
   function draw() {
-    const now = performance.now(); // horloge unique : expiration du maintien, du fantôme et des explosions
-    if (hold && now >= hold.until) hold = null;
-    if (ghost && now >= ghost.until) ghost = null;
+    const now = performance.now(); // horloge unique : maintien, fantôme, glissements et explosions
     const { state, ui, boardLayer } = getScene();
+    if (hold && now >= hold.until) {
+      // le feu est éteint : le pion replié rejoint son hex en glissant
+      const u = state.units.find((v) => v.id === hold.id);
+      if (u && (u.c !== hold.c || u.r !== hold.r)) slideUnit(u, hold);
+      hold = null;
+    }
+    if (ghost && now >= ghost.until) ghost = null;
+    for (let i = slides.length - 1; i >= 0; i--)
+      if (now >= slides[i].start + slides[i].ms) slides.splice(i, 1);
     ctx.clearRect(0, 0, width, height);
     ctx.drawImage(boardLayer, 0, 0, width, height);
 
@@ -170,6 +192,29 @@ export function createStage(canvas, getScene) {
       ctx.textAlign = 'center';
       ctx.fillText(t.dice + 'D', p.x, p.y - LAYOUT.size + 13);
     }
+    // tour adverse : hexes visés par l'IA, et traceur depuis l'unité activée
+    for (const h of ui.aiTargets) {
+      const p = hexCenter(h.c, h.r);
+      hexPath(ctx, p.x, p.y);
+      ctx.fillStyle = 'rgba(176,58,46,.22)';
+      ctx.fill();
+      ctx.strokeStyle = '#B03A2E';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    if (ui.aiFocus && ui.aiTargets.length === 1) {
+      const a = hexCenter(ui.aiFocus.c, ui.aiFocus.r);
+      const b = hexCenter(ui.aiTargets[0].c, ui.aiTargets[0].r);
+      ctx.save();
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = '#B03A2E';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      ctx.restore();
+    }
     // carte action en attente de cible : unités ciblables ou hexs déjà choisis
     if (ui.action) {
       for (const u of ui.action.targets ?? []) {
@@ -212,8 +257,15 @@ export function createStage(canvas, getScene) {
     for (const u of state.units) {
       if (ui.drag && ui.drag.unit.id === u.id) continue; // dessinée au curseur
       const held = hold && hold.id === u.id;
-      const p = held ? hexCenter(hold.c, hold.r) : hexCenter(u.c, u.r);
-      const sel = ui.selected && ui.selected.id === u.id;
+      let p = held ? hexCenter(hold.c, hold.r) : hexCenter(u.c, u.r);
+      const sl = !held && slides.find((s) => s.id === u.id);
+      if (sl) {
+        const t = Math.min(1, (now - sl.start) / sl.ms);
+        const e = t * t * (3 - 2 * t); // départ et arrivée en douceur
+        p = { x: sl.x + (p.x - sl.x) * e, y: sl.y + (p.y - sl.y) * e };
+      }
+      const sel =
+        (ui.selected && ui.selected.id === u.id) || (ui.aiFocus && ui.aiFocus.id === u.id);
       const canOrder =
         state.phase === 'orders' &&
         state.turn === state.playerSide &&
@@ -249,7 +301,7 @@ export function createStage(canvas, getScene) {
       }
       if (t >= 0) drawExplosion(fx[i].x, fx[i].y, t, fx[i].scale);
     }
-    if (fx.length) requestDraw();
+    if (fx.length || slides.length) requestDraw();
   }
 
   function drawExplosion(x, y, t, s) {
@@ -440,5 +492,5 @@ export function createStage(canvas, getScene) {
     ctx.restore();
   }
 
-  return { width, height, requestDraw, draw, boom };
+  return { width, height, requestDraw, draw, boom, slideUnit };
 }
