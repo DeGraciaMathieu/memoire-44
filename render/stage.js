@@ -63,7 +63,7 @@ export function createStage(canvas, getScene) {
   function boom(hex, { damage, killed, retreatedId, corpse }) {
     const now = performance.now();
     const p = hexCenter(hex.c, hex.r);
-    const corners = hexCorners(p.x, p.y, LAYOUT.size * 0.72);
+    const corners = hexCorners(p.x, p.y, LAYOUT.size * 0.45);
     const n = Math.min(damage, corners.length);
     for (let i = 0; i < n; i++) {
       const [x, y] = corners[i];
