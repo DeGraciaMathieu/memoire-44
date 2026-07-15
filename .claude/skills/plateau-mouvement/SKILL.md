@@ -56,7 +56,7 @@ auto_invoke: true
 
 1. `src/config.js` → entrée dans `OBSTACLES` : `{ label, dice: { def, defArmor?, defArt? }, blocksSight?, infantryOnly?, fixesArtillery?, ignoreFirstFlag?, removedOnExit?, makesPassable?, stops?, entanglesInfantry?, cutInsteadOfFight?, crushedByArmor? }`.
 2. `src/scenario.js` → le poser : `obstacles[key(c, r)] = '<type>'`.
-3. `render/board.js` → son dessin dans le raster (modèle : bunker, rectangle épais + meurtrière).
+3. `render/stage.js` → son dessin schématique dans `drawObstacle` + la mini-icône `drawBadgeIcon` de la pastille du pion (modèle : bunker, trapèze de béton + embrasure).
 4. `render/html.js` → l'infobulle est générée depuis les drapeaux connus (`obstacleTags`) ; ajouter une pastille si le nouvel obstacle introduit un drapeau inédit.
 5. Nouvelle capacité d'obstacle = nouvelle propriété de config appliquée dans `src/movement.js` (accès) ou `src/combat.js` (défense, drapeaux, ligne de mire) + test.
 6. Tests : `test/scenario.test.js` (placement) + `test/combat.test.js` / `test/movement.test.js` selon les règles.
