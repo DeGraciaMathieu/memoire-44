@@ -21,9 +21,6 @@ import {
 
 export const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
-// Glyphe de la pastille d'obstacle affichée sur le pion qui l'occupe.
-const OBSTACLE_BADGE = { bunker: '⌂', antichar: '✕', sacs: '◠', pont: '=', barbeles: '#' };
-
 export function createStage(canvas, getScene) {
   const { width, height } = boardSize();
   const ctx = canvas.getContext('2d');
@@ -337,44 +334,74 @@ export function createStage(canvas, getScene) {
 
   function drawObstacle(type, x, y, bridge = null) {
     if (type === 'bunker') {
-      ctx.strokeStyle = 'rgba(0,0,0,.5)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(x - 11, y - 8, 22, 16);
-      ctx.fillStyle = 'rgba(0,0,0,.5)';
-      ctx.fillRect(x - 5, y - 2, 10, 3); // meurtrière
+      // casemate bétonnée : murs en trapèze, embrasure sombre en façade
+      ctx.fillStyle = 'rgba(0,0,0,.18)';
+      ctx.strokeStyle = 'rgba(0,0,0,.55)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x - 16, y + 10);
+      ctx.lineTo(x - 10, y - 8);
+      ctx.lineTo(x + 10, y - 8);
+      ctx.lineTo(x + 16, y + 10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,.6)';
+      ctx.fillRect(x - 6, y, 12, 4); // embrasure
     }
     if (type === 'antichar') {
-      ctx.fillStyle = 'rgba(0,0,0,.45)';
-      ctx.font = 'bold 13px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('✕✕', x, y + 4); // hérissons tchèques
+      // hérissons tchèques : deux obstacles de trois poutrelles croisées
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0,0,0,.5)';
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = 'round';
+      for (const dx of [-9, 9]) {
+        for (let i = 0; i < 3; i++) {
+          const a = Math.PI / 2 + (i * Math.PI) / 3; // poutrelles à 60°
+          ctx.beginPath();
+          ctx.moveTo(x + dx - Math.cos(a) * 7, y - Math.sin(a) * 7);
+          ctx.lineTo(x + dx + Math.cos(a) * 7, y + Math.sin(a) * 7);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
     }
     if (type === 'sacs') {
-      ctx.fillStyle = 'rgba(0,0,0,.4)';
-      for (let i = -1; i <= 1; i++) {
+      // muret de sacs de sable : deux rangées en quinconce, remplissage sable
+      ctx.fillStyle = COL.plage;
+      ctx.strokeStyle = 'rgba(0,0,0,.55)';
+      ctx.lineWidth = 1.6;
+      const bag = (bx, by) => {
         ctx.beginPath();
-        ctx.arc(x + i * 9, y + 12, 4.5, Math.PI, 0); // rangée de sacs empilés
+        ctx.roundRect(bx - 6, by - 3.5, 12, 7, 3.5);
         ctx.fill();
-      }
+        ctx.stroke();
+      };
+      for (let i = -1; i <= 1; i++) bag(x + i * 13, y + 12);
+      for (let i = 0; i < 2; i++) bag(x + (i - 0.5) * 13, y + 5);
     }
     if (type === 'barbeles') {
+      // réseau de barbelés : piquets, fils tendus, boudins de concertina
       ctx.strokeStyle = 'rgba(0,0,0,.5)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(x - 15, y - 6);
-      ctx.lineTo(x - 15, y + 6); // piquets
-      ctx.moveTo(x + 15, y - 6);
-      ctx.lineTo(x + 15, y + 6);
+      ctx.moveTo(x - 16, y - 7);
+      ctx.lineTo(x - 16, y + 7); // piquets
+      ctx.moveTo(x + 16, y - 7);
+      ctx.lineTo(x + 16, y + 7);
       ctx.stroke();
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 1.1;
       ctx.beginPath();
-      ctx.moveTo(x - 15, y);
-      ctx.lineTo(x + 15, y); // fil tendu
+      ctx.moveTo(x - 16, y - 3);
+      ctx.lineTo(x + 16, y - 3); // fils tendus
+      ctx.moveTo(x - 16, y + 3);
+      ctx.lineTo(x + 16, y + 3);
       ctx.stroke();
-      ctx.fillStyle = 'rgba(0,0,0,.5)';
-      ctx.font = 'bold 9px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('× × ×', x, y + 3); // ardillons
+      for (let bx = x - 12; bx <= x + 12; bx += 6) {
+        ctx.beginPath();
+        ctx.arc(bx, y, 4.5, 0, Math.PI * 2); // concertina
+        ctx.stroke();
+      }
     }
     if (type === 'pont') {
       // tablier plein en bras partant du centre : d'une rive à l'autre quand le
@@ -443,6 +470,68 @@ export function createStage(canvas, getScene) {
     }
   }
 
+  // Icône miniature de l'obstacle dans la pastille du pion : mêmes silhouettes
+  // schématiques que drawObstacle, réduites à l'essentiel.
+  function drawBadgeIcon(type, x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = 'rgba(0,0,0,.75)';
+    ctx.fillStyle = 'rgba(0,0,0,.75)';
+    ctx.lineWidth = 1.6;
+    if (type === 'bunker') {
+      ctx.beginPath();
+      ctx.moveTo(-6, 4);
+      ctx.lineTo(-4, -4);
+      ctx.lineTo(4, -4);
+      ctx.lineTo(6, 4);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillRect(-2.5, 0.5, 5, 2); // embrasure
+    } else if (type === 'antichar') {
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        const a = Math.PI / 2 + (i * Math.PI) / 3;
+        ctx.beginPath();
+        ctx.moveTo(-Math.cos(a) * 5, -Math.sin(a) * 5);
+        ctx.lineTo(Math.cos(a) * 5, Math.sin(a) * 5);
+        ctx.stroke();
+      }
+    } else if (type === 'sacs') {
+      ctx.beginPath();
+      ctx.roundRect(-5.5, 0.5, 11, 5, 2.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.roundRect(-4, -5, 8, 5, 2.5);
+      ctx.stroke();
+    } else if (type === 'pont') {
+      ctx.beginPath();
+      ctx.moveTo(-6, -3.5);
+      ctx.lineTo(6, -3.5); // parapets
+      ctx.moveTo(-6, 3.5);
+      ctx.lineTo(6, 3.5);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (const px of [-3, 0, 3]) {
+        ctx.moveTo(px, -3.5);
+        ctx.lineTo(px, 3.5); // planches
+      }
+      ctx.stroke();
+    } else if (type === 'barbeles') {
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-7, 0);
+      ctx.lineTo(7, 0);
+      ctx.stroke();
+      for (const bx of [-4, 0, 4]) {
+        ctx.beginPath();
+        ctx.arc(bx, 0, 3, 0, Math.PI * 2); // concertina
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
   function drawCounter(u, x, y, { sel, canOrder, lifted, obstacle, playerSide }) {
     ctx.save();
     ctx.translate(x, y);
@@ -479,9 +568,7 @@ export function createStage(canvas, getScene) {
       ctx.arc(21, -18, 10, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = 'rgba(0,0,0,.75)';
-      ctx.font = 'bold 13px "Courier New"';
-      ctx.fillText(OBSTACLE_BADGE[obstacle] ?? '•', 21, -13);
+      drawBadgeIcon(obstacle, 21, -18);
     }
     if (u.acted && u.side === playerSide && !lifted) {
       ctx.fillStyle = 'rgba(0,0,0,.40)';
