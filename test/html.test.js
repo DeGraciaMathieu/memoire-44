@@ -2,7 +2,15 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcHTML, cardHTML, forcePanelHTML, homeMapsHTML, tipHTML } from '../render/html.js';
+import {
+  calcHTML,
+  cardHTML,
+  forcePanelHTML,
+  homeMapsHTML,
+  homeSideHTML,
+  ordersLabel,
+  tipHTML,
+} from '../render/html.js';
 import { cardById } from '../src/cards.js';
 import { createGame } from '../src/game.js';
 import { key } from '../src/hex.js';
@@ -68,6 +76,22 @@ test('homeMapsHTML : un lien par carte vers game.html, message si dossier vide',
   );
 
   assert.match(homeMapsHTML([]), /Aucune carte/);
+});
+
+test('ordersLabel : nombre d’unités, « par secteur » quand la carte en couvre plusieurs', () => {
+  assert.equal(ordersLabel(cardById('rec-c')), '1 unité');
+  assert.equal(ordersLabel(cardById('avance')), '2 unités par secteur');
+  assert.equal(ordersLabel(cardById('tenaille')), '2 unités par secteur');
+  assert.equal(ordersLabel(cardById('ast-g')), 'toutes les unités du secteur');
+});
+
+test('homeSideHTML : deux boutons radio, le camp choisi est coché', () => {
+  const h = homeSideHTML();
+  assert.match(h, /Alliés/);
+  assert.match(h, /Axe/);
+  assert.match(h, /value="allies" checked/);
+  assert.ok(!/value="axis" checked/.test(h));
+  assert.match(homeSideHTML('axis'), /value="axis" checked/);
 });
 
 test('forcePanelHTML : une pip par figurine, les pertes marquées gone', () => {

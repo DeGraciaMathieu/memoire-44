@@ -130,6 +130,31 @@ test("attaque aérienne : l'Axe ne lance qu'un dé par unité", () => {
   assert.equal(outcome.report.faces.length, 1);
 });
 
+test('attaque aérienne : une cible détruite n’interrompt pas la frappe des suivantes', () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 8 },
+      { side: 'axis', type: 'inf', c: 5, r: 2 },
+      { side: 'axis', type: 'inf', c: 6, r: 2 },
+    ],
+  });
+  const [, first, second] = state.units;
+  first.figs = 1;
+  state.rng = ALL_HITS;
+
+  const outcomes = resolveAirStrike(state, 'allies', [
+    { c: 5, r: 2 },
+    { c: 6, r: 2 },
+  ]);
+  assert.equal(outcomes.length, 2);
+  assert.ok(outcomes[0].report.killed);
+  assert.ok(!state.units.includes(first));
+  assert.equal(state.medals.allies, 1);
+  // la frappe continue sur la seconde cible, à pleine puissance
+  assert.equal(outcomes[1].report.hits, 2);
+  assert.equal(second.figs, 2);
+});
+
 test('médecins & mécanos : 1 dé par carte en main, soigne au symbole ou à l’étoile', () => {
   const state = duel({
     units: [

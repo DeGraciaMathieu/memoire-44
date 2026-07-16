@@ -23,6 +23,7 @@ import {
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
 import { cardById } from '../src/cards.js';
+import { sectorsOf } from '../src/sectors.js';
 import { medalCount, targetsFor } from '../src/combat.js';
 import { UNITS, HAND_SIZE, MEDALS_TO_WIN } from '../src/config.js';
 import { key } from '../src/hex.js';
@@ -358,6 +359,30 @@ test("objectif : possédé tant qu'une unité l'occupe, rendu dès qu'elle le qu
   assert.equal(medalCount(state, 'allies'), 0); // possession perdue en quittant la tuile
 });
 
+test('objectif : une prise de terrain adverse fait basculer la possession', () => {
+  const state = duel({
+    objectives: { [key(5, 4)]: true },
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 4 }, // tient l'objectif
+      { side: 'axis', type: 'inf', c: 5, r: 5 },
+    ],
+  });
+  const [holder, taker] = state.units;
+  holder.figs = 1;
+  assert.equal(medalCount(state, 'allies'), 1);
+  assert.equal(medalCount(state, 'axis'), 0);
+
+  state.rng = ALL_HITS;
+  const outcome = attackUnit(state, taker, holder);
+  assert.ok(outcome.report.killed);
+  // le défenseur détruit rend l'objectif avant même la prise de terrain
+  assert.equal(medalCount(state, 'allies'), 0);
+
+  takeGround(state, taker, takeGroundHex(state, taker, outcome));
+  // l'Axe cumule la médaille de destruction et l'objectif conquis
+  assert.equal(medalCount(state, 'axis'), 2);
+});
+
 test("victoire à 6 médailles : l'occupation d'un objectif peut donner la dernière", () => {
   assert.equal(MEDALS_TO_WIN, 6);
   const state = duel({
@@ -465,6 +490,29 @@ test('avance générale : 2 ordres par secteur, le quota du secteur épuisé fer
   finishUnit(state, g1);
   assert.equal(state.ordersLeft, 0);
   assert.deepEqual(activableUnits(state, 'allies'), []);
+});
+
+test("hex à cheval : l'ordre consomme le quota du secteur le mieux pourvu", () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 3, r: 5 }, // à cheval gauche/centre (rangée impaire)
+      { side: 'allies', type: 'inf', c: 5, r: 6 },
+      { side: 'allies', type: 'inf', c: 6, r: 6 }, // deux au centre
+      { side: 'axis', type: 'inf', c: 5, r: 0 },
+    ],
+  });
+  const [straddler, c1, c2] = state.units;
+  assert.deepEqual(sectorsOf(straddler.c, straddler.r), ['gauche', 'centre']);
+
+  state.hands.allies = ['avance'];
+  playCard(state, 'allies', 'avance');
+  assert.deepEqual(state.orders, { gauche: 1, centre: 2, droite: 0 });
+  assert.equal(state.ordersLeft, 3); // borné par les 3 unités présentes
+
+  // l'unité à cheval paie son ordre au centre (2 ordres) plutôt qu'à gauche (1)
+  finishUnit(state, straddler);
+  assert.deepEqual(state.orders, { gauche: 1, centre: 1, droite: 0 });
+  assert.deepEqual(activableUnits(state, 'allies'), [c1, c2]);
 });
 
 test("assaut : toutes les unités du secteur sont activables, pas celles d'ailleurs", () => {
