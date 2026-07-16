@@ -43,8 +43,11 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
   `UNITS` (`src/config.js`).
 - Vocabulaire : figurines (`figs`), médailles (victoire à `MEDALS_TO_WIN` = 6 — total
   `medalCount` = destructions et objectifs occupés), objectifs (tuiles `state.objectives`),
-  secteurs `gauche` / `centre` / `droite`, cartes de commandement, cartes actions
-  (`card.action` : barrage, attaque aérienne, médecins & mécanos, contre-attaque),
+  secteurs `gauche` / `centre` / `droite`, cartes de commandement, cartes tactiques —
+  à ordres (`card.tactic` : Directive du QG, En avant !, Assaut blindé, Assaut
+  d'infanterie, Assaut rapproché, Fusillade, Bombardement, Retranchement — règles
+  transverses dans `src/tactics.js`) ou à résolution dédiée (`card.action` : barrage,
+  attaque aérienne, médecins & mécanos, contre-attaque) —,
   drapeaux (repli), combat rapproché / tir, prise de terrain (`takeGround`), percée de
   blindés (`canBreakthrough`), phases `card` / `orders`.
 - Visuel : palette CSS dans `styles.css` (`:root`), doublée côté canvas par `COL`
