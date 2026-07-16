@@ -63,6 +63,16 @@ export function cardHTML(card) {
     <div class="cname">${card.name}</div>
     <div class="secs">${SECTORS.map(() => '<i></i>').join('')}</div>
     <div class="ctag">${card.desc}</div>`;
+  // carte tactique : quota global — tout le plateau allumé, sauf secteur au choix
+  if (card.tactic) {
+    const covered = card.sector === 'pick' ? [] : SECTORS;
+    return `<div class="n">${card.n === 'all' ? '∞' : card.n}<small>unité${
+      card.n === 'all' || card.n > 1 ? 's' : ''
+    }</small></div>
+    <div class="cname">${card.name}</div>
+    <div class="secs">${SECTORS.map((s) => `<i class="${covered.includes(s) ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="ctag">${card.desc}</div>`;
+  }
   const multi = cardSectors(card.sector).length > 1;
   return `<div class="n">${card.n === 'all' ? '∞' : card.n}<small>${
     multi ? 'par secteur' : `unité${card.n === 'all' || card.n > 1 ? 's' : ''}`
@@ -119,8 +129,18 @@ export function forcePanelHTML(unit, terrainKey, role, figsShown, lost) {
 // Le couvert affiché est celui qui fournit la réduction retenue (non cumulée) :
 // l'obstacle s'il protège au moins autant que le terrain.
 export function calcHTML(outcome) {
-  const { attacker, baseDice, range, reduction, snare, dice, defender, terrainKey, obstacleKey } =
-    outcome;
+  const {
+    attacker,
+    baseDice,
+    range,
+    reduction,
+    snare,
+    bonus,
+    dice,
+    defender,
+    terrainKey,
+    obstacleKey,
+  } = outcome;
   const t = TERRAIN[terrainKey];
   const o = obstacleKey ? OBSTACLES[obstacleKey] : null;
   const coverLabel =
@@ -131,6 +151,7 @@ export function calcHTML(outcome) {
     `<b>${baseDice}</b> dés à portée ${range}` +
     (reduction ? ` − <b>${reduction}</b> (${coverLabel.toLowerCase()})` : '') +
     (snare ? ` − <b>${snare}</b> (empêtrée dans les barbelés)` : '') +
+    (bonus ? ` + <b>${bonus}</b> (carte tactique)` : '') +
     ` = <b>${dice} dé${dice > 1 ? 's' : ''}</b> · touche sur ${UNITS[defender.type].hitOn
       .map(faceHTML)
       .join(' ')}`

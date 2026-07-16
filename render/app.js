@@ -8,10 +8,12 @@ import {
   activableUnits,
   attackUnit,
   barrageTargets,
+  canAttackAgain,
   canBreakthrough,
   canCutWire,
   createGame,
   cutWire,
+  digIn,
   drawCards,
   endAiTurn,
   endPlayerTurn,
@@ -27,6 +29,7 @@ import {
   takeGroundHex,
   validAirTarget,
 } from '../src/game.js';
+import { cardFallback, eligibleUnits, moveRange } from '../src/tactics.js';
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
 import { cardById } from '../src/cards.js';
@@ -38,10 +41,11 @@ import {
   aiChooseMoves,
   aiMedicsTarget,
   aiPickCard,
+  aiPickSector,
   aiReconKeep,
   aiTakesGround,
 } from '../src/ai.js';
-import { cardSectors } from '../src/sectors.js';
+import { cardSectors, SECTORS } from '../src/sectors.js';
 import { createUiState } from './uiState.js';
 import { buildBoardLayer } from './board.js';
 import { createStage, DPR } from './stage.js';
@@ -68,6 +72,7 @@ const hand = createHand({
   onEndTurn: endTurn,
   onNewGame: restart,
   onCutWire: cutSelectedWire,
+  onAirStrike: launchAirStrike,
 });
 
 attachInput(canvas, {
@@ -201,6 +206,10 @@ function wireBus(bus) {
     stage.requestDraw();
   });
   bus.on('medalAwarded', () => hud.setMedals(medalTotals()));
+  bus.on('obstaclePlaced', ({ obstacle }) => {
+    hud.log(`  ${OBSTACLES[obstacle].label} posés — l’unité se retranche.`);
+    stage.requestDraw();
+  });
   bus.on('obstacleRemoved', ({ obstacle }) => {
     const o = OBSTACLES[obstacle];
     hud.log(
@@ -248,18 +257,24 @@ function refresh() {
   } else if (state.phase === 'card') {
     hud.setPrompt('Jouez une carte de commandement.');
   } else if (ui.action?.kind === 'barrage') {
-    hud.setPrompt('Barrage : cliquez une unité ennemie — 4 dés, sans protection du terrain.');
+    hud.setPrompt(
+      'Barrage : cliquez une unité ennemie — 4 dés, sans protection du terrain ni des drapeaux.',
+    );
   } else if (ui.action?.kind === 'air') {
     hud.setPrompt(
-      `Attaque aérienne : cliquez encore ${cardById('air').hexes - ui.action.picks.length} hex contigus (2 dés par unité ennemie).`,
+      `Attaque aérienne : cliquez jusqu’à ${cardById('air').units - ui.action.picks.length} unité(s) ennemie(s) groupée(s), puis « Déclencher la frappe ».`,
     );
   } else if (ui.action?.kind === 'medics') {
-    hud.setPrompt('Médecins & mécanos : cliquez l’unité amie à soigner (4 dés à son symbole).');
+    hud.setPrompt('Médecins & mécanos : cliquez l’unité amie à soigner (1 dé par carte en main).');
+  } else if (ui.action?.kind === 'digin') {
+    hud.setPrompt('Retranchement : cliquez chaque infanterie qui pose ses sacs de sable.');
   } else if (ui.takeGround) {
     hud.setPrompt('Prise de terrain : cliquez l’hex libéré pour avancer, ailleurs pour rester.');
   } else if (ui.breakthrough) {
     hud.setPrompt(
-      'Percée de blindés : cliquez une cible au contour rouge pour attaquer encore, ailleurs pour terminer.',
+      ui.breakthrough.type === 'art'
+        ? 'Bombardement : cliquez une cible au contour rouge pour le second tir, ailleurs pour terminer.'
+        : 'Percée de blindés : cliquez une cible au contour rouge pour attaquer encore, ailleurs pour terminer.',
     );
   } else {
     hud.setPrompt(
@@ -280,8 +295,24 @@ function ordersPrompt() {
   return `${state.ordersLeft} (${secs.map((s) => `${state.orders[s]} ${s === 'centre' ? 'au centre' : 'à ' + s}`).join(', ')})`;
 }
 
+// Une carte à choix de secteur (Assaut d'infanterie) passe par le picker si
+// plusieurs secteurs ont des unités éligibles ; les autres se jouent direct.
 function playPlayerCard(id) {
-  const cd = playCard(state, state.playerSide, id);
+  const cd = cardById(id);
+  if (cd.sector === 'pick') {
+    const options = SECTORS.filter((s) => eligibleUnits(state, state.playerSide, cd, s).length > 0);
+    if (options.length > 1) {
+      hand.showSectorChoice(options, (sector) => beginCard(id, { sector }));
+      return;
+    }
+    beginCard(id, { sector: options[0] ?? null });
+    return;
+  }
+  beginCard(id, {});
+}
+
+function beginCard(id, opts) {
+  const cd = playCard(state, state.playerSide, id, opts);
   if (cd.action === 'barrage') {
     ui.action = { kind: 'barrage', targets: barrageTargets(state, state.playerSide) };
   } else if (cd.action === 'air') {
@@ -294,35 +325,62 @@ function playPlayerCard(id) {
       return;
     }
     ui.action = { kind: 'medics', targets };
+  } else if (cd.digIn && !cardFallback(state, state.playerSide, cd)) {
+    ui.action = { kind: 'digin', targets: activableUnits(state, state.playerSide) };
   } else {
     ui.orderable = activableUnits(state, state.playerSide);
+    if (!ui.orderable.length) {
+      hud.log('  Aucune unité éligible : la carte est perdue.');
+      endTurn();
+      return;
+    }
   }
   refresh();
 }
 
-// Clic pendant une carte action : choisit la cible (barrage, médecins) ou
-// empile les hexs de l'attaque aérienne, puis résout et passe le tour.
+// Clic pendant une carte tactique : choisit la cible (barrage, médecins,
+// retranchement) ou empile les unités de l'attaque aérienne.
 function actionClick(hex) {
   const act = ui.action;
   if (!act || !hex) return;
   if (act.kind === 'air') {
-    if (!validAirTarget(act.picks, hex)) return;
+    if (!validAirTarget(state, state.playerSide, act.picks, hex)) return;
     act.picks.push(hex);
-    if (act.picks.length < cardById('air').hexes) {
-      refresh();
-      return;
-    }
-    ui.action = null;
-    if (!resolveAirStrike(state, state.playerSide, act.picks).length)
-      hud.log('  Attaque aérienne : aucune unité ennemie sous les bombes.');
-    afterAction();
+    if (act.picks.length < cardById('air').units) refresh();
+    else launchAirStrike();
     return;
   }
   const target = act.targets.find((u) => u.c === hex.c && u.r === hex.r);
   if (!target) return;
+  if (act.kind === 'digin') {
+    digIn(state, target);
+    act.targets = activableUnits(state, state.playerSide);
+    if (state.ordersLeft <= 0 || !act.targets.length) {
+      ui.action = null;
+      endTurn();
+    } else refresh();
+    return;
+  }
   ui.action = null;
-  if (act.kind === 'barrage') resolveBarrage(state, state.playerSide, target);
-  else resolveMedics(state, target);
+  if (act.kind === 'barrage') {
+    resolveBarrage(state, state.playerSide, target);
+    afterAction();
+    return;
+  }
+  resolveMedics(state, target);
+  // soin réussi : l'unité soignée peut encore recevoir l'ordre de la carte
+  if (state.healedUnit && !state.winner) {
+    ui.orderable = activableUnits(state, state.playerSide);
+    refresh();
+  } else afterAction();
+}
+
+// Le joueur déclenche l'attaque aérienne sur les unités déjà désignées.
+function launchAirStrike() {
+  const picks = ui.action?.picks;
+  if (!picks?.length) return;
+  ui.action = null;
+  resolveAirStrike(state, state.playerSide, picks);
   afterAction();
 }
 
@@ -347,7 +405,7 @@ function selectUnit(u) {
     return;
   }
   ui.selected = u;
-  ui.moves = state.moved[u.id] == null ? reachable(state, u, UNITS[u.type].moveNoFire) : [];
+  ui.moves = state.moved[u.id] == null ? reachable(state, u, moveRange(state, u)) : [];
   ui.targets = targetsFor(state, u, state.moved[u.id] || 0);
   ui.cutWire = canCutWire(state, u);
   refresh();
@@ -395,6 +453,17 @@ async function attackTarget(u, target) {
     ui.moves = [{ ...hex, cost: 1 }];
     refresh();
     return;
+  }
+  // second tir du Bombardement : mêmes interactions que la percée de blindés
+  if (!state.winner && canAttackAgain(state, u)) {
+    const targets = targetsFor(state, u, state.moved[u.id] || 0);
+    if (targets.length) {
+      ui.breakthrough = u;
+      ui.selected = u;
+      ui.targets = targets;
+      refresh();
+      return;
+    }
   }
   finish(u);
 }
@@ -476,16 +545,23 @@ async function playAiTurn() {
   if (state.winner) return;
   drawCards(state, state.aiSide);
   const id = aiPickCard(state);
-  const cd = playCard(state, state.aiSide, id);
+  const picked = cardById(id);
+  const opts = picked.sector === 'pick' ? { sector: aiPickSector(state, picked) } : {};
+  const cd = playCard(state, state.aiSide, id, opts);
   if (cd.action) {
     await playAiAction(cd);
-    endAiTurn(state);
-    if (state.reconChoice) keepReconCard(state, aiReconKeep(state));
-    refresh();
-    return;
+  } else if (cd.digIn && !cardFallback(state, state.aiSide, cd)) {
+    await playAiDigIn();
+  } else {
+    await executePlans(aiChooseMoves(state, cd.id));
   }
-  const plans = aiChooseMoves(state, cd.id);
+  endAiTurn(state);
+  if (state.reconChoice) keepReconCard(state, aiReconKeep(state));
+  refresh();
+}
 
+// Déroule les activations planifiées par l'IA, avec le tempo des animations.
+async function executePlans(plans) {
   await sleep(450);
   for (const plan of plans) {
     if (state.winner) break;
@@ -529,6 +605,17 @@ async function playAiTurn() {
         ui.aiTargets = [];
         hex = takeGroundHex(state, u, outcome);
       }
+      // second tir du Bombardement
+      while (!state.winner && state.units.includes(u) && canAttackAgain(state, u)) {
+        const next = aiBreakthroughTarget(state, u);
+        if (!next) break;
+        ui.aiTargets = [{ c: next.c, r: next.r }];
+        stage.requestDraw();
+        await sleep(650);
+        outcome = attackUnit(state, u, next);
+        await playCombat(outcome, true);
+        ui.aiTargets = [];
+      }
     }
     ui.aiFocus = null;
     ui.aiTargets = [];
@@ -537,12 +624,26 @@ async function playAiTurn() {
   }
   ui.aiFocus = null;
   ui.aiTargets = [];
-  endAiTurn(state);
-  if (state.reconChoice) keepReconCard(state, aiReconKeep(state));
-  refresh();
 }
 
-// Carte action de l'IA : elle choisit la cible, les événements du bus
+// Retranchement de l'IA : chaque infanterie ordonnée pose ses sacs.
+async function playAiDigIn() {
+  await sleep(450);
+  while (!state.winner && state.ordersLeft > 0) {
+    const pool = activableUnits(state, state.aiSide);
+    if (!pool.length) break;
+    const u = pool[0];
+    ui.aiFocus = u;
+    stage.requestDraw();
+    await sleep(500);
+    digIn(state, u);
+    ui.aiFocus = null;
+    stage.requestDraw();
+    await sleep(250);
+  }
+}
+
+// Carte tactique de l'IA : elle choisit la cible, les événements du bus
 // (actionStruck, unitHealed) racontent la frappe.
 async function playAiAction(cd) {
   await sleep(600);
@@ -564,7 +665,14 @@ async function playAiAction(cd) {
     }
   } else if (cd.action === 'medics') {
     const unit = aiMedicsTarget(state);
-    if (unit) resolveMedics(state, unit);
+    if (unit) {
+      resolveMedics(state, unit);
+      // soin réussi : l'unité soignée reçoit l'ordre de la carte
+      if (state.healedUnit && !state.winner) {
+        await sleep(600);
+        await executePlans(aiChooseMoves(state, 'medics'));
+      }
+    }
   }
   await sleep(900);
   ui.aiTargets = [];

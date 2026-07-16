@@ -5,28 +5,47 @@ import { cardHTML, ordersLabel } from './html.js';
 
 const SPREAD = 8; // degrés entre deux cartes
 
-export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
+export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire, onAirStrike }) {
   const handEl = document.getElementById('hand');
   const fan = document.getElementById('fan');
   const acts = document.getElementById('acts');
   const reconScrim = document.getElementById('reconScrim');
   const reconCards = document.getElementById('reconCards');
+  const reconHead = document.getElementById('rHead');
+
+  const cardLabel = (cd) => `${cd.name}, ${cd.desc ?? ordersLabel(cd)}`;
 
   // Bonus de pioche d'une Reconnaissance : le joueur clique la carte à garder.
   function showReconChoice(ids, onPick) {
+    reconHead.textContent = 'Reconnaissance — gardez une carte, l’autre est défaussée';
     reconCards.innerHTML = '';
     for (const id of ids) {
       const cd = cardById(id);
       const b = document.createElement('button');
       b.className = 'card';
-      b.setAttribute(
-        'aria-label',
-        cd.action ? `${cd.name}, carte action` : `${cd.name}, ${ordersLabel(cd)}`,
-      );
+      b.setAttribute('aria-label', cardLabel(cd));
       b.innerHTML = cardHTML(cd);
       b.onclick = () => {
         reconScrim.classList.remove('on');
         onPick(id);
+      };
+      reconCards.appendChild(b);
+    }
+    reconScrim.classList.add('on');
+  }
+
+  // Carte à choix de secteur (Assaut d'infanterie) : le joueur clique le
+  // secteur où donner les ordres.
+  function showSectorChoice(sectors, onPick) {
+    reconHead.textContent = 'Assaut d’infanterie — choisissez le secteur';
+    reconCards.innerHTML = '';
+    for (const s of sectors) {
+      const b = document.createElement('button');
+      b.className = 'act';
+      b.textContent = s === 'centre' ? 'Au centre' : `À ${s}`;
+      b.onclick = () => {
+        reconScrim.classList.remove('on');
+        onPick(s);
       };
       reconCards.appendChild(b);
     }
@@ -85,10 +104,7 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
       b.style.setProperty('--tx', ((i - mid) * gap).toFixed(1) + 'px');
       b.style.zIndex = i;
       b.disabled = !playable;
-      b.setAttribute(
-        'aria-label',
-        cd.action ? `${cd.name}, carte action` : `${cd.name}, ${ordersLabel(cd)}`,
-      );
+      b.setAttribute('aria-label', cardLabel(cd));
       b.innerHTML = cardHTML(cd);
       // les cartes fraîchement piochées se posent en dernier
       if (ui.justDrew && i >= hand.length - ui.justDrew) {
@@ -109,6 +125,14 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
         w.onclick = onCutWire;
         acts.appendChild(w);
       }
+      // attaque aérienne : frapper avant d'avoir désigné les 4 unités
+      if (ui.action?.kind === 'air' && ui.action.picks.length) {
+        const a = document.createElement('button');
+        a.className = 'act';
+        a.textContent = 'Déclencher la frappe';
+        a.onclick = onAirStrike;
+        acts.appendChild(a);
+      }
       const e = document.createElement('button');
       e.className = 'act';
       e.textContent = 'Fin de tour';
@@ -122,5 +146,5 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire }) {
     acts.appendChild(rs);
   }
 
-  return { render, showReconChoice };
+  return { render, showReconChoice, showSectorChoice };
 }

@@ -11,9 +11,10 @@ import { mulberry32 } from './helpers.js';
 const emptyUi = { targets: [], moves: [], orderable: [] };
 
 test('cardHTML : nom, nombre d’unités et secteur', () => {
-  const h = cardHTML(cardById('recon'));
-  assert.match(h, /Reconnaissance/);
+  const h = cardHTML(cardById('recon-force'));
+  assert.match(h, /Reconnaissance en force/);
   assert.match(h, /tout le front/);
+  assert.match(h, /par secteur/);
   const h2 = cardHTML(cardById('atk-g'));
   assert.match(h2, /Attaque à gauche/);
   assert.match(h2, /unités/);
@@ -22,12 +23,29 @@ test('cardHTML : nom, nombre d’unités et secteur', () => {
   assert.match(h3, /Attaque en tenaille/);
   assert.match(h3, /les flancs/);
   assert.equal(h3.match(/<i class="on"/g).length, 2);
+  // l'assaut ordonne toutes les unités du secteur
+  const h5 = cardHTML(cardById('ast-c'));
+  assert.match(h5, /Assaut au centre/);
+  assert.match(h5, /∞/);
+  // la reconnaissance annonce son bonus de pioche
+  const h6 = cardHTML(cardById('rec-g'));
+  assert.match(h6, /pioche 2, garde 1/);
   // carte action : bandeau descriptif, aucune bande de secteur allumée
   const h4 = cardHTML(cardById('barrage'));
   assert.match(h4, /Barrage/);
   assert.match(h4, /action/);
   assert.match(h4, /4 dés sur 1 unité/);
   assert.ok(!h4.includes('class="on"'));
+  // carte tactique à ordres : quota, bandeau descriptif, tout le plateau allumé
+  const h7 = cardHTML(cardById('hq'));
+  assert.match(h7, /Directive du QG/);
+  assert.match(h7, /4 unités au choix/);
+  assert.equal(h7.match(/<i class="on"/g).length, 3);
+  // secteur au choix : aucune bande allumée, le bandeau explique
+  const h8 = cardHTML(cardById('infantry-assault'));
+  assert.match(h8, /Assaut d’infanterie/);
+  assert.match(h8, /∞/);
+  assert.ok(!h8.includes('class="on"'));
 });
 
 test('homeMapsHTML : un lien par carte vers game.html, message si dossier vide', () => {

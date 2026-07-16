@@ -212,12 +212,13 @@ export function createStage(canvas, getScene) {
       ctx.stroke();
       ctx.restore();
     }
-    // carte action en attente de cible : unités ciblables ou hexs déjà choisis
+    // carte tactique en attente de cible : unités ciblables ou hexs déjà
+    // choisis — contour doré pour les cibles amies (soin, retranchement)
     if (ui.action) {
       for (const u of ui.action.targets ?? []) {
         const p = hexCenter(u.c, u.r);
         hexPath(ctx, p.x, p.y);
-        ctx.strokeStyle = ui.action.kind === 'medics' ? '#C9A227' : '#B03A2E';
+        ctx.strokeStyle = ['medics', 'digin'].includes(ui.action.kind) ? '#C9A227' : '#B03A2E';
         ctx.lineWidth = 3;
         ctx.stroke();
       }
