@@ -1,10 +1,13 @@
-// Cartes actions : barrage, attaque aérienne, médecins & mécanos, contre-attaque.
+// Cartes tactiques à résolution dédiée : barrage, attaque aérienne,
+// médecins & mécanos, contre-attaque.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  activableUnits,
   barrageTargets,
   createGame,
+  finishUnit,
   medicTargets,
   orderableUnits,
   playCard,
@@ -26,6 +29,7 @@ function duel({ units, terrain = {}, obstacles = {}, objectives = {} }) {
 
 const ALL_HITS = () => 0; // FACES[0] = 'inf'
 const ALL_STARS = () => 0.7; // FACES[4] = 'star'
+const ALL_FLAGS = () => 0.99; // FACES[5] = 'flag'
 
 test('barrage : 4 dés sur une unité ennemie, sans protection du terrain', () => {
   const state = duel({
@@ -58,34 +62,60 @@ test('barrage : 4 dés sur une unité ennemie, sans protection du terrain', () =
   assert.equal(events[0], outcome);
 });
 
-test('attaque aérienne : hexs contigus obligatoires, 2 dés alliés par unité ennemie', () => {
+test('barrage : les drapeaux ne peuvent pas être ignorés, même retranché', () => {
+  const state = duel({
+    obstacles: { [key(5, 2)]: 'sacs' },
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 8 },
+      { side: 'axis', type: 'inf', c: 5, r: 2 },
+    ],
+  });
+  const axis = state.units[1];
+  state.hands.allies = ['barrage'];
+  playCard(state, 'allies', 'barrage');
+  state.rng = ALL_FLAGS;
+  const outcome = resolveBarrage(state, 'allies', axis);
+  assert.equal(outcome.report.flags, 4);
+  assert.equal(outcome.report.flagsIgnored, 0); // les sacs de sable ne couvrent pas
+  assert.ok(outcome.report.retreated);
+  assert.ok(axis.r < 2); // replié vers sa ligne de départ
+});
+
+test('attaque aérienne : jusqu’à 4 unités ennemies adjacentes entre elles', () => {
   const state = duel({
     units: [
       { side: 'allies', type: 'inf', c: 5, r: 8 },
       { side: 'axis', type: 'inf', c: 5, r: 2 },
       { side: 'axis', type: 'inf', c: 6, r: 2 },
+      { side: 'axis', type: 'inf', c: 10, r: 2 },
     ],
   });
-  // contiguïté : premier hex libre, les suivants collés à la chaîne, jamais deux fois le même
-  assert.ok(validAirTarget([], { c: 5, r: 2 }));
-  assert.ok(validAirTarget([{ c: 5, r: 2 }], { c: 6, r: 2 }));
-  assert.ok(!validAirTarget([{ c: 5, r: 2 }], { c: 9, r: 2 }));
-  assert.ok(!validAirTarget([{ c: 5, r: 2 }], { c: 5, r: 2 }));
-  assert.ok(!validAirTarget([], { c: 13, r: 0 })); // hors plateau
+  // seuls les hexs occupés par l'ennemi sont ciblables, en groupe contigu
+  assert.ok(validAirTarget(state, 'allies', [], { c: 5, r: 2 }));
+  assert.ok(!validAirTarget(state, 'allies', [], { c: 4, r: 2 })); // hex vide
+  assert.ok(!validAirTarget(state, 'allies', [], { c: 5, r: 8 })); // unité amie
+  assert.ok(validAirTarget(state, 'allies', [{ c: 5, r: 2 }], { c: 6, r: 2 }));
+  assert.ok(!validAirTarget(state, 'allies', [{ c: 5, r: 2 }], { c: 10, r: 2 })); // isolée
+  assert.ok(!validAirTarget(state, 'allies', [{ c: 5, r: 2 }], { c: 5, r: 2 })); // déjà choisie
+  const four = [
+    { c: 0, r: 0 },
+    { c: 1, r: 0 },
+    { c: 2, r: 0 },
+    { c: 3, r: 0 },
+  ];
+  assert.ok(!validAirTarget(state, 'allies', four, { c: 4, r: 0 })); // groupe plein
 
-  state.rng = ALL_HITS;
+  // l'étoile touche aussi : 2 dés alliés par unité, 2 touches chacune
+  state.rng = ALL_STARS;
   const outcomes = resolveAirStrike(state, 'allies', [
-    { c: 4, r: 2 },
     { c: 5, r: 2 },
     { c: 6, r: 2 },
-    { c: 7, r: 2 },
   ]);
-  assert.equal(outcomes.length, 2); // seuls les hexs occupés par l'ennemi frappent
+  assert.equal(outcomes.length, 2);
   for (const o of outcomes) {
     assert.equal(o.report.faces.length, 2);
     assert.equal(o.report.hits, 2);
   }
-  assert.ok(state.units.filter((u) => u.side === 'axis').every((u) => u.figs === 2));
 });
 
 test("attaque aérienne : l'Axe ne lance qu'un dé par unité", () => {
@@ -100,7 +130,7 @@ test("attaque aérienne : l'Axe ne lance qu'un dé par unité", () => {
   assert.equal(outcome.report.faces.length, 1);
 });
 
-test('médecins & mécanos : soigne au symbole, plafonné aux figurines de départ', () => {
+test('médecins & mécanos : 1 dé par carte en main, soigne au symbole ou à l’étoile', () => {
   const state = duel({
     units: [
       { side: 'allies', type: 'inf', c: 5, r: 8 },
@@ -115,22 +145,50 @@ test('médecins & mécanos : soigne au symbole, plafonné aux figurines de dépa
 
   const events = [];
   state.bus.on('unitHealed', (o) => events.push(o));
-  state.rng = ALL_HITS; // 4 faces infanterie, mais 2 figurines manquantes seulement
+  state.hands.allies = ['medics', 'atk-g', 'snd-c'];
+  playCard(state, 'allies', 'medics');
+  state.rng = ALL_HITS; // faces infanterie, mais 2 figurines manquantes seulement
   const out = resolveMedics(state, inf);
+  assert.equal(out.faces.length, 3); // 2 cartes en main + celle jouée
   assert.equal(out.restored, 2);
   assert.equal(inf.figs, UNITS.inf.figs);
-  assert.ok(inf.acted); // l'unité soignée ne bouge ni ne tire
-  assert.equal(state.ordersLeft, 0);
   assert.equal(events.length, 1);
+  // l'unité soignée peut encore recevoir l'ordre de la carte
+  assert.ok(!inf.acted);
+  assert.equal(state.ordersLeft, 1);
+  assert.deepEqual(activableUnits(state, 'allies'), [inf]);
+  finishUnit(state, inf);
+  assert.equal(state.ordersLeft, 0);
 
   // l'artillerie n'a pas de face de dé : elle se répare sur l'étoile
   art.figs = 1;
+  state.hands.allies = ['medics'];
+  playCard(state, 'allies', 'medics');
   state.rng = ALL_STARS;
   assert.equal(resolveMedics(state, art).restored, 1);
   assert.equal(art.figs, UNITS.art.figs);
 });
 
-test('contre-attaque : rejoue la dernière carte adverse, sinon vaut une reconnaissance', () => {
+test('médecins & mécanos : sans figurine récupérée, le tour est perdu', () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 8 },
+      { side: 'axis', type: 'inf', c: 5, r: 2 },
+    ],
+  });
+  const inf = state.units[0];
+  inf.figs = 2;
+  state.hands.allies = ['medics'];
+  playCard(state, 'allies', 'medics');
+  state.rng = () => 0.55; // FACES[3] = 'grenade' : aucune face de soin
+  const out = resolveMedics(state, inf);
+  assert.equal(out.restored, 0);
+  assert.ok(inf.acted);
+  assert.equal(state.ordersLeft, 0);
+  assert.deepEqual(activableUnits(state, 'allies'), []);
+});
+
+test('contre-attaque : rejoue la carte adverse en miroir gauche/droite', () => {
   const state = duel({
     units: [
       { side: 'allies', type: 'inf', c: 5, r: 8 },
@@ -150,13 +208,20 @@ test('contre-attaque : rejoue la dernière carte adverse, sinon vaut une reconna
   assert.equal(events[0].card.id, 'contre');
   assert.equal(events[0].as.id, 'recon-force');
 
-  // l'Axe joue une attaque à gauche : la contre-attaque suivante la rejoue
+  // l'Axe attaque à gauche : la contre-attaque rejoue une attaque à DROITE
   state.hands.axis = ['atk-g'];
   playCard(state, 'axis', 'atk-g');
   state.hands.allies = ['contre'];
   cd = playCard(state, 'allies', 'contre');
-  assert.equal(cd.id, 'atk-g');
-  assert.equal(state.playedCard, 'atk-g');
+  assert.equal(cd.id, 'atk-d');
+  assert.equal(state.playedCard, 'atk-d');
+
+  // une carte du centre se rejoue telle quelle
+  state.hands.axis = ['snd-c'];
+  playCard(state, 'axis', 'snd-c');
+  state.hands.allies = ['contre'];
+  cd = playCard(state, 'allies', 'contre');
+  assert.equal(cd.id, 'snd-c');
 
   // une contre-attaque adverse ne se rejoue pas : reconnaissance en force
   state.hands.axis = ['contre'];
@@ -173,4 +238,24 @@ test('contre-attaque : rejoue la dernière carte adverse, sinon vaut une reconna
   cd = playCard(state, 'allies', 'contre');
   assert.equal(cd.id, 'rec-c');
   assert.equal(state.reconDraw, 'allies');
+});
+
+test('contre-attaque d’un assaut d’infanterie : même secteur que l’adversaire', () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'inf', c: 1, r: 8 },
+      { side: 'allies', type: 'inf', c: 11, r: 8 },
+      { side: 'axis', type: 'inf', c: 1, r: 0 },
+    ],
+  });
+  state.hands.axis = ['infantry-assault'];
+  playCard(state, 'axis', 'infantry-assault', { sector: 'gauche' });
+  assert.equal(state.lastSector.axis, 'gauche');
+
+  state.hands.allies = ['contre'];
+  const cd = playCard(state, 'allies', 'contre');
+  assert.equal(cd.id, 'infantry-assault');
+  assert.equal(state.pickedSector, 'gauche'); // pas de miroir : même secteur
+  // seule l'infanterie alliée du secteur gauche est ordonnable
+  assert.deepEqual(orderableUnits(state, 'allies', 'infantry-assault'), [state.units[0]]);
 });

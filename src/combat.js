@@ -3,6 +3,7 @@
 import { FACES, H, MEDALS_TO_WIN, OBSTACLES, TERRAIN, UNITS } from './config.js';
 import { hexDistance, hexLine, key, neighbors } from './hex.js';
 import { crushObstacleOnEnter, dropObstacleOnExit, obstacleAt, unitAt } from './movement.js';
+import { bonusDice, fightCap } from './tactics.js';
 
 // Un terrain blocksSight (forêt, village) entre le tireur et la cible coupe
 // le tir. Une colline (elevated) intermédiaire ne bloque que si le tireur ET
@@ -56,20 +57,21 @@ export function attackerSnare(state, unit) {
 }
 
 export function diceFor(state, unit, target) {
-  const base = UNITS[unit.type].dice[hexDistance(unit, target) - 1];
+  const range = hexDistance(unit, target);
+  const base = UNITS[unit.type].dice[range - 1];
   if (base === undefined) return 0;
   if (!hasLineOfSight(state, unit, target)) return 0;
-  return Math.max(
-    1,
-    base - defenseReduction(state, unit.type, target) - attackerSnare(state, unit),
+  return (
+    Math.max(1, base - defenseReduction(state, unit.type, target) - attackerSnare(state, unit)) +
+    bonusDice(state, unit, range)
   );
 }
 
 // Éligibilité au combat pour l'activation en cours : restrictions liées au
-// mouvement effectué et au terrain occupé — indépendante des cibles.
+// mouvement effectué et au terrain occupé — indépendante des cibles. Le coût
+// de mouvement toléré vient du type, ou de la carte tactique en cours.
 export function canFight(state, unit, movedCost) {
-  if (unit.type === 'art' && movedCost > 0) return false;
-  if (unit.type === 'inf' && movedCost > 1) return false;
+  if (movedCost > fightCap(state, unit)) return false;
   const here = TERRAIN[state.terrain[key(unit.c, unit.r)]];
   if (here.noFight) return false; // mer : aucun combat à bord d'une barge
   if (here.noFightOnEnter && movedCost > 0) return false; // bocage : pas de combat le tour d'entrée
@@ -121,13 +123,15 @@ export function rollDice(n, rng) {
 }
 
 // Résolution : mutations de l'état + rapport. Zéro rendu, les effets
-// visuels sont notifiés via state.bus.
-export function resolveCombat(state, attacker, defender, faces) {
+// visuels sont notifiés via state.bus. Options des frappes tactiques :
+// `starHits` : l'étoile touche aussi ; `noFlagCover` : aucun obstacle ne
+// permet d'ignorer un drapeau.
+export function resolveCombat(state, attacker, defender, faces, opts = {}) {
   const hitOn = UNITS[defender.type].hitOn;
   let hits = 0;
   let flags = 0;
   for (const f of faces) {
-    if (hitOn.includes(f)) hits++;
+    if (hitOn.includes(f) || (opts.starHits && f === 'star')) hits++;
     else if (f === 'flag') flags++;
   }
   const report = {
@@ -144,7 +148,7 @@ export function resolveCombat(state, attacker, defender, faces) {
 
   // un obstacle ignoreFirstFlag (bunker) annule le premier drapeau du jet
   // (simplification assumée : toujours appliqué, sans choix du défenseur)
-  const cover = OBSTACLES[obstacleAt(state, defender.c, defender.r)];
+  const cover = opts.noFlagCover ? null : OBSTACLES[obstacleAt(state, defender.c, defender.r)];
   let effectiveFlags = flags;
   if (cover?.ignoreFirstFlag && flags > 0) {
     effectiveFlags--;

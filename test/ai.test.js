@@ -128,7 +128,7 @@ test("aiBarrageTarget vise l'unité que 4 dés peuvent achever", () => {
   assert.equal(aiBarrageTarget(state), state.units[2]);
 });
 
-test("aiAirHexes couvre le plus d'unités alliées avec une chaîne d'hexs contigus", () => {
+test("aiAirHexes vise le plus grand groupe d'unités alliées adjacentes entre elles", () => {
   const state = board({
     units: [
       { side: 'axis', type: 'inf', c: 0, r: 0 },
@@ -138,9 +138,9 @@ test("aiAirHexes couvre le plus d'unités alliées avec une chaîne d'hexs conti
     ],
   });
   const strike = aiAirHexes(state);
-  assert.equal(strike.hexes.length, 4);
   assert.equal(strike.units, 2); // la paire, pas l'unité isolée
-  // chaque hex de la chaîne touche un hex choisi avant lui
+  assert.equal(strike.hexes.length, 2); // uniquement des hexs occupés par l'ennemi
+  // chaque hex du groupe touche un hex choisi avant lui
   for (let i = 1; i < strike.hexes.length; i++) {
     assert.ok(strike.hexes.slice(0, i).some((h) => hexDistance(h, strike.hexes[i]) === 1));
   }

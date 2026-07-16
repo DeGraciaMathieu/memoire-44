@@ -1,12 +1,19 @@
 // IA du camp adverse (state.aiSide) — ne parle qu'aux règles. Gloutonne, évaluation 1 coup.
 
 import { TERRAIN, UNITS } from './config.js';
-import { hexDistance, key, neighbors } from './hex.js';
-import { cardById } from './cards.js';
-import { sectorsOf } from './sectors.js';
-import { barrageTargets, medicTargets, orderableUnits, sectorQuota, validAirTarget } from './game.js';
+import { hexDistance, key } from './hex.js';
+import { cardById, mirrorId } from './cards.js';
+import { SECTORS, sectorsOf } from './sectors.js';
+import {
+  barrageTargets,
+  medicTargets,
+  orderableUnits,
+  sectorQuota,
+  validAirTarget,
+} from './game.js';
+import { eligibleUnits, moveRange } from './tactics.js';
 import { reachable, unitAt } from './movement.js';
-import { defenseReduction, diceFor, targetsFor } from './combat.js';
+import { canFight, defenseReduction, diceFor, targetsFor } from './combat.js';
 
 const P_HIT = { inf: 3 / 6, arm: 2 / 6, art: 3 / 6 }; // proba par dé selon la cible
 
@@ -20,8 +27,30 @@ function openObjectives(state) {
     .filter((h) => unitAt(state, h.c, h.r)?.side !== state.aiSide);
 }
 
+// Secteur choisi pour une carte à choix de secteur : le plus fourni en
+// unités éligibles.
+export function aiPickSector(state, cd) {
+  let best = SECTORS[0];
+  let bestCount = -1;
+  for (const s of SECTORS) {
+    const count = eligibleUnits(state, state.aiSide, cd, s).length;
+    if (count > bestCount) {
+      bestCount = count;
+      best = s;
+    }
+  }
+  return best;
+}
+
+// Unités éligibles d'une carte tactique, sur son meilleur secteur pour une
+// carte à choix de secteur.
+function aiEligible(state, cd) {
+  if (cd.sector !== 'pick') return eligibleUnits(state, state.aiSide, cd);
+  return eligibleUnits(state, state.aiSide, cd, aiPickSector(state, cd));
+}
+
 // Valeur d'une carte en main : unités activables + celles qui ont déjà une
-// cible ; les cartes actions sont évaluées par leur meilleure frappe.
+// cible ; les cartes à résolution dédiée sont évaluées par leur meilleure frappe.
 function cardScore(state, id) {
   const cd = cardById(id);
   if (cd.action === 'barrage') {
@@ -42,7 +71,17 @@ function cardScore(state, id) {
   }
   if (cd.action === 'contre') {
     const last = state.lastCard[state.playerSide] && cardById(state.lastCard[state.playerSide]);
-    return cardScore(state, last && last.action !== 'contre' ? last.id : 'recon-force');
+    return cardScore(state, last && last.action !== 'contre' ? mirrorId(last.id) : 'recon-force');
+  }
+  if (cd.tactic) {
+    const pool = aiEligible(state, cd);
+    if (!pool.length) return cd.fallback ? 2 : 0; // repli : 1 unité au choix, ou carte perdue
+    const cap = cd.n === 'all' ? pool.length : Math.min(cd.n, pool.length);
+    let s = cap * 2;
+    for (const u of pool.slice(0, cap)) {
+      if (targetsFor(state, u, 0).length) s += 3;
+    }
+    return s;
   }
   const us = orderableUnits(state, state.aiSide, id);
   const cap = Object.values(sectorQuota(state, state.aiSide, cd)).reduce((a, b) => a + b, 0);
@@ -89,31 +128,27 @@ export function aiBarrageTarget(state) {
   return best;
 }
 
-// Attaque aérienne : fait grossir une chaîne d'hexs autour de chaque unité
-// alliée, en absorbant d'abord les hexs occupés par l'ennemi, et garde la
-// chaîne qui couvre le plus d'unités. Renvoie { hexes, units } ou null.
+// Attaque aérienne : vise le plus grand groupe d'unités du joueur adjacentes
+// entre elles (au plus 4), en grossissant une chaîne depuis chaque unité.
+// Renvoie { hexes, units } ou null.
 export function aiAirHexes(state) {
-  const card = cardById('air');
   const enemies = state.units.filter((u) => u.side === state.playerSide);
   let best = null;
   for (const seed of enemies) {
     const hexes = [{ c: seed.c, r: seed.r }];
-    while (hexes.length < card.hexes) {
-      const options = hexes
-        .flatMap((h) => neighbors(h.c, h.r))
-        .filter((h) => validAirTarget(hexes, h));
-      if (!options.length) break;
-      const withEnemy = options.find((h) => unitAt(state, h.c, h.r)?.side === state.playerSide);
-      hexes.push(withEnemy ?? options[0]);
+    let next;
+    while (
+      (next = enemies.find((e) => validAirTarget(state, state.aiSide, hexes, { c: e.c, r: e.r })))
+    ) {
+      hexes.push({ c: next.c, r: next.r });
     }
-    const units = hexes.filter((h) => unitAt(state, h.c, h.r)?.side === state.playerSide).length;
-    if (!best || units > best.units) best = { hexes, units };
+    if (!best || hexes.length > best.units) best = { hexes, units: hexes.length };
   }
   return best;
 }
 
 // Soigner l'unité la plus amochée ; à pertes égales, l'infanterie
-// (2 faces sur 6, la meilleure espérance de réparation).
+// (3 faces sur 6, la meilleure espérance de réparation).
 export function aiMedicsTarget(state) {
   const hurt = medicTargets(state, state.aiSide);
   if (!hurt.length) return null;
@@ -126,7 +161,7 @@ export function aiMedicsTarget(state) {
 
 export function aiChooseMoves(state, cardId) {
   const cd = cardById(cardId);
-  const pool = orderableUnits(state, state.aiSide, cardId);
+  const pool = orderableUnits(state, state.aiSide, cardId).filter((u) => !u.acted);
   const open = openObjectives(state);
   // priorité : unités qui peuvent frapper ou prendre un objectif > unités proches de l'ennemi
   const scored = pool
@@ -135,20 +170,26 @@ export function aiChooseMoves(state, cardId) {
         ...state.units.filter((e) => e.side === state.playerSide).map((e) => hexDistance(u, e)),
       );
       let s = (targetsFor(state, u, 0).length ? 10 : 0) - near;
-      if (open.some((o) => hexDistance(u, o) <= UNITS[u.type].moveNoFire)) s += 5;
+      if (open.some((o) => hexDistance(u, o) <= moveRange(state, u))) s += 5;
       return { u, s };
     })
     .sort((a, b) => b.s - a.s);
 
-  // les meilleures unités d'abord, dans la limite du quota de leur secteur
-  const quota = sectorQuota(state, state.aiSide, cd);
-  const picked = [];
-  for (const x of scored) {
-    const secs = sectorsOf(x.u.c, x.u.r).filter((s) => (quota[s] || 0) > 0);
-    const s = secs.sort((a, b) => quota[b] - quota[a])[0];
-    if (!s) continue;
-    quota[s]--;
-    picked.push(x);
+  // cartes tactiques : quota global — les meilleures unités dans la limite
+  // des ordres ; cartes de commandement : quota par secteur
+  let picked;
+  if (cd.tactic || cd.action) {
+    picked = scored.slice(0, state.ordersLeft);
+  } else {
+    const quota = sectorQuota(state, state.aiSide, cd);
+    picked = [];
+    for (const x of scored) {
+      const secs = sectorsOf(x.u.c, x.u.r).filter((s) => (quota[s] || 0) > 0);
+      const s = secs.sort((a, b) => quota[b] - quota[a])[0];
+      if (!s) continue;
+      quota[s]--;
+      picked.push(x);
+    }
   }
   return picked.map((x) => aiPlanUnit(state, x.u));
 }
@@ -164,7 +205,8 @@ export function aiTakesGround(state, unit, hex) {
   return defenseReduction(state, 'inf', hex) >= defenseReduction(state, 'inf', unit);
 }
 
-// Meilleure cible pour une percée de blindés, ou null si aucun tir possible.
+// Meilleure cible pour un combat supplémentaire (percée de blindés, second
+// tir du Bombardement), ou null si aucun tir possible.
 export function aiBreakthroughTarget(state, unit) {
   let best = null;
   let bestScore = 0;
@@ -184,20 +226,14 @@ function aiPlanUnit(state, unit) {
   const open = openObjectives(state);
   const dests = [
     { c: unit.c, r: unit.r, cost: 0 },
-    ...reachable(state, unit, UNITS[unit.type].moveNoFire),
+    ...reachable(state, unit, moveRange(state, unit)),
   ];
   let best = null;
 
   for (const d of dests) {
     const ghost = { ...unit, c: d.c, r: d.r };
     const destT = TERRAIN[state.terrain[key(d.c, d.r)]];
-    const canFire =
-      !(unit.type === 'art' && d.cost > 0) &&
-      !(unit.type === 'inf' && d.cost > 1) &&
-      !(unit.type === 'arm' && d.cost > UNITS.arm.move) &&
-      !destT.noFight &&
-      !(destT.noFightOnEnter && d.cost > 0);
-    if (unit.type === 'inf' && d.cost > UNITS.inf.moveNoFire) continue;
+    const canFire = canFight(state, ghost, d.cost);
 
     let score = 0;
     let target = null;
