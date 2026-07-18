@@ -457,6 +457,28 @@ a.act:hover {
   outline: none;
   border-color: var(--brass);
 }
+.mapbox select {
+  background: var(--table);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font:
+    12px/1 'Courier New',
+    monospace;
+  padding: 9px 10px;
+  border-radius: 3px;
+}
+.mapbox label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font:
+    12px/1 'Courier New',
+    monospace;
+  cursor: pointer;
+}
+.mapbox input[type='checkbox'] {
+  accent-color: var(--brass);
+}
 .prompt.bad {
   color: var(--flag);
 }

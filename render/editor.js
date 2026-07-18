@@ -5,6 +5,7 @@
 import { W, H, TERRAIN, OBSTACLES, UNITS } from '../src/config.js';
 import { inBounds, key } from '../src/hex.js';
 import { parseMap, serializeMap, unitAllowedOn } from '../src/map.js';
+import { BIOMES, generateMap } from '../src/generator.js';
 import { createUiState } from './uiState.js';
 import { buildBoardLayer } from './board.js';
 import { createStage, DPR } from './stage.js';
@@ -244,6 +245,23 @@ fileImport.onchange = async () => {
   } catch (err) {
     setStatus(err.message, true);
   }
+};
+
+const symInput = document.getElementById('chkSym');
+const biomeSel = document.getElementById('biomeSel');
+for (const [id, b] of Object.entries(BIOMES)) {
+  const opt = document.createElement('option');
+  opt.value = id;
+  opt.textContent = `Biome : ${b.label}`;
+  biomeSel.appendChild(opt);
+}
+
+document.getElementById('btnRandom').onclick = () => {
+  map = generateMap({ symmetric: symInput.checked, biome: biomeSel.value });
+  repaintTerrain();
+  setStatus(
+    `Carte « ${BIOMES[biomeSel.value].label} » ${symInput.checked ? 'symétrique' : 'asymétrique'} générée — retouchez-la puis exportez.`,
+  );
 };
 
 document.getElementById('btnClear').onclick = () => {
