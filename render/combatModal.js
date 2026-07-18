@@ -41,36 +41,60 @@ export function createCombatModal({ requestDraw, getUi }) {
 
     await sleep(520);
 
-    // les dés roulent : on brasse des faces, le résultat est déjà tiré
-    const dice = report.faces.map((_, i) => {
-      const d = document.createElement('div');
-      d.className = 'die rolling';
-      d.style.animationDelay = i * 55 + 'ms'; // désynchronise les culbutes
-      els.dice.appendChild(d);
-      return d;
-    });
-    let tick = 0;
-    const spin = setInterval(() => {
-      tick++;
-      dice.forEach((d, i) => {
-        if (!d.classList.contains('settled')) d.innerHTML = faceHTML(FACES[(tick + i) % 6]);
+    const line = (txt, cls = '') => {
+      const p = document.createElement('div');
+      p.className = 'line ' + cls;
+      p.textContent = txt;
+      els.out.appendChild(p);
+    };
+
+    // Une volée de dés : ils roulent (le résultat est déjà tiré), puis
+    // s'immobilisent un par un, colorés selon leur verdict.
+    const rollRow = async (faces, verdictOf) => {
+      const dice = faces.map((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'die rolling';
+        d.style.animationDelay = i * 55 + 'ms'; // désynchronise les culbutes
+        els.dice.appendChild(d);
+        return d;
       });
-    }, 60);
+      let tick = 0;
+      const spin = setInterval(() => {
+        tick++;
+        dice.forEach((d, i) => {
+          if (!d.classList.contains('settled')) d.innerHTML = faceHTML(FACES[(tick + i) % 6]);
+        });
+      }, 60);
+      await sleep(750);
+      for (let i = 0; i < faces.length; i++) {
+        const d = dice[i];
+        d.style.animationDelay = '0ms';
+        d.classList.remove('rolling');
+        d.classList.add('settled', verdictOf(faces[i]));
+        d.innerHTML = faceHTML(faces[i]);
+        await sleep(190);
+      }
+      clearInterval(spin);
+      return dice;
+    };
 
-    await sleep(750);
-
-    // ils s'immobilisent un par un, et se colorent selon leur verdict
     const hitOn = UNITS[defender.type].hitOn;
-    for (let i = 0; i < report.faces.length; i++) {
-      const f = report.faces[i];
-      const d = dice[i];
-      d.style.animationDelay = '0ms';
-      d.classList.remove('rolling');
-      d.classList.add('settled', hitOn.includes(f) ? 'isHit' : f === 'flag' ? 'isFlag' : 'isMiss');
-      d.innerHTML = faceHTML(f);
-      await sleep(190);
+    const firstVolley = await rollRow(report.faces, (f) =>
+      hitOn.includes(f) ? 'isHit' : f === 'flag' ? 'isFlag' : 'isMiss',
+    );
+
+    // Défenseur rerollHits (Tigre) : seconde volée — les dés qui ont touché
+    // sont relancés, seules les faces listées confirment, le reste est ignoré.
+    if (report.reroll) {
+      await sleep(300);
+      line(
+        `${UNITS[defender.type].label} touché — l’adversaire relance les dés qui ont touché`,
+        'flagline',
+      );
+      firstVolley.forEach((d) => d.classList.add('faded'));
+      const confirmOn = UNITS[defender.type].rerollHits;
+      await rollRow(report.reroll, (f) => (confirmOn.includes(f) ? 'isHit' : 'isMiss'));
     }
-    clearInterval(spin);
     await sleep(260);
 
     // les figurines perdues s'effacent dans le panneau du défenseur,
@@ -79,15 +103,13 @@ export function createCombatModal({ requestDraw, getUi }) {
     els.def.innerHTML = forcePanelHTML(defender, terrainKey, 'Défenseur', figsBefore, lost);
     requestDraw();
 
-    const line = (txt, cls = '') => {
-      const p = document.createElement('div');
-      p.className = 'line ' + cls;
-      p.textContent = txt;
-      els.out.appendChild(p);
-    };
-
+    const s = report.hits > 1 ? 's' : '';
     line(
-      report.hits ? `${report.hits} touche${report.hits > 1 ? 's' : ''}` : 'Aucune touche',
+      report.hits
+        ? `${report.hits} touche${s}${report.reroll ? ` confirmée${s}` : ''}`
+        : report.reroll
+          ? 'Aucune touche confirmée'
+          : 'Aucune touche',
       report.hits ? 'hit' : '',
     );
     await sleep(280);

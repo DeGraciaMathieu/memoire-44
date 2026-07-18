@@ -7,7 +7,7 @@ import { obstacleAt, unitAt } from '../src/movement.js';
 import { reductionOf } from '../src/combat.js';
 
 export const SYM = { inf: '✦', arm: '▮', grenade: '✸', star: '★', flag: '⚑' };
-export const UNIT_GLYPH = { inf: '✦', arm: '▮', art: '✜' };
+export const UNIT_GLYPH = { inf: '✦', arm: '▮', art: '✜', tig: '▣' };
 export const SIDE_FR = { allies: 'Alliés', axis: 'Axe' };
 
 // Icônes schématiques des types d'unités (soldat, tank, canon) — SVG inline
@@ -16,6 +16,7 @@ export const UNIT_ICON = {
   inf: `<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="3.8"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0z"/></svg>`,
   arm: `<svg class="icon" viewBox="0 0 24 24"><rect x="1.5" y="13" width="21" height="7" rx="3.5"/><path d="M7 13v-3.5A1.5 1.5 0 0 1 8.5 8H14a1.5 1.5 0 0 1 1.5 1.5V13z"/><rect x="15" y="9.6" width="7.5" height="1.8" rx="0.9"/></svg>`,
   art: `<svg class="icon" viewBox="0 0 24 24"><circle cx="8" cy="16.5" r="5"/><rect x="6.3" y="1.5" width="3.4" height="16" rx="1.7" transform="rotate(40 8 9.5)"/></svg>`,
+  tig: `<svg class="icon" viewBox="0 0 24 24"><rect x="0.8" y="12.5" width="22.4" height="8" rx="4"/><path d="M5.5 12.5V8.6A1.6 1.6 0 0 1 7.1 7h7.2a1.6 1.6 0 0 1 1.6 1.6v3.9z"/><rect x="15.5" y="8.4" width="8" height="2.2" rx="1.1"/></svg>`,
 };
 
 // Face de dé : icône schématique pour les unités (infanterie, blindé),
@@ -34,19 +35,21 @@ function reductionLabel(dice) {
 }
 
 // Protection d'un terrain : une seule valeur quand elle est uniforme, sinon
-// schématique — une icône par type d'attaquant (soldat, tank, canon).
+// schématique — une icône par axe de réduction (def / defArmor / defArt),
+// le Tigre partage celle des blindés.
 function protectionLabel(dice) {
-  const types = Object.keys(UNIT_ICON);
+  const types = ['inf', 'arm', 'art'];
   const reds = types.map((ty) => reductionOf(dice, ty));
   if (new Set(reds).size === 1) return reds[0] ? '−' + reds[0] : '—';
   return types.map((ty, i) => `${UNIT_ICON[ty]}${reds[i] ? '−' + reds[i] : '·'}`).join(' ');
 }
 
-const RANGE_LBL = { inf: '1 / 2 / 3', arm: '1 à 3', art: '1 à 6' };
+const RANGE_LBL = { inf: '1 / 2 / 3', arm: '1 à 3', art: '1 à 6', tig: '1 à 3' };
 const MOVE_LBL = {
   inf: '1 hex + tir, ou 2 sans tir',
   arm: '3 hex, tir conservé',
   art: '1 hex sans tir, ou tir sur place',
+  tig: '0 à 3 hex, tir conservé · touché : seule une grenade relancée le détruit',
 };
 
 // Libellé du nombre d'ordres d'une carte de commandement : `n` unités par

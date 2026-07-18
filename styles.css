@@ -160,6 +160,10 @@ svg.icon {
   background: #6e6a5e;
   color: #22261f;
 }
+/* première volée estompée quand une relance (Tigre) prend le relais */
+.die.faded {
+  opacity: 0.35;
+}
 @keyframes tumble {
   from {
     transform: rotate(-25deg) scale(0.5);

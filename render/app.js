@@ -108,6 +108,8 @@ const medalTotals = () => ({
 
 function outcomeSuffix(report) {
   let txt = ` : ${report.hits} touche(s)`;
+  if (report.reroll)
+    txt = ` : ${report.reroll.length} touche(s), relance Tigre — ${report.hits} confirmée(s)`;
   if (report.flags) txt += `, ${report.flags} drapeau(x)`;
   if (report.flagsIgnored) txt += ' (1 ignoré)';
   if (report.extraLoss) txt += `, dos au mur : ${report.extraLoss} perte(s)`;
