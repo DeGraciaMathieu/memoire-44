@@ -49,7 +49,7 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 | `test/actions.test.js`  | Cartes à résolution dédiée : barrage, attaque aérienne, médecins & mécanos, contre-attaque                                                                    |
 | `test/ai.test.js`       | `aiPickCard`, `aiPickSector`, `aiChooseMoves` (quotas, plans), cibles des cartes action, `aiTakesGround`, `aiBreakthroughTarget`                              |
 | `test/game.test.js`     | **MACRO** : déterminisme par graine, tour allié complet, `attackUnit`, prise de terrain, percée, objectifs, victoire, rebattage de pioche, carte de l'éditeur |
-| `test/html.test.js`     | Fragments purs : `cardHTML`, `ordersLabel`, `homeSideHTML`, `homeMapsHTML`, `homeRandomHTML`, `forcePanelHTML`, `calcHTML`, `tipHTML`                         |
+| `test/html.test.js`     | Fragments purs : `cardHTML`, `ordersLabel`, `homeSideHTML`, `homeMapsHTML`, `homeRandomHTML`, `endgameHTML`, `forcePanelHTML`, `calcHTML`, `tipHTML`          |
 | `test/gfx.test.js`      | `boardSize`, aller-retour `hexCenter`/`pickHex`, lignes de secteur, nuances de plaine (`plaineShade`), orientation et raccords du pont (`bridgeSpec`)         |
 
 ## Où placer un nouveau test
