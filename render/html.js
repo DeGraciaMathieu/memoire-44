@@ -217,6 +217,12 @@ export function tipHTML(state, ui, hex) {
       </div>${tagsHTML(terrainTags(t))}
     </div>`;
 
+  const obj = state.objectives?.[key(hex.c, hex.r)];
+  if (obj)
+    h += `<div class="unit">
+      <div class="uname">★ Objectif — médaille : ${obj === 'both' ? 'les deux camps' : SIDE_FR[obj]}</div>
+    </div>`;
+
   const oKey = obstacleAt(state, hex.c, hex.r);
   if (oKey) {
     const o = OBSTACLES[oKey];

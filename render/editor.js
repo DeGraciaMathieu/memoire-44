@@ -84,10 +84,16 @@ for (const [id, o] of Object.entries(OBSTACLES))
 addTool(obstacleTools, 'Enlever l’obstacle', { kind: 'obstacle', id: null });
 
 const objectiveTools = document.getElementById('objectiveTools');
-addTool(objectiveTools, 'Objectif ★', { kind: 'objective', id: true }, (el) => {
-  el.style.setProperty('--swatch', COL.objective);
-  el.classList.add('swatched');
-});
+for (const id of ['both', 'allies', 'axis'])
+  addTool(
+    objectiveTools,
+    `Objectif ★ ${id === 'both' ? 'mixte' : SIDE_FR[id]}`,
+    { kind: 'objective', id },
+    (el) => {
+      el.style.setProperty('--swatch', id === 'both' ? COL.objective : COL[id]);
+      el.classList.add('swatched');
+    },
+  );
 addTool(objectiveTools, 'Enlever l’objectif', { kind: 'objective', id: null });
 
 const unitTools = document.getElementById('unitTools');
@@ -134,7 +140,7 @@ function applyTool(hex) {
     // dessiné dans la couche statique du plateau : re-raster nécessaire
     const next = { ...map.objectives };
     if (tool.id === null) delete next[k];
-    else next[k] = true;
+    else next[k] = tool.id;
     map.objectives = next;
     repaintTerrain();
     return;
