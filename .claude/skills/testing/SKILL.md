@@ -38,6 +38,7 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 | `test/hex.test.js`      | Coordonnées cube, `hexDistance`, `neighbors`, bords                                                                                                           |
 | `test/sectors.test.js`  | Hexes à cheval (colonnes 3/8 des rangées impaires), `inSector`, `cardSectors` (flancs)                                                                        |
 | `test/cards.test.js`    | Composition de la pioche (49 cartes, copies), `cardById`, `mirrorId`                                                                                          |
+| `test/commands.test.js` | Cartes de commandement : un test fonctionnel par carte (secteur couvert, quota, bonus Reconnaissance, tenaille, reconnaissance en force)                      |
 | `test/scenario.test.js` | Mise en place : 14 unités, terrain du bocage                                                                                                                  |
 | `test/map.test.js`      | Cartes de l'éditeur : aller-retour JSON, validation `parseMap`, `setupFromMap`, `unitAllowedOn`                                                               |
 | `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer, plage                                                                    |

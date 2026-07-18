@@ -89,8 +89,9 @@ activableUnits(...)` (carte à ciblage : `ui.action` + `actionClick` ; aucune
 1. `src/cards.js` → entrée dans `CARDS` (`id`, `name` en français, `sector`, `n` par
    secteur ou `'all'`, éventuel `recon: true`) + nombre de copies dans `COPIES`.
 2. `test/cards.test.js` → ajuster le total (actuellement 49) et la répartition.
-3. Carte standard (secteur + n) : **rien d'autre** — `cardHTML` (`render/html.js`) et
-   `playCard` sont génériques.
+3. Carte standard (secteur + n) : `cardHTML` (`render/html.js`) et `playCard` sont
+   génériques — ajouter seulement son test fonctionnel dans `test/commands.test.js`
+   (un test par carte de commandement).
 4. Carte tactique à ordres : `tactic: true` + `desc` + champs déclaratifs (`types`,
    `adjacent`, `noMove`, `bonus`, `move`, `attacks`, `fallback`, `digIn`) — les règles
    transverses de `src/tactics.js` les appliquent ; tests dans `test/tactics.test.js`.
