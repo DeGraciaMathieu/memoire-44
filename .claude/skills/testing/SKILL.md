@@ -35,20 +35,21 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 | Fichier                 | Couvre                                                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `test/events.test.js`   | Bus : livraison, payload, désabonnement                                                                                                                       |
+| `test/rng.test.js`      | `mulberry32` : déterminisme par graine, bornes                                                                                                                |
 | `test/hex.test.js`      | Coordonnées cube, `hexDistance`, `neighbors`, bords                                                                                                           |
 | `test/sectors.test.js`  | Hexes à cheval (colonnes 3/8 des rangées impaires), `inSector`, `cardSectors` (flancs)                                                                        |
 | `test/cards.test.js`    | Composition de la pioche (49 cartes, copies), `cardById`, `mirrorId`                                                                                          |
 | `test/commands.test.js` | Cartes de commandement : un test fonctionnel par carte (secteur couvert, quota, bonus Reconnaissance, tenaille, reconnaissance en force)                      |
 | `test/scenario.test.js` | Mise en place : 14 unités, terrain du bocage                                                                                                                  |
 | `test/map.test.js`      | Cartes de l'éditeur : aller-retour JSON, validation `parseMap`, `setupFromMap`, `unitAllowedOn`                                                               |
-| `test/generator.test.js` | `generateMap` : déterminisme par graine, validité `parseMap` (50 graines × modes × biomes, objectifs occupables), symétrie centrale, biomes, fleuve à ponts |
+| `test/generator.test.js` | `generateMap` : déterminisme par graine, validité `parseMap` (graines × biomes × profils, objectifs occupables), symétrie centrale, biomes, fleuve, débarquement, profil d'assaut, flux de l'accueil |
 | `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer, plage                                                                    |
 | `test/combat.test.js`   | `diceFor`, `targetsFor`, `rollDice`, `resolveCombat` (repli, dos au mur, médaille, victoire, événements)                                                      |
 | `test/tactics.test.js`  | Cartes tactiques à ordres : éligibilité, quota global, bonus de dés, mouvement modifié, retranchement, repli « 1 unité »                                      |
 | `test/actions.test.js`  | Cartes à résolution dédiée : barrage, attaque aérienne, médecins & mécanos, contre-attaque                                                                    |
 | `test/ai.test.js`       | `aiPickCard`, `aiPickSector`, `aiChooseMoves` (quotas, plans), cibles des cartes action, `aiTakesGround`, `aiBreakthroughTarget`                              |
 | `test/game.test.js`     | **MACRO** : déterminisme par graine, tour allié complet, `attackUnit`, prise de terrain, percée, objectifs, victoire, rebattage de pioche, carte de l'éditeur |
-| `test/html.test.js`     | Fragments purs : `cardHTML`, `ordersLabel`, `homeSideHTML`, `homeMapsHTML`, `forcePanelHTML`, `calcHTML`, `tipHTML`                                           |
+| `test/html.test.js`     | Fragments purs : `cardHTML`, `ordersLabel`, `homeSideHTML`, `homeMapsHTML`, `homeRandomHTML`, `forcePanelHTML`, `calcHTML`, `tipHTML`                         |
 | `test/gfx.test.js`      | `boardSize`, aller-retour `hexCenter`/`pickHex`, lignes de secteur, nuances de plaine (`plaineShade`), orientation et raccords du pont (`bridgeSpec`)         |
 
 ## Où placer un nouveau test
