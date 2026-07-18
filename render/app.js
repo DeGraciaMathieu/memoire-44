@@ -2,8 +2,7 @@
 // orchestre le tempo (tours, IA, modale). Aucune règle métier ici : toutes
 // les décisions viennent de src/.
 
-import { OBSTACLES, TERRAIN, UNITS } from '../src/config.js';
-import { key } from '../src/hex.js';
+import { OBSTACLES, UNITS } from '../src/config.js';
 import {
   activableUnits,
   attackUnit,
@@ -55,7 +54,7 @@ import { createHud } from './hud.js';
 import { createHand } from './hand.js';
 import { createCombatModal } from './combatModal.js';
 import { attachInput } from './input.js';
-import { SYM, SIDE_FR } from './html.js';
+import { SIDE_FR } from './html.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const canvas = document.getElementById('cv');
@@ -103,6 +102,25 @@ const medalTotals = () => ({
 
 /* --- bus → rendu ------------------------------------------------------- */
 
+/* --- journal : une ligne par combat, le détail des faces vit dans le
+   plateau de dés ; le camp du défenseur est implicite (celui qui n'a pas
+   la main dans l'en-tête de tour) ------------------------------------- */
+
+function outcomeSuffix(report) {
+  let txt = ` : ${report.hits} touche(s)`;
+  if (report.flags) txt += `, ${report.flags} drapeau(x)`;
+  if (report.flagsIgnored) txt += ' (1 ignoré)';
+  if (report.extraLoss) txt += `, dos au mur : ${report.extraLoss} perte(s)`;
+  if (report.killed) txt += ' — ★ détruite, médaille';
+  return txt;
+}
+
+const combatLine = (attacker, defender, report) =>
+  `  ${UNITS[attacker.type].label} ⚔ ${UNITS[defender.type].label}${outcomeSuffix(report)}`;
+
+const combatTone = (side, report) =>
+  report.killed ? (side === state.playerSide ? 'good' : 'bad') : '';
+
 function wireBus(bus) {
   bus.on('cardsDrawn', ({ side, count }) => {
     if (side === state.playerSide) ui.justDrew = count;
@@ -117,88 +135,43 @@ function wireBus(bus) {
     });
   });
   bus.on('cardPlayed', ({ side, card, as, ordersLeft }) => {
-    const name = as ? `${card.name} — rejoue ${as.name}` : card.name;
-    hud.log(
-      side === state.playerSide
-        ? (as ?? card).action
-          ? `▸ ${name}.`
-          : `▸ ${name} — ${ordersLeft} unité(s) activable(s).`
-        : `▸ ${SIDE_FR[side]} : ${name}.`,
-      'hi',
-    );
+    const name = as ? `${card.name} → ${as.name}` : card.name;
+    const who = side === state.playerSide ? 'Vous' : SIDE_FR[side];
+    const orders = (as ?? card).action ? '' : ` · ${ordersLeft} ordre(s)`;
+    hud.log(`${who} — ${name}${orders}`, 'turn');
   });
   bus.on('unitMoved', ({ unit, cost }) => {
-    const label = UNITS[unit.type].label;
-    hud.log(
-      unit.side === state.playerSide
-        ? `  ${label} avance de ${cost} hex (${TERRAIN[state.terrain[key(unit.c, unit.r)]].label.toLowerCase()}).`
-        : `  ${SIDE_FR[unit.side]} · ${label} avance de ${cost} hex.`,
-    );
+    // les déplacements du joueur se lisent sur le plateau : seule l'IA journalise
+    if (unit.side === state.aiSide) hud.log(`  ${UNITS[unit.type].label} avance de ${cost} hex.`);
     hud.setMedals(medalTotals()); // un objectif a pu changer de main
     stage.requestDraw();
   });
   bus.on('combatResolved', (o) => {
-    hud.showDice(o.report.faces);
-    const attacker = SIDE_FR[o.attacker.side];
-    hud.log(
-      `  ${attacker} · ${UNITS[o.attacker.type].label} tire à ${o.range} — ${o.dice} dés : ${o.report.faces.map((f) => SYM[f]).join(' ')}`,
-    );
-    let txt = `  → ${o.report.hits} touche(s)`;
-    if (o.report.flags) txt += `, ${o.report.flags} drapeau(x)`;
-    if (o.report.flagsIgnored)
-      txt += ` · 1 drapeau ignoré (${OBSTACLES[o.obstacleKey].label.toLowerCase()})`;
-    if (o.report.extraLoss) txt += ` · repli impossible : ${o.report.extraLoss} perte(s)`;
-    hud.log(txt, o.report.hits || o.report.extraLoss ? 'bad' : '');
-    if (o.report.killed) {
-      hud.log(
-        `  ★ ${UNITS[o.defender.type].label} détruite — médaille pour l’${attacker}.`,
-        o.attacker.side === state.playerSide ? 'good' : 'bad',
-      );
-    }
+    hud.showDice(o.report.faces); // le détail des faces vit dans le plateau de dés
+    hud.log(combatLine(o.attacker, o.defender, o.report), combatTone(o.attacker.side, o.report));
     hud.setMedals(medalTotals()); // un repli a pu prendre ou libérer un objectif
   });
   bus.on('groundTaken', ({ unit }) => {
-    const label = UNITS[unit.type].label;
-    hud.log(
-      unit.side === state.playerSide
-        ? `  ${label} fait une prise de terrain.`
-        : `  ${SIDE_FR[unit.side]} · ${label} fait une prise de terrain.`,
-    );
+    if (unit.side === state.aiSide) hud.log(`  ${UNITS[unit.type].label} prend le terrain.`);
     hud.setMedals(medalTotals());
     stage.requestDraw();
   });
-  bus.on(
-    'actionStruck',
-    ({ card, side, defender, defenderHex, obstacleKey, figsBefore, report }) => {
-      hud.showDice(report.faces);
-      hud.log(
-        `  ${card.name} sur ${UNITS[defender.type].label} ${SIDE_FR[defender.side]} — ${report.faces
-          .map((f) => SYM[f])
-          .join(' ')}`,
-      );
-      let txt = `  → ${report.hits} touche(s)`;
-      if (report.flags) txt += `, ${report.flags} drapeau(x)`;
-      if (report.flagsIgnored)
-        txt += ` · 1 drapeau ignoré (${OBSTACLES[obstacleKey].label.toLowerCase()})`;
-      if (report.extraLoss) txt += ` · repli impossible : ${report.extraLoss} perte(s)`;
-      hud.log(txt, report.hits || report.extraLoss ? 'bad' : '');
-      if (report.killed) {
-        hud.log(
-          `  ★ ${UNITS[defender.type].label} détruite — médaille pour l’${SIDE_FR[side]}.`,
-          side === state.playerSide ? 'good' : 'bad',
-        );
-      }
-      hud.setMedals(medalTotals());
-      if (report.hits + report.extraLoss > 0)
-        stage.boom(defenderHex, {
-          damage: report.hits + report.extraLoss,
-          killed: report.killed,
-          retreatedId: report.retreated ? defender.id : null,
-          corpse: report.killed ? { ...defender, figs: figsBefore } : null,
-        });
-      stage.requestDraw();
-    },
-  );
+  bus.on('actionStruck', ({ card, side, defender, defenderHex, figsBefore, report }) => {
+    hud.showDice(report.faces);
+    hud.log(
+      `  ${card.name} sur ${UNITS[defender.type].label}${outcomeSuffix(report)}`,
+      combatTone(side, report),
+    );
+    hud.setMedals(medalTotals());
+    if (report.hits + report.extraLoss > 0)
+      stage.boom(defenderHex, {
+        damage: report.hits + report.extraLoss,
+        killed: report.killed,
+        retreatedId: report.retreated ? defender.id : null,
+        corpse: report.killed ? { ...defender, figs: figsBefore } : null,
+      });
+    stage.requestDraw();
+  });
   bus.on('unitHealed', ({ unit, restored, faces }) => {
     hud.showDice(faces);
     hud.log(

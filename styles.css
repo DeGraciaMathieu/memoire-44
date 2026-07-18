@@ -184,6 +184,17 @@ svg.icon {
 #log p.hi {
   color: var(--ink);
 }
+/* En-tête de tour (carte jouée). Le journal s'empile du plus récent au plus
+   ancien : les actions d'un tour sont AU-DESSUS de leur en-tête, le filet
+   sous l'en-tête sépare donc deux tours. */
+#log p.turn {
+  color: var(--brass);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid var(--rule);
+}
 #log p.bad {
   color: var(--flag);
 }
