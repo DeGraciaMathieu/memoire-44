@@ -1,8 +1,10 @@
 // Page d'accueil : liste les cartes du dossier maps/ (manifeste maps/index.json)
-// et mène au jeu via game.html?map=<fichier>&side=<camp>. Aucune règle métier ici.
+// et mène au jeu via game.html?map=<fichier>&side=<camp> — ou vers une carte
+// aléatoire via game.html?random=<graine>&biome=<biome>. Aucune règle métier ici.
 
 import { parseMap, setupFromMap } from '../src/map.js';
-import { homeMapsHTML, homeSideHTML } from './html.js';
+import { BIOMES } from '../src/generator.js';
+import { homeMapsHTML, homeRandomHTML, homeSideHTML } from './html.js';
 import { buildBoardLayer } from './board.js';
 import { COL, boardSize, hexCenter } from './gfx.js';
 
@@ -22,6 +24,19 @@ sidepick.addEventListener('change', (e) => {
     a.href = url;
   }
 });
+
+// Carte aléatoire : biome au choix, graine saisie ou tirée au hasard — la
+// graine rend la carte rejouable et partageable.
+const randpick = document.getElementById('randpick');
+randpick.innerHTML = homeRandomHTML(BIOMES);
+document.getElementById('btnRandomPlay').onclick = () => {
+  const biome = document.getElementById('homeBiome').value;
+  const attacker = document.getElementById('homeProfile').value;
+  const raw = document.getElementById('homeSeed').value.trim();
+  const seed = /^\d+$/.test(raw) ? Number(raw) : (Math.random() * 1e6) | 0;
+  const profile = attacker ? `&attacker=${attacker}` : '';
+  location.href = `game.html?random=${seed}&biome=${biome}${profile}&side=${side}`;
+};
 
 // Aperçu d'une carte : le raster du plateau (terrain + objectifs) surmonté
 // d'une pastille par unité, réduit en image.

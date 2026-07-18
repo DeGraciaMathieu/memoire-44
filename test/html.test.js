@@ -7,6 +7,7 @@ import {
   cardHTML,
   forcePanelHTML,
   homeMapsHTML,
+  homeRandomHTML,
   homeSideHTML,
   ordersLabel,
   tipHTML,
@@ -92,6 +93,21 @@ test('homeSideHTML : deux boutons radio, le camp choisi est coché', () => {
   assert.match(h, /value="allies" checked/);
   assert.ok(!/value="axis" checked/.test(h));
   assert.match(homeSideHTML('axis'), /value="axis" checked/);
+});
+
+test('homeRandomHTML : une option par biome, un champ graine et le bouton Jouer', () => {
+  const h = homeRandomHTML({
+    campagne: { label: 'Campagne' },
+    littoral: { label: 'Débarquement' },
+  });
+  assert.match(h, /<option value="campagne">Campagne<\/option>/);
+  assert.match(h, /<option value="littoral">Débarquement<\/option>/);
+  assert.match(h, /id="homeSeed"/);
+  assert.match(h, /id="btnRandomPlay"/);
+  // le profil : rencontre par défaut, assaut d'un camp ou de l'autre
+  assert.match(h, /id="homeProfile"/);
+  assert.match(h, /<option value="allies">Assaut allié<\/option>/);
+  assert.match(h, /<option value="axis">Assaut de l’Axe<\/option>/);
 });
 
 test('forcePanelHTML : une pip par figurine, les pertes marquées gone', () => {

@@ -957,6 +957,20 @@ a.act:hover {
 .sideopt input {
   accent-color: var(--brass);
 }
+.sidepick select,
+.sidepick input[type='text'] {
+  background: var(--table);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font:
+    12px/1 'Courier New',
+    monospace;
+  padding: 8px 10px;
+  border-radius: 3px;
+}
+.sidepick input[type='text'] {
+  width: 110px;
+}
 .maplist {
   display: flex;
   flex-wrap: wrap;

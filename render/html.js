@@ -94,6 +94,24 @@ export function homeSideHTML(side = 'allies') {
     <label class="sideopt"><input type="radio" name="side" value="axis" ${side === 'axis' ? 'checked' : ''} /> ${SIDE_FR.axis}</label>`;
 }
 
+// Bloc « Carte aléatoire » de l'accueil : biome, profil (rencontre ou assaut)
+// et graine facultative (champ vide = graine tirée au hasard) — home.js câble
+// le bouton avec le camp choisi.
+export function homeRandomHTML(biomes) {
+  const options = Object.entries(biomes)
+    .map(([id, b]) => `<option value="${id}">${b.label}</option>`)
+    .join('');
+  return `<span class="sidelabel">Carte aléatoire :</span>
+    <select id="homeBiome">${options}</select>
+    <select id="homeProfile">
+      <option value="">Rencontre</option>
+      <option value="allies">Assaut allié</option>
+      <option value="axis">Assaut de l’Axe</option>
+    </select>
+    <input id="homeSeed" type="text" inputmode="numeric" maxlength="9" placeholder="graine (hasard)" />
+    <button class="act" id="btnRandomPlay">Jouer</button>`;
+}
+
 // Liste des cartes proposées par la page d'accueil
 // (maps : [{ file, name, preview }] — preview : dataURL d'aperçu, ou null ;
 // side : camp joué, ajouté au lien de chaque tuile).

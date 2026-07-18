@@ -32,6 +32,11 @@
           <button class="act" id="btnImport">Importer un JSON</button>
           <input type="file" id="fileImport" accept=".json,application/json" hidden />
           <select id="biomeSel" title="Biome de la génération aléatoire"></select>
+          <select id="profileSel" title="Profil de la génération aléatoire">
+            <option value="">Profil : Rencontre</option>
+            <option value="allies">Profil : Assaut allié</option>
+            <option value="axis">Profil : Assaut de l’Axe</option>
+          </select>
           <label><input type="checkbox" id="chkSym" checked /> Génération symétrique</label>
           <button class="act" id="btnRandom">Générer une carte aléatoire</button>
           <button class="act" id="btnClear">Vider le plateau</button>

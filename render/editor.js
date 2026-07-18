@@ -255,12 +255,37 @@ for (const [id, b] of Object.entries(BIOMES)) {
   opt.textContent = `Biome : ${b.label}`;
   biomeSel.appendChild(opt);
 }
+// Un biome côtier force l'assaut allié ; un assaut, quel qu'il soit, n'est
+// jamais symétrique : les contrôles devenus sans objet se désactivent.
+const profileSel = document.getElementById('profileSel');
+const syncControls = () => {
+  const coast = !!BIOMES[biomeSel.value].coast;
+  if (coast) profileSel.value = 'allies';
+  profileSel.disabled = coast;
+  symInput.disabled = coast || profileSel.value !== '';
+};
+biomeSel.onchange = syncControls;
+profileSel.onchange = syncControls;
+syncControls();
 
 document.getElementById('btnRandom').onclick = () => {
-  map = generateMap({ symmetric: symInput.checked, biome: biomeSel.value });
+  map = generateMap({
+    symmetric: symInput.checked,
+    biome: biomeSel.value,
+    attacker: profileSel.value || null,
+  });
   repaintTerrain();
+  const mode = BIOMES[biomeSel.value].coast
+    ? 'assaut allié depuis la mer'
+    : profileSel.value
+      ? profileSel.value === 'allies'
+        ? 'assaut allié'
+        : 'assaut de l’Axe'
+      : symInput.checked
+        ? 'symétrique'
+        : 'asymétrique';
   setStatus(
-    `Carte « ${BIOMES[biomeSel.value].label} » ${symInput.checked ? 'symétrique' : 'asymétrique'} générée — retouchez-la puis exportez.`,
+    `Carte « ${BIOMES[biomeSel.value].label} » (${mode}) générée — retouchez-la puis exportez.`,
   );
 };
 

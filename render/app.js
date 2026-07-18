@@ -32,6 +32,8 @@ import {
 import { cardFallback, eligibleUnits, moveRange } from '../src/tactics.js';
 import { reachable } from '../src/movement.js';
 import { parseMap } from '../src/map.js';
+import { BIOMES, generateMap } from '../src/generator.js';
+import { mulberry32 } from '../src/rng.js';
 import { cardById } from '../src/cards.js';
 import { diceFor, medalCount, targetsFor } from '../src/combat.js';
 import {
@@ -718,11 +720,30 @@ mapFile.onchange = async () => {
 };
 
 // Démarrage : la page d'accueil transmet la carte choisie via ?map=<fichier>
-// et le camp du joueur via ?side=allies|axis (Alliés par défaut). Sans
-// paramètre (ou si la carte est illisible), repli sur le scénario par défaut.
+// — ou une carte aléatoire via ?random=<graine>&biome=<biome>, régénérée à
+// l'identique depuis la graine — et le camp du joueur via ?side=allies|axis
+// (Alliés par défaut). Sans paramètre (ou si la carte est illisible), repli
+// sur le scénario par défaut.
 async function init() {
   const params = new URLSearchParams(location.search);
   currentSide = params.get('side') === 'axis' ? 'axis' : 'allies';
+  const seedRaw = params.get('random');
+  if (seedRaw !== null) {
+    const seed = /^\d+$/.test(seedRaw) ? Number(seedRaw) : (Math.random() * 1e6) | 0;
+    const biome = BIOMES[params.get('biome')] ? params.get('biome') : 'campagne';
+    const attacker = params.get('attacker');
+    currentMap = generateMap({ rng: mulberry32(seed), biome, attacker });
+    const profile = BIOMES[biome].coast
+      ? ''
+      : attacker === 'allies'
+        ? ' · assaut allié'
+        : attacker === 'axis'
+          ? ' · assaut de l’Axe'
+          : '';
+    currentMap.name = `${BIOMES[biome].label}${profile} · graine ${seed}`;
+    startGame(`Carte aléatoire « ${currentMap.name} ». Les Alliés ouvrent le feu.`);
+    return;
+  }
   const file = params.get('map');
   let error = null;
   if (file) {
