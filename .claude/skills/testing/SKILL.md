@@ -41,6 +41,7 @@ Runner : `node --test` natif (aucune dépendance). Assertions : `node:assert/str
 | `test/commands.test.js` | Cartes de commandement : un test fonctionnel par carte (secteur couvert, quota, bonus Reconnaissance, tenaille, reconnaissance en force)                      |
 | `test/scenario.test.js` | Mise en place : 14 unités, terrain du bocage                                                                                                                  |
 | `test/map.test.js`      | Cartes de l'éditeur : aller-retour JSON, validation `parseMap`, `setupFromMap`, `unitAllowedOn`                                                               |
+| `test/generator.test.js` | `generateMap` : déterminisme par graine, validité `parseMap` (50 graines × modes × biomes, objectifs occupables), symétrie centrale, biomes, fleuve à ponts |
 | `test/movement.test.js` | `reachable` : plaine, hex occupé/bloquant, terrains qui stoppent, rivière/pont, mer, plage                                                                    |
 | `test/combat.test.js`   | `diceFor`, `targetsFor`, `rollDice`, `resolveCombat` (repli, dos au mur, médaille, victoire, événements)                                                      |
 | `test/tactics.test.js`  | Cartes tactiques à ordres : éligibilité, quota global, bonus de dés, mouvement modifié, retranchement, repli « 1 unité »                                      |
