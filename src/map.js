@@ -1,13 +1,15 @@
 // Cartes personnalisées créées par l'éditeur : sérialisation JSON,
 // validation et mise en place d'une partie à partir d'une carte.
 // Format JSON : { name, terrain: { "c,r": type } (hexes non plaine seulement),
-//                 obstacles: { "c,r": type }, objectives: { "c,r": true },
+//                 obstacles: { "c,r": type },
+//                 objectives: { "c,r": 'both'|'allies'|'axis' } (true accepté : 'both'),
 //                 units: [{ side, type, c, r }] }
 
 import { W, H, TERRAIN, OBSTACLES, UNITS } from './config.js';
 import { inBounds, key } from './hex.js';
 
 const SIDES = ['allies', 'axis'];
+const OBJECTIVE_TYPES = ['both', 'allies', 'axis'];
 
 // Une unité ne peut être posée ni sur un terrain infranchissable sans pont
 // (rivière), ni sur un obstacle réservé à l'infanterie si elle n'en est pas —
@@ -76,9 +78,11 @@ export function parseMap(raw) {
   }
 
   const objectives = {};
-  for (const k of Object.keys(data.objectives ?? {})) {
+  for (const [k, v] of Object.entries(data.objectives ?? {})) {
+    const type = v === true ? 'both' : v; // anciennes cartes : true = objectif mixte
+    if (!OBJECTIVE_TYPES.includes(type)) fail(`type d'objectif inconnu « ${v} »`);
     const [c, r] = parseHexKey(k);
-    objectives[key(c, r)] = true;
+    objectives[key(c, r)] = type;
   }
 
   const units = [];

@@ -87,11 +87,19 @@ export function targetsFor(state, unit, movedCost) {
   return targets.some((t) => t.range === 1) ? targets.filter((t) => t.range === 1) : targets;
 }
 
+// Un objectif rapporte-t-il une médaille à ce camp ? 'both' : aux deux camps ;
+// 'allies' / 'axis' : seul ce camp y marque — l'autre ne peut que l'occuper
+// pour en priver l'adversaire.
+export function objectiveScoresFor(type, side) {
+  return type === 'both' || type === side;
+}
+
 // Objectifs possédés : une tuile objectif compte pour le camp dont une unité
-// l'occupe — possession perdue dès que l'unité la quitte.
+// l'occupe, si elle rapporte à ce camp — possession perdue dès que l'unité la quitte.
 export function objectivesHeld(state, side) {
   let held = 0;
-  for (const k of Object.keys(state.objectives ?? {})) {
+  for (const [k, type] of Object.entries(state.objectives ?? {})) {
+    if (!objectiveScoresFor(type, side)) continue;
     const [c, r] = k.split(',').map(Number);
     if (unitAt(state, c, r)?.side === side) held++;
   }

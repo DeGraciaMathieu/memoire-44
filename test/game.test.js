@@ -383,6 +383,34 @@ test('objectif : une prise de terrain adverse fait basculer la possession', () =
   assert.equal(medalCount(state, 'axis'), 2);
 });
 
+test("objectif réservé à un camp : seul ce camp y marque, l'autre ne fait que bloquer", () => {
+  const state = duel({
+    objectives: { [key(5, 5)]: 'allies', [key(5, 4)]: 'axis' },
+    units: [
+      { side: 'allies', type: 'inf', c: 5, r: 6 },
+      { side: 'axis', type: 'inf', c: 5, r: 3 },
+    ],
+  });
+  const [allied, axis] = state.units;
+
+  moveUnit(state, allied, { c: 5, r: 5 });
+  moveUnit(state, axis, { c: 5, r: 4 });
+  // chacun occupe la tuile qui lui rapporte
+  assert.equal(medalCount(state, 'allies'), 1);
+  assert.equal(medalCount(state, 'axis'), 1);
+
+  // camps inversés : l'occupation prive l'adversaire mais ne rapporte rien
+  const blocked = duel({
+    objectives: { [key(5, 5)]: 'allies', [key(5, 4)]: 'axis' },
+    units: [
+      { side: 'axis', type: 'inf', c: 5, r: 5 }, // l'Axe bloque la tuile alliée
+      { side: 'allies', type: 'inf', c: 5, r: 4 }, // les Alliés bloquent la tuile Axe
+    ],
+  });
+  assert.equal(medalCount(blocked, 'allies'), 0);
+  assert.equal(medalCount(blocked, 'axis'), 0);
+});
+
 test("victoire à 6 médailles : l'occupation d'un objectif peut donner la dernière", () => {
   assert.equal(MEDALS_TO_WIN, 6);
   const state = duel({

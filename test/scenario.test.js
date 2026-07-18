@@ -26,9 +26,9 @@ test('le terrain couvre tout le plateau, avec le bocage attendu', () => {
   assert.equal(terrain[key(0, 0)], 'plaine');
 });
 
-test('les objectifs du scénario : les deux villages du centre', () => {
+test('les objectifs du scénario : les deux villages du centre, mixtes', () => {
   const { objectives } = scenario();
-  assert.deepEqual(objectives, { [key(6, 4)]: true, [key(6, 5)]: true });
+  assert.deepEqual(objectives, { [key(6, 4)]: 'both', [key(6, 5)]: 'both' });
 });
 
 test("les bunkers du scénario, dont celui de l'artillerie de l'Axe", () => {

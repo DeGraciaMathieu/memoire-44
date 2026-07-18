@@ -28,8 +28,21 @@ test('parseMap complète le terrain en plaine et valide les unités', () => {
   assert.equal(map.terrain[key(2, 3)], 'foret');
   assert.equal(map.terrain[key(0, 0)], 'plaine');
   assert.equal(map.obstacles[key(6, 0)], 'bunker');
-  assert.deepEqual(map.objectives, { [key(5, 5)]: true });
+  assert.deepEqual(map.objectives, { [key(5, 5)]: 'both' }); // legacy true = mixte
   assert.equal(map.units.length, 3);
+});
+
+test('parseMap accepte les objectifs typés par camp et rejette les types inconnus', () => {
+  const typed = sampleMap();
+  typed.objectives = { [key(5, 5)]: 'allies', [key(2, 3)]: 'axis', [key(0, 0)]: 'both' };
+  const map = parseMap(typed);
+  assert.deepEqual(map.objectives, typed.objectives);
+  // l'aller-retour sérialisation → parse préserve le type
+  assert.deepEqual(parseMap(JSON.stringify(serializeMap(map))).objectives, typed.objectives);
+
+  const bad = sampleMap();
+  bad.objectives = { [key(5, 5)]: 'france' };
+  assert.throws(() => parseMap(bad), /Carte invalide/);
 });
 
 test('parseMap rejette les cartes invalides avec un message en français', () => {

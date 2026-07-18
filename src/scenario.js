@@ -50,10 +50,10 @@ export function scenario() {
     [key(8, 2)]: 'barbeles',
   };
 
-  // objectifs : une médaille pour le camp qui occupe la tuile
+  // objectifs mixtes : une médaille pour le camp qui occupe la tuile
   const objectives = {
-    [key(6, 4)]: true, // village nord du centre
-    [key(6, 5)]: true, // village sud du centre
+    [key(6, 4)]: 'both', // village nord du centre
+    [key(6, 5)]: 'both', // village sud du centre
   };
 
   const units = [];
