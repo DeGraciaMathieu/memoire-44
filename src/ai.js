@@ -1,6 +1,6 @@
 // IA du camp adverse (state.aiSide) — ne parle qu'aux règles. Gloutonne, évaluation 1 coup.
 
-import { TERRAIN, UNITS } from './config.js';
+import { FACES, TERRAIN, UNITS } from './config.js';
 import { hexDistance, key } from './hex.js';
 import { cardById, mirrorId } from './cards.js';
 import { SECTORS, sectorsOf } from './sectors.js';
@@ -15,7 +15,15 @@ import { eligibleUnits, moveRange } from './tactics.js';
 import { reachable, unitAt } from './movement.js';
 import { canFight, defenseReduction, diceFor, objectiveScoresFor, targetsFor } from './combat.js';
 
-const P_HIT = { inf: 3 / 6, arm: 2 / 6, art: 3 / 6 }; // proba par dé selon la cible
+// Proba qu'un dé inflige une perte, par type de cible — dérivée des règles :
+// faces hitOn parmi FACES, atténuée par la relance (rerollHits, Tigre).
+const pFaces = (list) => FACES.filter((f) => list.includes(f)).length / FACES.length;
+const P_HIT = Object.fromEntries(
+  Object.entries(UNITS).map(([type, u]) => [
+    type,
+    pFaces(u.hitOn) * (u.rerollHits ? pFaces(u.rerollHits) : 1),
+  ]),
+);
 
 function objectiveHexes(state, keep) {
   return Object.entries(state.objectives ?? {})
@@ -214,7 +222,7 @@ export function aiTakesGround(state, unit, hex) {
   const objective = (h) => !!state.objectives?.[key(h.c, h.r)];
   if (objective(unit)) return objective(hex);
   if (objective(hex)) return true;
-  if (unit.type === 'arm') return true;
+  if (UNITS[unit.type].armored) return true;
   return defenseReduction(state, 'inf', hex) >= defenseReduction(state, 'inf', unit);
 }
 

@@ -120,6 +120,44 @@ test("protection : l'IA vise l'occupant d'un objectif qui fait marquer le joueur
   assert.equal(plan.target, state.units[2]);
 });
 
+test("l'IA vise un Tigre ennemi — mais préfère une cible plus tendre à côté", () => {
+  // seul ennemi à portée : le Tigre est bien une cible malgré la relance
+  const state = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 5, r: 2 },
+      { side: 'allies', type: 'tig', c: 5, r: 3 },
+    ],
+  });
+  const [plan] = aiChooseMoves(state, 'snd-c');
+  assert.equal(plan.target?.type, 'tig');
+
+  // au contact des deux : l'espérance de dégâts fait préférer l'infanterie
+  const both = board({
+    units: [
+      { side: 'axis', type: 'inf', c: 5, r: 2 },
+      { side: 'allies', type: 'tig', c: 4, r: 2 },
+      { side: 'allies', type: 'inf', c: 6, r: 2 },
+    ],
+  });
+  const [p2] = aiChooseMoves(both, 'snd-c');
+  assert.equal(p2.target?.type, 'inf');
+});
+
+test("l'IA joue le Tigre comme un blindé : ordonné, prise de terrain toujours acceptée", () => {
+  const state = board({
+    units: [
+      { side: 'axis', type: 'tig', c: 5, r: 2 },
+      { side: 'axis', type: 'inf', c: 1, r: 1 },
+      { side: 'allies', type: 'inf', c: 5, r: 4 },
+    ],
+  });
+  // Sonder au centre : le Tigre est la seule unité du secteur, il reçoit l'ordre
+  const plan = aiChooseMoves(state, 'snd-c').find((p) => p.unit.type === 'tig');
+  assert.ok(plan);
+  // famille blindée : l'IA prend toujours le terrain conquis
+  assert.ok(aiTakesGround(state, state.units[0], { c: 5, r: 3 }));
+});
+
 test('aiReconKeep garde la carte qui active le plus de monde', () => {
   const state = board({
     units: [
