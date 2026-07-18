@@ -61,11 +61,12 @@ Un type d'unité n'est **pas** qu'une entrée dans `UNITS` : le moteur
 particularise `'inf'` / `'arm'` / `'art'` en dur. Audit obligatoire :
 
 ```
-grep -rn "'inf'\|'arm'\|'art'" src/ render/
+grep -rn "'inf'\|'arm'\|'art'\|inf:\|arm:\|art:" src/ render/
 ```
 
-Chaque occurrence est une décision « la nouvelle unité se comporte comme
-qui ? ». Points connus :
+(les clés d'objet non quotées — `P_HIT`, `UNIT_GLYPH`… — échappent au grep des
+seuls littéraux). Chaque occurrence est une décision « la nouvelle unité se
+comporte comme qui ? ». Points connus :
 
 | Fichier           | Décision à prendre                                                                 |
 | ----------------- | ----------------------------------------------------------------------------------- |
@@ -74,7 +75,7 @@ qui ? ». Points connus :
 | `src/movement.js` | `reachable` : `moveCap` (plage), `fixesArtillery` (bunker), `crushedByArmor` (barbelés écrasés ?)                                                           |
 | `src/map.js`      | `unitAllowedOn` : peut-elle être posée sur bunker/antichar dans l'éditeur ?                                                                                 |
 | `src/tactics.js`  | cartes à `types` (En avant !, Assaut blindé, Bombardement, Retranchement, Assaut rapproché) : la nouvelle unité est-elle éligible à chacune ?               |
-| `src/ai.js`       | `aiPlanUnit` (l'artillerie reste en retrait, tri infanterie d'abord), `aiTakesGround`                                                                       |
+| `src/ai.js`       | `aiPlanUnit` (l'artillerie reste en retrait, tri infanterie d'abord), `aiTakesGround` — et `P_HIT` (dérivée de `UNITS`, vérifier qu'elle reflète la vulnérabilité réelle : une entrée `NaN`/absente rend l'unité invisible aux ciblages IA) |
 | `src/generator.js`| entre-t-elle dans les rosters des cartes aléatoires (rencontre / assaut) ? à quelle fréquence ?                                                             |
 | `src/scenario.js` | figure-t-elle dans le scénario par défaut ?                                                                                                                 |
 

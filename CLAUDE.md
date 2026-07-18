@@ -39,8 +39,9 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
 ## Conventions du domaine
 
 - Camps : `allies` / `axis` — affichés « Alliés » / « Axe » (`SIDE_FR`, `render/html.js`).
-- Types d'unités : `inf` / `arm` / `art` (Infanterie, Blindé, Artillerie) — définis dans
-  `UNITS` (`src/config.js`).
+- Types d'unités : `inf` / `arm` / `art` / `tig` (Infanterie, Blindé, Artillerie,
+  Tigre — char d'élite à 1 figurine : les touches sont relancées, seule une grenade
+  confirme) — définis dans `UNITS` (`src/config.js`), famille blindée via `armored`.
 - Vocabulaire : figurines (`figs`), médailles (victoire à `MEDALS_TO_WIN` = 6 — total
   `medalCount` = destructions et objectifs occupés — ou par anéantissement : un camp
   sans unités a immédiatement perdu), objectifs (tuiles `state.objectives` — mixtes `'both'` ou réservés à un camp
