@@ -437,6 +437,20 @@ test("resolveCombat : l'anéantissement retire l'unité, décerne une médaille 
   ]);
 });
 
+test('anéantissement : un camp qui perd toutes ses unités a immédiatement perdu', () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const def = inf('d', 'axis', 6, 5, 1); // dernière unité de l'Axe
+  const state = battleState({ units: [atk, def] });
+  const events = [];
+  state.bus.on('gameWon', (p) => events.push(p));
+
+  const report = resolveCombat(state, atk, def, ['inf']);
+  assert.ok(report.killed);
+  assert.equal(state.medals.allies, 1); // très loin des 6 médailles…
+  assert.equal(state.winner, 'allies'); // …mais plus d'adversaire : victoire immédiate
+  assert.deepEqual(events, [{ side: 'allies' }]);
+});
+
 test('barbelés : l’infanterie empêtrée combat avec 1 dé de moins, la vue reste libre', () => {
   const atk = inf('a', 'allies', 5, 5);
   const enemy = inf('e', 'axis', 6, 5);

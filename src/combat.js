@@ -112,15 +112,21 @@ export function medalCount(state, side) {
 }
 
 // À appeler après tout événement qui change le décompte (destruction, repli,
-// mouvement, prise de terrain) : pose state.winner et émet gameWon.
+// mouvement, prise de terrain) : pose state.winner et émet gameWon. Deux
+// façons de gagner : atteindre le total de médailles, ou anéantir l'adversaire
+// (un camp qui perd toutes ses unités a immédiatement perdu).
 export function checkVictory(state) {
   if (state.winner) return;
+  const win = (side) => {
+    state.winner = side;
+    state.bus.emit('gameWon', { side });
+  };
   for (const side of ['allies', 'axis']) {
-    if (medalCount(state, side) >= MEDALS_TO_WIN) {
-      state.winner = side;
-      state.bus.emit('gameWon', { side });
-      return;
-    }
+    if (medalCount(state, side) >= MEDALS_TO_WIN) return win(side);
+  }
+  for (const side of ['allies', 'axis']) {
+    if (!state.units.some((u) => u.side === side))
+      return win(side === 'allies' ? 'axis' : 'allies');
   }
 }
 
