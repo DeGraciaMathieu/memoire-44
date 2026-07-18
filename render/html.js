@@ -94,6 +94,14 @@ export function homeSideHTML(side = 'allies') {
     <label class="sideopt"><input type="radio" name="side" value="axis" ${side === 'axis' ? 'checked' : ''} /> ${SIDE_FR.axis}</label>`;
 }
 
+// Écran de fin de partie : verdict du point de vue du joueur + score final.
+export function endgameHTML(winner, playerSide, medals) {
+  const won = winner === playerSide;
+  return `<div class="endTitle ${won ? 'won' : 'lost'}">${won ? '★ Victoire' : '✖ Défaite'}</div>
+    <div class="endSub">${winner === 'allies' ? 'Les Alliés l’emportent.' : 'Les forces de l’Axe l’emportent.'}</div>
+    <div class="endMedals">${SIDE_FR.allies} ${medals.allies} · ${medals.axis} ${SIDE_FR.axis}</div>`;
+}
+
 // Bloc « Carte aléatoire » de l'accueil : biome, profil (rencontre ou assaut)
 // et graine facultative (champ vide = graine tirée au hasard) — home.js câble
 // le bouton avec le camp choisi.

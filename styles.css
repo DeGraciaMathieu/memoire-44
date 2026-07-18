@@ -703,6 +703,49 @@ a.act:hover {
   outline: none;
 }
 
+/* --- écran de fin de partie --- */
+.endgame {
+  width: min(460px, 92%);
+  background: var(--panel);
+  border: 1px solid var(--brass);
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  padding: 30px 24px 22px;
+  text-align: center;
+}
+.endTitle {
+  font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.endTitle.won {
+  color: var(--brass);
+}
+.endTitle.lost {
+  color: var(--flag);
+}
+.endSub {
+  margin-top: 10px;
+  color: var(--ink);
+  font-size: 14px;
+}
+.endMedals {
+  margin-top: 14px;
+  color: var(--ink-dim);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.endgame footer {
+  margin-top: 24px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .duel {
   width: min(520px, 100%);
   background: var(--panel);

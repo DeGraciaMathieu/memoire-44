@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import {
   calcHTML,
   cardHTML,
+  endgameHTML,
   forcePanelHTML,
   homeMapsHTML,
   homeRandomHTML,
@@ -108,6 +109,22 @@ test('homeRandomHTML : une option par biome, un champ graine et le bouton Jouer'
   assert.match(h, /id="homeProfile"/);
   assert.match(h, /<option value="allies">Assaut allié<\/option>/);
   assert.match(h, /<option value="axis">Assaut de l’Axe<\/option>/);
+});
+
+test('endgameHTML : verdict du point de vue du joueur, camp vainqueur et score', () => {
+  const won = endgameHTML('allies', 'allies', { allies: 6, axis: 3 });
+  assert.match(won, /endTitle won/);
+  assert.match(won, /★ Victoire/);
+  assert.match(won, /Les Alliés l’emportent/);
+  assert.match(won, /Alliés 6 · 3 Axe/);
+
+  // même vainqueur, autre camp joué : c'est une défaite
+  const lost = endgameHTML('allies', 'axis', { allies: 6, axis: 3 });
+  assert.match(lost, /endTitle lost/);
+  assert.match(lost, /✖ Défaite/);
+  assert.match(lost, /Les Alliés l’emportent/);
+
+  assert.match(endgameHTML('axis', 'axis', { allies: 0, axis: 6 }), /l’Axe l’emportent/);
 });
 
 test('forcePanelHTML : une pip par figurine, les pertes marquées gone', () => {

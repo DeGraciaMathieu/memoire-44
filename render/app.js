@@ -54,7 +54,7 @@ import { createHud } from './hud.js';
 import { createHand } from './hand.js';
 import { createCombatModal } from './combatModal.js';
 import { attachInput } from './input.js';
-import { SIDE_FR } from './html.js';
+import { endgameHTML, SIDE_FR } from './html.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const canvas = document.getElementById('cv');
@@ -214,6 +214,28 @@ async function playCombat(outcome, auto) {
   }
 }
 
+/* --- écran de fin de partie ---------------------------------------------
+   Affiché une seule fois par partie, avec un battement pour laisser la
+   dernière animation (explosion, repli) se terminer sous les yeux du joueur. */
+
+const endScrim = document.getElementById('endScrim');
+const endBody = document.getElementById('endBody');
+let endShown = false;
+document.getElementById('endReplay').onclick = () => {
+  endScrim.classList.remove('on');
+  restart();
+};
+document.getElementById('endLook').onclick = () => endScrim.classList.remove('on');
+
+function showEndScreen() {
+  if (endShown) return;
+  endShown = true;
+  setTimeout(() => {
+    endBody.innerHTML = endgameHTML(state.winner, state.playerSide, medalTotals());
+    endScrim.classList.add('on');
+  }, 900);
+}
+
 /* --- actions du joueur (appelées par input.js et hand.js) --------------- */
 
 function refresh() {
@@ -225,6 +247,7 @@ function refresh() {
       (state.winner === state.playerSide ? '★ ' : '✖ ') +
         (state.winner === 'allies' ? 'Victoire alliée.' : 'Les forces de l’Axe l’emportent.'),
     );
+    showEndScreen();
   } else if (state.turn !== state.playerSide) {
     hud.setPrompt(
       state.aiSide === 'axis' ? 'L’Axe joue son tour…' : 'Les Alliés jouent leur tour…',
@@ -658,6 +681,8 @@ async function playAiAction(cd) {
 function startGame(message) {
   state = createGame({ map: currentMap, playerSide: currentSide });
   ui = createUiState();
+  endShown = false;
+  endScrim.classList.remove('on');
   boardLayer = buildBoardLayer(state, DPR);
   wireBus(state.bus);
   hud.clearLog();
