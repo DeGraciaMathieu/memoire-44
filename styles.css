@@ -160,9 +160,14 @@ svg.icon {
   background: #6e6a5e;
   color: #22261f;
 }
-/* première volée estompée quand une relance (Tigre) prend le relais */
-.die.faded {
-  opacity: 0.35;
+/* rangée de relance dans le plateau latéral : légende sur toute la largeur */
+.trayCap {
+  width: 100%;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 2px;
 }
 @keyframes tumble {
   from {
@@ -875,6 +880,25 @@ a.act:hover {
   justify-content: center;
   perspective: 600px;
 }
+/* réaction du défenseur (relance du Tigre) : sous les dés de l'attaque */
+.save {
+  padding: 0 16px 14px;
+}
+.saveHead {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--brass);
+  text-align: center;
+  margin-bottom: 9px;
+}
+.saveDice {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.saveDice .die,
 #dDice .die {
   width: 44px;
   height: 44px;

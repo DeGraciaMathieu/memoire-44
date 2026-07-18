@@ -23,15 +23,24 @@ export function createHud() {
     els.log.innerHTML = '';
   }
 
-  function showDice(faces) {
+  function showDice(faces, reroll = null) {
     els.tray.innerHTML = '';
-    faces.forEach((f, i) => {
+    const addDie = (f, i) => {
       const d = document.createElement('div');
       d.className = 'die' + (f === 'flag' ? ' flag' : '') + (f === 'star' ? ' miss' : '');
       d.style.animationDelay = i * 45 + 'ms';
       d.innerHTML = faceHTML(f);
       els.tray.appendChild(d);
-    });
+    };
+    faces.forEach(addDie);
+    // relance du défenseur (Tigre) : seconde rangée, légendée
+    if (reroll?.length) {
+      const cap = document.createElement('div');
+      cap.className = 'trayCap';
+      cap.textContent = 'Réaction du défenseur — relance des touches';
+      els.tray.appendChild(cap);
+      reroll.forEach(addDie);
+    }
   }
 
   function clearDice() {

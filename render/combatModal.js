@@ -4,7 +4,7 @@
 
 import { FACES, OBSTACLES, UNITS } from '../src/config.js';
 import { key } from '../src/hex.js';
-import { SIDE_FR, calcHTML, faceHTML, forcePanelHTML } from './html.js';
+import { SIDE_FR, SYM, calcHTML, faceHTML, forcePanelHTML } from './html.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -16,6 +16,9 @@ export function createCombatModal({ requestDraw, getUi }) {
     def: document.getElementById('dDef'),
     calc: document.getElementById('dCalc'),
     dice: document.getElementById('dDice'),
+    save: document.getElementById('dSave'),
+    saveHead: document.getElementById('dSaveHead'),
+    saveDice: document.getElementById('dSaveDice'),
     out: document.getElementById('dOut'),
     btn: document.getElementById('dBtn'),
   };
@@ -35,6 +38,8 @@ export function createCombatModal({ requestDraw, getUi }) {
     els.def.innerHTML = forcePanelHTML(defender, terrainKey, 'Défenseur', figsBefore, 0);
     els.calc.innerHTML = calcHTML(outcome);
     els.dice.innerHTML = '';
+    els.save.hidden = true;
+    els.saveDice.innerHTML = '';
     els.out.innerHTML = '';
     els.btn.classList.remove('on');
     els.scrim.classList.add('on');
@@ -50,12 +55,12 @@ export function createCombatModal({ requestDraw, getUi }) {
 
     // Une volée de dés : ils roulent (le résultat est déjà tiré), puis
     // s'immobilisent un par un, colorés selon leur verdict.
-    const rollRow = async (faces, verdictOf) => {
+    const rollRow = async (faces, verdictOf, host = els.dice) => {
       const dice = faces.map((_, i) => {
         const d = document.createElement('div');
         d.className = 'die rolling';
         d.style.animationDelay = i * 55 + 'ms'; // désynchronise les culbutes
-        els.dice.appendChild(d);
+        host.appendChild(d);
         return d;
       });
       let tick = 0;
@@ -75,25 +80,28 @@ export function createCombatModal({ requestDraw, getUi }) {
         await sleep(190);
       }
       clearInterval(spin);
-      return dice;
     };
 
     const hitOn = UNITS[defender.type].hitOn;
-    const firstVolley = await rollRow(report.faces, (f) =>
+    await rollRow(report.faces, (f) =>
       hitOn.includes(f) ? 'isHit' : f === 'flag' ? 'isFlag' : 'isMiss',
     );
 
-    // Défenseur rerollHits (Tigre) : seconde volée — les dés qui ont touché
-    // sont relancés, seules les faces listées confirment, le reste est ignoré.
+    // Défenseur rerollHits (Tigre) : sa réaction s'affiche SOUS les dés de
+    // l'attaque — les dés qui ont touché sont relancés, seules les faces
+    // listées confirment, le reste est ignoré.
     if (report.reroll) {
       await sleep(300);
-      line(
-        `${UNITS[defender.type].label} touché — l’adversaire relance les dés qui ont touché`,
-        'flagline',
-      );
-      firstVolley.forEach((d) => d.classList.add('faded'));
       const confirmOn = UNITS[defender.type].rerollHits;
-      await rollRow(report.reroll, (f) => (confirmOn.includes(f) ? 'isHit' : 'isMiss'));
+      els.saveHead.textContent =
+        `Réaction du défenseur — le ${UNITS[defender.type].label} relance ` +
+        `les dés qui l’ont touché : seul ${confirmOn.map((f) => SYM[f]).join(' ')} confirme`;
+      els.save.hidden = false;
+      await rollRow(
+        report.reroll,
+        (f) => (confirmOn.includes(f) ? 'isHit' : 'isMiss'),
+        els.saveDice,
+      );
     }
     await sleep(260);
 

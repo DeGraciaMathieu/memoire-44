@@ -149,7 +149,7 @@ function wireBus(bus) {
     stage.requestDraw();
   });
   bus.on('combatResolved', (o) => {
-    hud.showDice(o.report.faces); // le détail des faces vit dans le plateau de dés
+    hud.showDice(o.report.faces, o.report.reroll); // le détail des faces vit dans le plateau de dés
     hud.log(combatLine(o.attacker, o.defender, o.report), combatTone(o.attacker.side, o.report));
     hud.setMedals(medalTotals()); // un repli a pu prendre ou libérer un objectif
   });
@@ -159,7 +159,7 @@ function wireBus(bus) {
     stage.requestDraw();
   });
   bus.on('actionStruck', ({ card, side, defender, defenderHex, figsBefore, report }) => {
-    hud.showDice(report.faces);
+    hud.showDice(report.faces, report.reroll);
     hud.log(
       `  ${card.name} sur ${UNITS[defender.type].label}${outcomeSuffix(report)}`,
       combatTone(side, report),
