@@ -83,6 +83,7 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
 | `cartes-tours`      | Pioche, main, cartes, phases, séquence de tour                         |
 | `ia-axe`            | Heuristiques de l'IA adverse et tempo de son tour automatique          |
 | `feature`           | Workflow d'implémentation d'une feature (invocable : `/feature`)       |
+| `add-unit`          | Ajout d'un type d'unité depuis sa fiche — faisabilité, visuel, IA, cas limites (invocable : `/add-unit`) |
 | `prd`               | Rédaction d'un PRD sans implémentation (invocable : `/prd`)            |
 
 Commands : `/review` (revue complète du diff), `/check-conventions` (revue allégée),
