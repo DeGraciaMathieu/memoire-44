@@ -42,7 +42,8 @@ teste. S'il décide « comment ça s'affiche », il va dans `render/`.
 - Types d'unités : `inf` / `arm` / `art` (Infanterie, Blindé, Artillerie) — définis dans
   `UNITS` (`src/config.js`).
 - Vocabulaire : figurines (`figs`), médailles (victoire à `MEDALS_TO_WIN` = 6 — total
-  `medalCount` = destructions et objectifs occupés), objectifs (tuiles `state.objectives`),
+  `medalCount` = destructions et objectifs occupés), objectifs (tuiles `state.objectives` — mixtes `'both'` ou réservés à un camp
+  `'allies'` / `'axis'` : seul le camp désigné y marque, l'autre ne peut que bloquer),
   secteurs `gauche` / `centre` / `droite`, cartes de commandement, cartes tactiques —
   à ordres (`card.tactic` : Directive du QG, En avant !, Assaut blindé, Assaut
   d'infanterie, Assaut rapproché, Fusillade, Bombardement, Retranchement — règles
