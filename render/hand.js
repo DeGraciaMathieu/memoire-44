@@ -94,7 +94,7 @@ export function createHand({ onPlayCard, onEndTurn, onNewGame, onCutWire, onAirS
     const playable = state.turn === state.playerSide && state.phase === 'card' && !state.winner;
     const hand = state.hands[state.playerSide];
     const mid = (hand.length - 1) / 2;
-    const gap = window.innerWidth < 900 ? 62 : 78; // écartement horizontal
+    const gap = window.innerWidth < 900 ? 78 : 98; // écartement horizontal
 
     hand.forEach((id, i) => {
       const cd = cardById(id);
