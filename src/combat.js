@@ -32,10 +32,10 @@ export function hasLineOfSight(state, from, to) {
 }
 
 // Dés retirés par un couvert (terrain ou obstacle), selon le type de
-// l'attaquant : defArmor pour les blindés, defArt pour l'artillerie
-// (0 = sans malus), def sinon.
+// l'attaquant : defArmor pour la famille blindée (armored), defArt pour
+// l'artillerie (0 = sans malus), def sinon.
 export function reductionOf(dice, attackerType) {
-  if (attackerType === 'arm' && dice.defArmor != null) return dice.defArmor;
+  if (UNITS[attackerType]?.armored && dice.defArmor != null) return dice.defArmor;
   if (attackerType === 'art' && dice.defArt != null) return dice.defArt;
   return dice.def;
 }
@@ -148,6 +148,16 @@ export function resolveCombat(state, attacker, defender, faces, opts = {}) {
     if (hitOn.includes(f) || (opts.starHits && f === 'star')) hits++;
     else if (f === 'flag') flags++;
   }
+  // Unité rerollHits (Tigre) : chaque dé qui a touché est relancé, seules les
+  // faces listées confirment la touche — tous les autres résultats sont
+  // ignorés. Les drapeaux du jet initial s'appliquent normalement.
+  let reroll = null;
+  const confirmOn = UNITS[defender.type].rerollHits;
+  if (confirmOn && hits > 0) {
+    reroll = rollDice(hits, state.rng);
+    hits = reroll.filter((f) => confirmOn.includes(f)).length;
+  }
+
   const report = {
     hits,
     flags,
@@ -155,6 +165,7 @@ export function resolveCombat(state, attacker, defender, faces, opts = {}) {
     retreated: null,
     extraLoss: 0,
     killed: false,
+    reroll,
     faces,
   };
 

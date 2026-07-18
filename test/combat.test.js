@@ -451,6 +451,41 @@ test('anéantissement : un camp qui perd toutes ses unités a immédiatement per
   assert.deepEqual(events, [{ side: 'allies' }]);
 });
 
+const tigre = (id, side, c, r) => ({ id, side, type: 'tig', c, r, figs: 1, acted: false });
+
+test('Tigre : les dés qui touchent sont relancés, tout sauf une grenade est ignoré', () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const tig = tigre('t', 'axis', 6, 5);
+  const state = battleState({ units: [atk, tig] });
+
+  // 2 touches initiales (blindé + grenade), relance sans grenade : rien ne passe
+  state.rng = () => 0; // relance sur face infanterie
+  let report = resolveCombat(state, atk, tig, ['arm', 'grenade', 'inf']);
+  assert.equal(report.reroll.length, 2);
+  assert.equal(report.hits, 0);
+  assert.equal(tig.figs, 1);
+  assert.ok(!report.killed);
+
+  // grenade à la relance : détruit — et dernière unité de l'Axe, victoire immédiate
+  state.rng = () => 0.55; // FACES[3] = grenade
+  report = resolveCombat(state, atk, tig, ['arm']);
+  assert.equal(report.hits, 1);
+  assert.ok(report.killed);
+  assert.equal(state.medals.allies, 1);
+  assert.equal(state.winner, 'allies');
+});
+
+test('Tigre : les drapeaux du jet initial le font replier normalement', () => {
+  const atk = inf('a', 'allies', 5, 5);
+  const tig = tigre('t', 'axis', 6, 5);
+  const state = battleState({ units: [atk, tig] });
+  state.rng = () => 0; // la relance de la touche ne confirme rien
+  const report = resolveCombat(state, atk, tig, ['flag', 'arm']);
+  assert.ok(report.retreated);
+  assert.ok(tig.r < 5); // remonte vers sa ligne de départ
+  assert.equal(tig.figs, 1);
+});
+
 test('barbelés : l’infanterie empêtrée combat avec 1 dé de moins, la vue reste libre', () => {
   const atk = inf('a', 'allies', 5, 5);
   const enemy = inf('e', 'axis', 6, 5);

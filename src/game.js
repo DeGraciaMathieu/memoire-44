@@ -409,7 +409,7 @@ export function takeGround(state, unit, hex) {
 // terrain), un blindé peut attaquer une seconde fois — une seule percée
 // par activation, jamais pour l'infanterie ni l'artillerie.
 export function canBreakthrough(state, unit) {
-  return unit.type === 'arm' && (state.attacks[unit.id] || 0) === 1;
+  return !!UNITS[unit.type].armored && (state.attacks[unit.id] || 0) === 1;
 }
 
 // Second combat accordé par la carte en cours (Bombardement : l'artillerie

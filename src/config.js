@@ -104,6 +104,7 @@ export const UNITS = {
     moveNoFire: 3,
     dice: [3, 3, 3],
     hitOn: ['arm', 'grenade'],
+    armored: true, // famille blindée : defArmor, percée, écrase les barbelés
   },
   art: {
     label: 'Artillerie',
@@ -112,6 +113,18 @@ export const UNITS = {
     moveNoFire: 1,
     dice: [3, 3, 2, 2, 1, 1],
     hitOn: ['inf', 'grenade'],
+  },
+  tig: {
+    label: 'Tigre',
+    figs: 1,
+    move: 3,
+    moveNoFire: 3,
+    dice: [3, 3, 3],
+    hitOn: ['arm', 'grenade'],
+    armored: true,
+    // Touché : l'adversaire relance les dés qui ont touché — seules ces faces
+    // confirment, tous les autres résultats sont ignorés (resolveCombat).
+    rerollHits: ['grenade'],
   },
 };
 // Simplification assumée : l'artillerie est touchée sur le symbole infanterie.

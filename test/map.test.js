@@ -75,6 +75,7 @@ test('unitAllowedOn : obstacles réservés à l’infanterie et rivière sans po
   const obstacles = { [key(3, 3)]: 'bunker', [key(4, 4)]: 'sacs', [key(6, 6)]: 'pont' };
   assert.equal(unitAllowedOn(terrain, obstacles, 'inf', 3, 3), true);
   assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 3, 3), false);
+  assert.equal(unitAllowedOn(terrain, obstacles, 'tig', 3, 3), false); // le Tigre reste un char
   assert.equal(unitAllowedOn(terrain, obstacles, 'art', 3, 3), true); // artillerie retranchée au départ
   assert.equal(unitAllowedOn(terrain, obstacles, 'art', 4, 4), true); // sacs : accès libre
   assert.equal(unitAllowedOn(terrain, obstacles, 'arm', 0, 0), true); // hex sans obstacle

@@ -190,6 +190,7 @@ export function generateMap({
     enlist(roster, 'inf', 3 + ((rng() * 2) | 0));
     enlist(roster, 'arm', 1 + ((rng() * 2) | 0));
     enlist(roster, 'art', (rng() * 2) | 0);
+    enlist(roster, 'tig', rng() < 0.2 ? 1 : 0); // un Tigre, rarement
     return roster;
   };
   const attackerRoster = () => {
@@ -197,6 +198,7 @@ export function generateMap({
     enlist(roster, 'inf', 4 + ((rng() * 2) | 0));
     enlist(roster, 'arm', 2);
     enlist(roster, 'art', (rng() * 2) | 0);
+    enlist(roster, 'tig', rng() < 0.2 ? 1 : 0);
     return roster;
   };
   const defenderRoster = () => {

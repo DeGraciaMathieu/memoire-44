@@ -1,6 +1,6 @@
 // Occupation du plateau et hexes atteignables.
 
-import { OBSTACLES, TERRAIN } from './config.js';
+import { OBSTACLES, TERRAIN, UNITS } from './config.js';
 import { key, neighbors } from './hex.js';
 
 export const unitAt = (state, c, r) => state.units.find((u) => u.c === c && u.r === r);
@@ -22,7 +22,7 @@ export function dropObstacleOnExit(state, c, r) {
 // coûter son combat du tour.
 export function crushObstacleOnEnter(state, unit) {
   const crushed = obstacleAt(state, unit.c, unit.r);
-  if (unit.type !== 'arm' || !OBSTACLES[crushed]?.crushedByArmor) return;
+  if (!UNITS[unit.type].armored || !OBSTACLES[crushed]?.crushedByArmor) return;
   delete state.obstacles[key(unit.c, unit.r)];
   state.bus.emit('obstacleRemoved', { c: unit.c, r: unit.r, obstacle: crushed });
 }

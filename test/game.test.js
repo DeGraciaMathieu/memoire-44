@@ -480,6 +480,32 @@ test("barbelés : l'infanterie les coupe au lieu de combattre — si elle pouvai
   assert.equal(canCutWire(state, foot), false);
 });
 
+test('le Tigre se comporte en blindé : barbelés écrasés, prise de terrain puis percée', () => {
+  const state = duel({
+    obstacles: { [key(5, 5)]: 'barbeles' },
+    units: [
+      { side: 'allies', type: 'tig', c: 5, r: 6 },
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+      { side: 'axis', type: 'inf', c: 5, r: 3 },
+    ],
+  });
+  const [tig, e1] = state.units;
+
+  // entre sur les barbelés : écrasés, combat conservé
+  assert.equal(moveUnit(state, tig, { c: 5, r: 5 }), 1);
+  assert.equal(state.obstacles[key(5, 5)], undefined);
+
+  // destruction au contact → prise de terrain → percée ouverte
+  e1.figs = 1;
+  state.rng = ALL_HITS;
+  const outcome = attackUnit(state, tig, e1);
+  assert.ok(outcome.report.killed);
+  const hex = takeGroundHex(state, tig, outcome);
+  assert.deepEqual(hex, { c: 5, r: 4 });
+  takeGround(state, tig, hex);
+  assert.ok(canBreakthrough(state, tig));
+});
+
 test('la pioche épuisée est rebattue automatiquement', () => {
   const state = createGame({ rng: mulberry32(3) });
   state.decks.allies = [];

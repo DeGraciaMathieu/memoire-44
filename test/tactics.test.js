@@ -84,6 +84,21 @@ test('assaut blindé : les blindés gagnent 1 dé au contact seulement', () => {
   assert.equal(diceFor(state, arm, state.units[2]), 3); // pas de bonus à distance
 });
 
+test('le Tigre est un blindé pour les cartes tactiques : assaut blindé, +1 dé au contact', () => {
+  const state = duel({
+    units: [
+      { side: 'allies', type: 'tig', c: 5, r: 7 },
+      { side: 'allies', type: 'inf', c: 1, r: 8 },
+      { side: 'axis', type: 'inf', c: 5, r: 8 },
+    ],
+  });
+  const tig = state.units[0];
+  state.hands.allies = ['armor-assault'];
+  playCard(state, 'allies', 'armor-assault');
+  assert.deepEqual(orderableUnits(state, 'allies', 'armor-assault'), [tig]);
+  assert.equal(diceFor(state, tig, state.units[2]), 4); // 3 + 1 au contact
+});
+
 test('assaut d’infanterie : le secteur choisi, bouge 2 et tire ou 3 sans tirer', () => {
   const state = duel({
     units: [
