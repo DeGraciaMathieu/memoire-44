@@ -93,6 +93,33 @@ test("maintien d'objectif : l'unité qui tient la tuile ne la quitte pas", () =>
   assert.equal(plan.dest.cost, 0);
 });
 
+test("objectif réservé au joueur : l'IA lui préfère la tuile qui lui rapporte", () => {
+  const state = board({
+    objectives: { [key(5, 2)]: 'axis', [key(5, 5)]: 'allies' },
+    units: [
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+      { side: 'allies', type: 'inf', c: 0, r: 8 },
+    ],
+  });
+  // la tuile alliée est plus proche de l'ennemi, mais ne rapporte rien à l'IA
+  const [plan] = aiChooseMoves(state, 'rec-c');
+  assert.deepEqual({ c: plan.dest.c, r: plan.dest.r }, { c: 5, r: 2 });
+});
+
+test("protection : l'IA vise l'occupant d'un objectif qui fait marquer le joueur", () => {
+  const state = board({
+    objectives: { [key(4, 4)]: 'allies' },
+    units: [
+      { side: 'axis', type: 'inf', c: 5, r: 4 },
+      { side: 'allies', type: 'inf', c: 5, r: 3 }, // à portée, hors objectif
+      { side: 'allies', type: 'inf', c: 4, r: 4 }, // tient l'objectif allié
+    ],
+  });
+  // à dés égaux, déloger l'occupant qui marque passe avant l'autre cible
+  const [plan] = aiChooseMoves(state, 'rec-c');
+  assert.equal(plan.target, state.units[2]);
+});
+
 test('aiReconKeep garde la carte qui active le plus de monde', () => {
   const state = board({
     units: [

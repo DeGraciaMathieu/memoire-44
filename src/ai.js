@@ -13,18 +13,30 @@ import {
 } from './game.js';
 import { eligibleUnits, moveRange } from './tactics.js';
 import { reachable, unitAt } from './movement.js';
-import { canFight, defenseReduction, diceFor, targetsFor } from './combat.js';
+import { canFight, defenseReduction, diceFor, objectiveScoresFor, targetsFor } from './combat.js';
 
 const P_HIT = { inf: 3 / 6, arm: 2 / 6, art: 3 / 6 }; // proba par dé selon la cible
 
-// Objectifs à prendre : toute tuile objectif que l'IA ne tient pas encore.
-function openObjectives(state) {
-  return Object.keys(state.objectives ?? {})
-    .map((k) => {
+function objectiveHexes(state, keep) {
+  return Object.entries(state.objectives ?? {})
+    .filter(([, type]) => keep(type))
+    .map(([k]) => {
       const [c, r] = k.split(',').map(Number);
       return { c, r };
-    })
-    .filter((h) => unitAt(state, h.c, h.r)?.side !== state.aiSide);
+    });
+}
+
+// Objectifs à prendre : toute tuile qui rapporte à l'IA et qu'elle ne tient pas encore.
+function openObjectives(state) {
+  return objectiveHexes(state, (type) => objectiveScoresFor(type, state.aiSide)).filter(
+    (h) => unitAt(state, h.c, h.r)?.side !== state.aiSide,
+  );
+}
+
+// Objectifs à protéger : tuiles qui ne rapportent qu'au joueur — l'IA n'y marque
+// jamais, elle cherche seulement à en interdire l'accès.
+function guardObjectives(state) {
+  return objectiveHexes(state, (type) => !objectiveScoresFor(type, state.aiSide));
 }
 
 // Secteur choisi pour une carte à choix de secteur : le plus fourni en
@@ -195,7 +207,8 @@ export function aiChooseMoves(state, cardId) {
 }
 
 // Prise de terrain : ne jamais lâcher un objectif tenu, toujours avancer sur
-// un objectif ; sinon le blindé avance toujours (percée possible) et
+// un objectif — même réservé au joueur : l'occuper en interdit l'accès —
+// sinon le blindé avance toujours (percée possible) et
 // l'infanterie n'abandonne jamais une couverture meilleure que l'hex pris.
 export function aiTakesGround(state, unit, hex) {
   const objective = (h) => !!state.objectives?.[key(h.c, h.r)];
@@ -224,6 +237,7 @@ export function aiBreakthroughTarget(state, unit) {
 function aiPlanUnit(state, unit) {
   const enemies = state.units.filter((e) => e.side === state.playerSide);
   const open = openObjectives(state);
+  const guard = guardObjectives(state);
   const dests = [
     { c: unit.c, r: unit.r, cost: 0 },
     ...reachable(state, unit, moveRange(state, unit)),
@@ -245,19 +259,32 @@ function aiPlanUnit(state, unit) {
         const dd = diceFor(state, ghost, e);
         if (!dd) continue;
         const exp = dd * P_HIT[e.type];
-        // bonus si le tir peut achever l'unité
-        const s = exp * 10 + (exp >= e.figs ? 12 : 0);
+        const holds = state.objectives?.[key(e.c, e.r)];
+        // bonus si le tir peut achever l'unité, ou déloger l'occupant d'un
+        // objectif qui fait marquer le joueur
+        const s =
+          exp * 10 +
+          (exp >= e.figs ? 12 : 0) +
+          (holds && objectiveScoresFor(holds, state.playerSide) ? 10 : 0);
         if (s > score) {
           score = s;
           target = e;
         }
       }
     }
-    // prendre ou tenir un objectif vaut une médaille ; sinon s'en rapprocher
-    if (state.objectives?.[key(d.c, d.r)]) score += 12;
+    // prendre ou tenir un objectif qui rapporte à l'IA vaut une médaille ;
+    // sinon s'en rapprocher
+    const objType = state.objectives?.[key(d.c, d.r)];
+    if (objType && objectiveScoresFor(objType, state.aiSide)) score += 12;
     else if (open.length) {
       const dObj = Math.min(...open.map((o) => hexDistance(ghost, o)));
       score += (10 - dObj) * 0.5;
+    }
+    // protéger un objectif réservé au joueur : rester à proximité pour en
+    // interdire l'accès (l'occuper n'est qu'un blocage, pas une médaille)
+    if (guard.length) {
+      const dGuard = Math.min(...guard.map((o) => hexDistance(ghost, o)));
+      score += (10 - dGuard) * 0.4;
     }
     // avancer vers l'ennemi le plus proche, se couvrir en terrain
     const near = Math.min(...enemies.map((e) => hexDistance(ghost, e)));
